@@ -1,0 +1,133 @@
+name: ${COMPOSE_PROJECT_NAME:-shad-tutoring}
+
+x-backend-env: &backend-env
+  DB_URL: postgresql+psycopg://${POSTGRES_USER:-shad}:${POSTGRES_PASSWORD:?Run dev.ps1 init}@db:5432/${POSTGRES_DB:-shad_tutoring}
+  DB_URL_ASYNC: postgresql+asyncpg://${POSTGRES_USER:-shad}:${POSTGRES_PASSWORD:?Run dev.ps1 init}@db:5432/${POSTGRES_DB:-shad_tutoring}
+  TEST_DB_URL: postgresql+psycopg://${POSTGRES_USER:-shad}:${POSTGRES_PASSWORD:?Run dev.ps1 init}@db:5432/${POSTGRES_TEST_DB:-shad_tutoring_test}
+  TEST_DB_URL_ASYNC: postgresql+asyncpg://${POSTGRES_USER:-shad}:${POSTGRES_PASSWORD:?Run dev.ps1 init}@db:5432/${POSTGRES_TEST_DB:-shad_tutoring_test}
+  CORE_JWT_SECRET: ${CORE_JWT_SECRET:?Run dev.ps1 init}
+  CORE_ACCESS_TOKEN_MINUTES: "30"
+  CORE_REFRESH_TOKEN_DAYS: "7"
+  FAT_HOST: 0.0.0.0
+  FAT_PORT: "8000"
+  FAT_WORKERS: "1"
+  FAT_RELOAD: "false"
+  TZ: ${SHAD_TIMEZONE:-Asia/Irkutsk}
+
+x-backend: &backend
+  image: ${COMPOSE_PROJECT_NAME:-shad-tutoring}-api:local
+  build:
+    context: .
+    target: runtime
+  environment: *backend-env
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  db:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-shad}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run dev.ps1 init}
+      POSTGRES_DB: ${POSTGRES_DB:-shad_tutoring}
+      POSTGRES_TEST_DB: ${POSTGRES_TEST_DB:-shad_tutoring_test}
+      TZ: ${SHAD_TIMEZONE:-Asia/Irkutsk}
+    command: ["postgres", "-c", "timezone=${SHAD_TIMEZONE:-Asia/Irkutsk}"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:${SHAD_DB_PORT:-15432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  migrate:
+    <<: *backend
+    image: ${COMPOSE_PROJECT_NAME:-shad-tutoring}-migrate:local
+    restart: "no"
+    command: ["python", "-m", "scripts.migrate"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    <<: *backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - app-logs:/srv/logs
+    ports:
+      - "127.0.0.1:${SHAD_API_PORT:-18080}:8000"
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/ready', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  web:
+    image: ${COMPOSE_PROJECT_NAME:-shad-tutoring}-web:local
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      target: runtime
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${SHAD_HTTP_PORT:-3000}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/ && wget -q -O /dev/null http://127.0.0.1:8080/api/v1/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  api-tests:
+    <<: *backend
+    profiles: ["test"]
+    image: ${COMPOSE_PROJECT_NAME:-shad-tutoring}-api:dev
+    build:
+      context: .
+      target: dev
+    read_only: false
+    environment:
+      <<: *backend-env
+      SHAD_RUN_DB_TESTS: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["python", "-m", "pytest", "-q"]
+
+  frontend-tests:
+    profiles: ["test"]
+    image: ${COMPOSE_PROJECT_NAME:-shad-tutoring}-frontend:dev
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      target: test
+    init: true
+    command: ["npm", "test"]
+
+volumes:
+  pgdata:
+  app-logs:

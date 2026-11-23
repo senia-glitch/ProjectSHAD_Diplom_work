@@ -4,6 +4,31 @@
 уведомления и статистика. Backend: **event-infra + core-package + fastbase + PostgreSQL**.
 Frontend: Vue 3 / Vite / Pinia; существующие интерфейс и контракты сохранены.
 
+## Запуск в Docker одной командой
+
+Запустить Docker Desktop (Linux containers), затем из папки проекта:
+
+```powershell
+.\dev.ps1
+```
+
+Скрипт создаст локальные настройки, соберёт frontend и backend, запустит
+PostgreSQL, применит миграции и дождётся готовности проекта.
+Приложение: [localhost:3000](http://localhost:3000/), API-документация:
+[localhost:3000/docs](http://localhost:3000/docs/).
+Docker начинает с пустой отдельной БД; данные сохраняются в постоянном томе.
+
+```powershell
+.\dev.ps1 down       # остановить с сохранением данных
+.\dev.ps1 up         # снова запустить
+.\dev.ps1 logs       # посмотреть логи
+.\dev.ps1 test       # backend и frontend в контейнерах
+.\dev.ps1 help       # все команды
+```
+
+Для этого режима локальные Python, Node и PostgreSQL не нужны.
+Порты, данные, секреты и устройство контейнеров — в [docs/docker.md](docs/docker.md).
+
 ## Запуск существующей рабочей копии
 
 Из корня проекта, PowerShell:
@@ -70,6 +95,7 @@ npm run build
 ## Документация
 
 - [Карта адаптации и результаты проверок](docs/stack-adaptation.md)
+- [Docker и PowerShell-запуск](docs/docker.md)
 - [Архитектура, правила и назначение проекта](PROJECT.md)
 - [Спецификация](docs/spec.md), [возможности ролей](docs/role-capabilities.md)
 - [Правила времени](docs/time-rules.md), [JSON-поля](docs/json-fields.md)

@@ -152,6 +152,9 @@ HTTP-запрос
 
 ### 1.10 Тесты, запуск, диагностика
 
+Основной локальный запуск в Docker: `.\dev.ps1` (PostgreSQL → миграции → backend → Vue/Nginx).
+Повторный запуск сохраняет тома. Команды и настройки — [docs/docker.md](docs/docker.md).
+
 - Бэкенд: `python -m pytest`; для PostgreSQL-проверок — `SHAD_RUN_DB_TESTS=1`. Проверяются исходная бизнес-логика, HTTP-доступ, контракты, все API-действия и сохранность данных при миграции.
 - Фронтенд: `npm run test` (vitest, тесты рядом с кодом в `logic/` и `ui/pages`).
 - Запуск: `python -m scripts.migrate`, затем `python -m app.main` (проверка схемы → инфраструктура → ядро → HTTP), фронт — `npm run dev`.

@@ -1,0 +1,12 @@
+# Runtime dependencies, constrained by the existing verified lock.
+-c requirements.lock
+event-infra @ git+https://github.com/senia-glitch/event-infra.git@cdc048e7c2a4625eb43e29e910a561f36b460bcd
+core-package @ git+https://github.com/senia-glitch/core-package.git@fb4b9b1f9151fe8d184d6fd35ee098d4e49a4135
+fastbase @ git+https://github.com/senia-glitch/fastapi-transport.git@e2dd625b53b1703031b43191c06936267678350d
+SQLAlchemy[asyncio]==2.1.5
+sqlmodel==0.0.48
+psycopg[binary]==3.3.6
+fastapi==0.143.3
+pydantic==2.14.3
+python-dotenv==1.2.4
+uvicorn==0.54.0
