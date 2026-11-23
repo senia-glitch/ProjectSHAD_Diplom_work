@@ -1,0 +1,105 @@
+:root {
+  --color-primary: #1a3a4a;
+  --color-primary-light: #2a5a6a;
+  --color-accent: #3a7abd;
+  --color-accent-dark: #2a5a8d;
+  --color-accent-50: #f0f7ff;
+  --color-accent-100: #d0e3f7;
+  --color-success: #28a745;
+  --color-warning: #ffc107;
+  --color-danger: #dc3545;
+  --color-white: #ffffff;
+  --color-gray-50: #f8f9fa;
+  --color-gray-100: #f1f3f5;
+  --color-gray-200: #e9ecef;
+  --color-gray-300: #dee2e6;
+  --color-gray-400: #ced4da;
+  --color-gray-500: #adb5bd;
+  --color-gray-600: #868e96;
+  --color-gray-700: #495057;
+  --color-gray-800: #343a40;
+  --color-gray-900: #212529;
+  --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --radius-md: 6px;
+  --radius-lg: 12px;
+  --radius-full: 50%;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+
+  /* === Правила доступа к времени (сетка броней, легенда, фон на расписании) === */
+  --rule-everyone-bg: #d3f9d8;
+  --rule-everyone-text: #2b8a3e;
+  --rule-everyone-border: #b2f2bb;
+
+  --rule-only-bg: #fff3bf;
+  --rule-only-text: #e67700;
+  --rule-only-border: #ffec99;
+
+  --rule-all-except-bg: #ffd8a8;
+  --rule-all-except-text: #d9480f;
+  --rule-all-except-border: #ffc078;
+
+  --rule-nobody-bg: #ffc9c9;
+  --rule-nobody-text: #c92a2a;
+  --rule-nobody-border: #ffa8a8;
+
+  /* === Цвета репетиторов (подсветка свободных окон ученика, по одному на репетитора).
+     Порядок радуги, затем нейтральные. Синего нет осознанно:
+     синий — подсветка существующих уроков. === */
+  --tutor-c1: #c92a2a;
+  --tutor-c2: #9b2226;
+  --tutor-c3: #d9480f;
+  --tutor-c4: #e67700;
+  --tutor-c5: #b26a00;
+  --tutor-c6: #8f7200;
+  --tutor-c7: #5c940d;
+  --tutor-c8: #4c9a2a;
+  --tutor-c9: #2b8a3e;
+  --tutor-c10: #087f5b;
+  --tutor-c11: #0c8599;
+  --tutor-c12: #9c36b5;
+  --tutor-c13: #7b2d8b;
+  --tutor-c14: #a61e4d;
+  --tutor-c15: #d6336c;
+  --tutor-c16: #8a5a2b;
+  --tutor-c17: #495057;
+  --tutor-c18: #1a1b1e;
+
+  /* === Статус урока «Неявка» (значок на сетке; остальные — из базовой палитры) === */
+  --status-no-show: #e67700;
+
+  /* === Прогноз на графике статистики (факт — акцент) === */
+  --chart-forecast: #e67700;
+
+  /* === Статистика v2: типографика секций и KPI === */
+  --kpi-value-size: 32px;
+  --kpi-label-size: 12px;
+  --section-title-size: 12px;
+  --section-title-tracking: 0.6px;
+
+  /* === Роли (бейджи в админ-панели) === */
+  --role-student-bg: #e3f2fd;
+  --role-student-text: #1565c0;
+  --role-tutor-bg: #e8f5e9;
+  --role-tutor-text: #2e7d32;
+  --role-admin-bg: #fff3e0;
+  --role-admin-text: #e65100;
+
+  /* === Блок урока на сетке расписания === */
+  --lesson-block-bg: rgba(58, 122, 189, 0.2);
+  --lesson-block-text: #2a5a8d;
+  --lesson-block-border: rgba(58, 122, 189, 0.3);
+
+  /* === Дополнительные поверхности и разделители === */
+  --slot-separator: #c8ced3;
+  --color-surface-subtle: #fafbfc;
+  --color-accent-5: #f0f6ff;
+  --color-text-muted: #6c757d;
+}

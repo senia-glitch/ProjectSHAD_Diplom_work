@@ -1,0 +1,142 @@
+from pydantic import BaseModel, Field
+from core import BaseScenario, NotFoundError, ValidationError, register_scenario, tracked_scenario
+from core.utils.security import extract_token_info
+from app.utils.participants import is_cancelled_row
+from app.utils.safe_parse import parse_iso_date
+from core.dto import BaseDTO
+
+
+class TutorListStudentsDTO(BaseDTO):
+    pass
+
+
+class TutorListStudentItem(BaseModel):
+    student_id: int
+    user_id: int
+    full_name: str
+
+
+class TutorListStudentsResponse(BaseModel):
+    students: list[TutorListStudentItem]
+
+
+@register_scenario("tutor_list_students")
+@tracked_scenario("tutor_list_students")
+class TutorListStudentsScenario(BaseScenario):
+    async def execute(self, dto: TutorListStudentsDTO) -> TutorListStudentsResponse:
+        token = extract_token_info(dto.access_token)
+
+        tutors = await self._db.query(
+            'SELECT id FROM "tutors" WHERE user_id = :uid',
+            {"uid": token.user_id},
+        )
+        if not tutors:
+            raise NotFoundError("Tutor profile not found")
+        tutor_id = tutors[0]["id"]
+
+        rows = await self._db.query(
+            '''SELECT s.id AS student_id, s.user_id, u.full_name
+               FROM "configurations" c
+               JOIN "students" s ON s.id = c.student_id
+               JOIN "users" u ON u.id = s.user_id
+               WHERE c.tutor_id = :tid
+               ORDER BY u.full_name''',
+            {"tid": tutor_id},
+        )
+
+        return TutorListStudentsResponse(
+            students=[TutorListStudentItem(**r) for r in rows]
+        )
+
+
+class TutorGetStudentBusySlotsDTO(BaseDTO):
+    student_user_id: int
+    date_from: str = Field(..., description="Start date in YYYY-MM-DD format")
+    date_to: str = Field(..., description="End date in YYYY-MM-DD format")
+
+
+class BusySlot(BaseModel):
+    start: str
+    end: str
+
+
+class TutorGetStudentBusySlotsResponse(BaseModel):
+    busy_slots: list[BusySlot]
+
+
+def _to_iso(value) -> str:
+    if isinstance(value, str):
+        return value.replace(" ", "T")
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value)
+
+
+@register_scenario("tutor_get_student_busy_slots")
+@tracked_scenario("tutor_get_student_busy_slots")
+class TutorGetStudentBusySlotsScenario(BaseScenario):
+    async def execute(self, dto: TutorGetStudentBusySlotsDTO) -> TutorGetStudentBusySlotsResponse:
+        token = extract_token_info(dto.access_token)
+
+        date_from = parse_iso_date(dto.date_from, "date_from")
+        date_to = parse_iso_date(dto.date_to, "date_to")
+        if date_from > date_to:
+            raise ValidationError("date_from must be less than or equal to date_to")
+
+        tutors = await self._db.query(
+            'SELECT id FROM "tutors" WHERE user_id = :uid',
+            {"uid": token.user_id},
+        )
+        if not tutors:
+            raise NotFoundError("Tutor profile not found")
+        tutor_id = tutors[0]["id"]
+
+        students = await self._db.query(
+            'SELECT id FROM "students" WHERE user_id = :uid',
+            {"uid": dto.student_user_id},
+        )
+        if not students:
+            raise NotFoundError("Student not found")
+        student_id = students[0]["id"]
+
+        configs = await self._db.query(
+            'SELECT id FROM "configurations" WHERE student_id = :sid AND tutor_id = :tid',
+            {"sid": student_id, "tid": tutor_id},
+        )
+        if not configs:
+            raise NotFoundError("No configuration found for this student-tutor pair")
+
+        participations = await self._db.query(
+            'SELECT * FROM "lesson_participants" WHERE student_id = :sid',
+            {"sid": student_id},
+        )
+
+        busy_slots = []
+        for p in participations:
+            # Отменённая запись время не занимает.
+            if is_cancelled_row(p):
+                continue
+            lesson_rows = await self._db.query(
+                'SELECT * FROM "lessons" WHERE id = :lid',
+                {"lid": p["lesson_id"]},
+            )
+            if not lesson_rows:
+                continue
+            lesson = lesson_rows[0]
+            # Отменённый урок время не занимает.
+            if (lesson.get("status") or "SCHEDULED") == "CANCELLED":
+                continue
+            start = lesson["start_time"]
+            end = lesson["end_time"]
+
+            start_str = str(start)[:10]
+            end_str = str(end)[:10]
+            # Занятость: урок занимает каждый день диапазона, который он
+            # пересекает (полуоткрытые интервалы — как в create).
+            if end_str >= date_from.isoformat() and start_str <= date_to.isoformat():
+                busy_slots.append(BusySlot(
+                    start=_to_iso(start),
+                    end=_to_iso(end),
+                ))
+
+        return TutorGetStudentBusySlotsResponse(busy_slots=busy_slots)

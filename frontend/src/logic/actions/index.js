@@ -1,0 +1,15 @@
+// Контракт logic/actions. Снаружи — только отсюда.
+// Логгера здесь нет осознанно: это не пользовательские сценарии (см. logic/logger/).
+export * from './auth.js'
+export * from './profile.js'
+export * from './schedule.js'
+export * from './bookings.js'
+export * from './roster.js'
+export * from './statistics.js'
+export * from './lesson_details.js'
+export * from './admin.js'
+export * from './settings.js'
+export * from './notifications.js'
+export * from './system.js'
+export * from './calendar.js'
+export * from './logs.js'

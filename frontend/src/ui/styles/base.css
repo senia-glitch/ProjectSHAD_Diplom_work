@@ -1,0 +1,233 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+/* Резерв места под вертикальный скроллбар на всех страницах:
+   появление/исчезновение полосы (например, на длинных Настройках)
+   больше не сдвигает центрированный контент влево. */
+html { scrollbar-gutter: stable; }
+body { font-family: var(--font-family); font-size: 16px; line-height: 1.5; color: var(--color-gray-800); background: var(--color-gray-100); }
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+img { max-width: 100%; height: auto; }
+ul, ol { list-style: none; }
+
+/* ===== Общие кнопки (единственное определение — здесь) ===== */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 8px 16px; border: none; border-radius: 8px; font-size: 14px;
+  font-weight: 500; cursor: pointer; transition: background 150ms; text-align: center;
+}
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn--primary { background: var(--color-accent); color: var(--color-white); }
+.btn--primary:hover:not(:disabled) { background: var(--color-accent-dark); }
+.btn--secondary { background: var(--color-gray-200); color: var(--color-gray-700); }
+.btn--secondary:hover:not(:disabled) { background: var(--color-gray-300); }
+.btn--danger { background: var(--color-danger); color: var(--color-white); }
+.btn--danger:hover:not(:disabled) { background: #a93226; }
+.btn--pri { background: var(--color-accent); color: var(--color-white); }
+.btn--pri:hover:not(:disabled) { background: var(--color-accent-dark); }
+.btn--pri:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn--dan { background: var(--color-danger); color: var(--color-white); }
+.btn--dan:hover:not(:disabled) { background: #c82333; }
+.btn--dan:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn--gry { background: transparent; color: var(--color-gray-700); border: 1px solid var(--color-gray-300); }
+.btn--gry:hover { background: var(--color-gray-100); }
+.btn--sm { padding: 5px 10px; font-size: 12px; }
+.btn--xs { padding: 3px 8px; font-size: 11px; }
+.btn--full { width: 100%; }
+
+/* ===== Кнопки-иконки +/− (единственное определение — здесь) ===== */
+.icon-btn {
+  width: 28px; height: 28px; border: 1px solid var(--color-gray-300); border-radius: 6px;
+  background: var(--color-white); color: var(--color-gray-700); font-size: 16px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 150ms; flex-shrink: 0; line-height: 1;
+}
+.icon-btn:hover { background: var(--color-gray-100); }
+.icon-btn--add { color: var(--color-accent); border-color: var(--color-accent); }
+.icon-btn--add:hover { background: rgba(58,122,189,0.08); }
+.icon-btn--remove { color: var(--color-danger); border-color: var(--color-danger); }
+.icon-btn--remove:hover { background: rgba(220,53,69,0.08); }
+.icon-btn--xs { width: 22px; height: 22px; font-size: 13px; }
+.icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ===== Модалки (единственное определение — здесь) ===== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center; z-index: 200;
+}
+.modal {
+  background: var(--color-white); border-radius: 12px; padding: 24px; width: 360px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+.modal-title { font-size: 18px; font-weight: 600; color: var(--color-primary); margin: 0 0 16px; }
+.modal-list { display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; }
+.modal-item {
+  padding: 10px 12px; border: 1px solid var(--color-gray-200); border-radius: 8px;
+  background: var(--color-white); text-align: left; font-size: 14px; color: var(--color-gray-800);
+  cursor: pointer; transition: background 150ms;
+}
+.modal-item:hover { background: #f0f6ff; border-color: var(--color-accent); }
+.modal-empty { font-size: 14px; color: var(--color-gray-500); text-align: center; padding: 12px 0; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* ===== Формы (единственное определение — здесь) ===== */
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group label { font-size: 13px; font-weight: 500; color: var(--color-gray-700); }
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 8px 12px; border: 1px solid var(--color-gray-300); border-radius: 6px;
+  font-size: 14px; transition: border-color 150ms; background: var(--color-white);
+  font-family: inherit; box-sizing: border-box;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus { outline: none; border-color: var(--color-accent); }
+.form-group input.error,
+.form-group select.error,
+.form-group textarea.error { border-color: var(--color-danger); }
+.form-group.has-error label { color: var(--color-danger); }
+.form-label { font-size: 13px; font-weight: 500; color: var(--color-gray-700); }
+.form-input {
+  padding: 8px 12px; border: 1px solid var(--color-gray-300); border-radius: 6px;
+  font-size: 14px; outline: none; transition: border-color 150ms; box-sizing: border-box;
+}
+.form-input:focus { border-color: var(--color-accent); }
+.field-error { font-size: 13px; color: var(--color-danger); }
+.server-error {
+  font-size: 14px; color: var(--color-danger); padding: 8px 12px;
+  background: rgba(220,53,69,0.08); border-radius: 6px; text-align: center;
+}
+.server-success {
+  font-size: 14px; color: var(--color-success); padding: 8px 12px;
+  background: rgba(40,167,69,0.08); border-radius: 6px; text-align: center;
+}
+.empty { padding: 32px; text-align: center; color: var(--color-gray-500); }
+.loading { text-align: center; color: var(--color-gray-600); padding: 60px; }
+
+/* ===== Шапка страницы (единая разметка всех страниц) ===== */
+.page-header { display: flex; flex-direction: column; gap: 2px; margin-bottom: 24px; }
+/* Строка заголовка страницы с кнопкой помощи-тура. */
+.page-title-row { display: flex; align-items: center; gap: 10px; }
+.page-title-row > .btn { margin-left: auto; }
+.page-title { font-size: 24px; font-weight: 700; color: var(--color-primary); margin: 0; }
+.page-desc { font-size: 14px; color: var(--color-gray-600); margin: 0; }
+.help-btn {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid var(--color-accent); background: var(--color-white);
+  color: var(--color-accent); font-size: 15px; font-weight: 700; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 150ms;
+}
+.help-btn:hover { background: rgba(58,122,189,0.08); }
+
+/* ===== Каркас боковых колонок табличных страниц ===== */
+.side-col { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; min-height: 0; overflow: hidden; }
+.side-col--wide { width: 384px; }
+.side-col > .side-block { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.side-col .side-hint { margin-top: auto; margin-bottom: auto; }
+.side-block {
+  background: white; border-radius: 12px; border: 1px solid var(--color-gray-200); padding: 16px;
+}
+.side-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.side-head .side-title { margin: 0; }
+.side-title { font-size: 15px; font-weight: 600; color: var(--color-primary); margin: 0 0 12px; }
+.side-hint { font-size: 14px; color: var(--color-gray-500); margin: 0; text-align: center; padding: 12px 0; }
+
+/* ===== Общие примитивы форм ===== */
+.slots-scroll {
+  flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+  scrollbar-width: thin; scrollbar-color: #ced4da var(--color-gray-100);
+}
+.slots-scroll::-webkit-scrollbar { width: 5px; }
+.slots-scroll::-webkit-scrollbar-track { background: var(--color-gray-100); border-radius: 3px; }
+.slots-scroll::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 3px; }
+.add-part { display: flex; gap: 6px; margin-top: 6px; }
+.add-part-select {
+  flex: 1; padding: 6px 10px; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 13px; background: white;
+}
+.add-part-select:focus { outline: none; border-color: var(--color-accent); }
+.fl { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 500; color: var(--color-gray-700); }
+.fl input, .fl select {
+  padding: 7px 10px; border: 1px solid var(--color-gray-300); border-radius: 6px;
+  font-size: 13px; background: white; width: 100%; box-sizing: border-box;
+}
+.fl input:focus, .fl select:focus { outline: none; border-color: var(--color-accent); }
+.checkbox-label { flex-direction: row; align-items: center; gap: 8px; }
+.checkbox-label input { width: auto; }
+.frow { display: flex; gap: 8px; }
+.frow .fl { flex: 1; }
+.inline-field { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--color-gray-700); }
+.inline-field > span { flex: 1; }
+.inline-field input, .inline-field select {
+  flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid var(--color-gray-300);
+  border-radius: 6px; font-size: 13px; background: var(--color-white); box-sizing: border-box;
+}
+.inline-field input:focus, .inline-field select:focus { outline: none; border-color: var(--color-accent); }
+.rule-row { display: flex; align-items: flex-end; gap: 6px; }
+.rule-row > .icon-btn:last-child { margin-left: auto; }
+.rule-select { flex: 1; }
+/* Паттерн значков +/−: замыкающий значок строки — всегда у правого края,
+   поэтому не скачут при разной ширине содержимого. */
+.add-part > .icon-btn:last-child,
+.mode-row > .icon-btn:last-child { margin-left: auto; }
+/* Вложенный уровень: значки тоже справа, но с отступом левее родительских —
+   вложенность видна. */
+.nest > .add-part { margin-right: 8px; }
+/* Время принадлежит дате/дню: его значки — ещё на шаг левее значков родителя. */
+.nest > .add-part.add-part--sub { margin-right: 16px; }
+.pick-lbl { font-size: 12px; font-weight: 500; color: var(--color-gray-600); margin-bottom: 2px; }
+.pick-empty { font-size: 12px; color: var(--color-gray-500); padding: 4px 0; }
+.pv-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--color-gray-800); }
+.pv-row span { flex: 1; }
+.nest { margin: 6px 0 6px 10px; padding-left: 8px; border-left: 2px solid var(--color-gray-200); display: flex; flex-direction: column; gap: 6px; }
+.nest .fl, .nest .pick-lbl { font-size: 12px; }
+.nest-title { font-size: 12px; font-weight: 600; color: var(--color-gray-700); white-space: nowrap; }
+.nest-sub { font-size: 12px; color: var(--color-gray-600); white-space: nowrap; }
+.time-in { flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 12px; background: white; box-sizing: border-box; }
+.time-in:focus { outline: none; border-color: var(--color-accent); }
+.period-sel { flex: 0 1 64px; min-width: 0; }
+.ferr { font-size: 12px; color: var(--color-danger); }
+.fmsg { font-size: 13px; padding: 6px 8px; border-radius: 6px; text-align: center; }
+.fmsg--ok { color: var(--color-success); background: rgba(40,167,69,0.06); }
+.fmsg--err { color: var(--color-danger); background: rgba(220,53,69,0.06); }
+
+/* ===== Карточка дня в weekly-режиме (расписание, обе роли) ===== */
+.day-card {
+  display: flex; flex-direction: column; gap: 10px;
+  background: var(--color-white); border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md); padding: 12px;
+}
+.day-head { display: flex; align-items: center; justify-content: space-between; }
+.day-title { font-size: 14px; font-weight: 600; color: var(--color-gray-800); }
+.day-dates {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  border-top: 1px solid var(--color-gray-200); padding-top: 8px;
+  font-size: 12px; color: var(--color-gray-700);
+}
+
+/* ===== Чипы участников и строки ключ-значение (левые панели) ===== */
+.part-chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px;
+  background: var(--color-white); border: 1px solid var(--color-gray-300); border-radius: 6px;
+  font-size: 13px; color: var(--color-gray-700); margin: 0 4px 4px 0;
+}
+.target-chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px;
+  background: var(--color-gray-100); border-radius: 6px;
+  font-size: 13px; color: var(--color-gray-700);
+}
+.info-k {
+  font-size: 10px; font-weight: 500; color: var(--color-gray-600);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.info-actions { display: flex; gap: 6px; margin-top: 10px; }
+
+/* ===== Детальная панель (правая колонка списков) ===== */
+.detail-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.detail-header h2 { margin: 0; font-size: 20px; font-weight: 600; color: var(--color-primary); }
+.detail-label {
+  font-size: 10px; font-weight: 500; color: var(--color-gray-600);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.detail-value { font-size: 14px; font-weight: 500; color: var(--color-gray-800); }

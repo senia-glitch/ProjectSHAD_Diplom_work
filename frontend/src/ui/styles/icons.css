@@ -1,0 +1,53 @@
+/* Назначение значков навигационной шапки.
+ *
+ * Как заменить значок: положите свой SVG с тем же именем в public/icons/
+ * (viewBox 24x24, светлые линии — шапка тёмная). Классы и разметка
+ * при этом не меняются. Размер значка и подписи — в MainLayout.
+ *
+ * Имя класса = страница или домен. Группировка — комментариями ниже.
+ */
+
+/* Корпус значка: квадрат 32px, картинка целиком, без повторов. */
+.nav-ico {
+  width: 32px; height: 32px; flex-shrink: 0;
+  background-size: contain; background-repeat: no-repeat; background-position: center;
+  transition: transform 150ms;
+}
+
+/* === Общие страницы === */
+/* Профиль пользователя */
+.nav-ico--profile { background-image: url('/icons/profile.svg'); }
+/* Расписание уроков */
+.nav-ico--schedule { background-image: url('/icons/schedule.svg'); }
+/* Календарь месяцев */
+.nav-ico--calendar { background-image: url('/icons/calendar.svg'); }
+
+/* === Связи ученик–репетитор === */
+/* Репетиторы (вид студента) */
+.nav-ico--tutors { background-image: url('/icons/tutors.svg'); }
+/* Ученики (вид репетитора) */
+.nav-ico--students { background-image: url('/icons/students.svg'); }
+
+/* === Брони и настройки (вид репетитора) === */
+/* График броней */
+.nav-ico--bookings { background-image: url('/icons/bookings.svg'); }
+/* Реестр оплат */
+.nav-ico--payments { background-image: url('/icons/payments.svg'); }
+/* Статистика репетитора */
+.nav-ico--statistics { background-image: url('/icons/statistics.svg'); }
+/* Настройки репетитора */
+.nav-ico--settings { background-image: url('/icons/settings.svg'); }
+
+/* === Администрирование === */
+/* Управление (вид администратора) */
+.nav-ico--admin { background-image: url('/icons/admin.svg'); }
+
+/* === Аутентификация === */
+/* Вход */
+.nav-ico--login { background-image: url('/icons/login.svg'); }
+/* Регистрация */
+.nav-ico--register { background-image: url('/icons/register.svg'); }
+/* Выход */
+.nav-ico--logout { background-image: url('/icons/logout.svg'); }
+/* Уведомления */
+.nav-ico--bell { background-image: url('/icons/bell.svg'); }
