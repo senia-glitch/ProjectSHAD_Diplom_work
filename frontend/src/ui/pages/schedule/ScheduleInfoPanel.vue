@@ -70,7 +70,7 @@
               <div class="edit-participants">
                 <div class="part-head">
                   <span class="info-k">Участники</span>
-                  <button v-if="editForm.is_group" type="button" class="icon-btn icon-btn--xs icon-btn--add" title="Добавить ученика" @click="emit('row-add')" :disabled="saving">+</button>
+                  <button v-if="editForm.is_group" type="button" class="icon-btn icon-btn--xs icon-btn--add" title="Добавить ученика" @click="emit('row-add')" :disabled="saving" aria-label="Добавить ученика">+</button>
                 </div>
                 <template v-if="!editForm.is_group">
                   <select v-model="singleEditStudent" class="add-part-select" :disabled="saving">
@@ -89,7 +89,7 @@
                       >{{ studentName(row.student_user_id) }}</option>
                       <option v-for="s in rowOptions(row.key)" :key="s.user_id" :value="s.user_id">{{ s.full_name }}</option>
                     </select>
-                    <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать строку" @click="emit('row-remove', row.key)" :disabled="saving">−</button>
+                    <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать строку" @click="emit('row-remove', row.key)" :disabled="saving" aria-label="Убрать строку">−</button>
                   </div>
                 </template>
                 <div v-if="addParticipantErr" class="ferr">{{ addParticipantErr }}</div>
@@ -97,13 +97,13 @@
               <div class="edit-links">
                 <div class="part-head">
                   <span class="info-k">Ссылки урока</span>
-                  <button type="button" class="icon-btn icon-btn--xs icon-btn--add" title="Добавить ссылку" @click="emit('link-add')" :disabled="saving">+</button>
+                  <button type="button" class="icon-btn icon-btn--xs icon-btn--add" title="Добавить ссылку" @click="emit('link-add')" :disabled="saving" aria-label="Добавить ссылку">+</button>
                 </div>
                 <div v-if="!editForm.lesson_links?.length" class="part-empty">Нет ссылок</div>
                 <div v-for="(link, i) in editForm.lesson_links" :key="i" class="link-row">
                   <input v-model="link.alias" placeholder="Название" class="link-alias" :disabled="saving" />
                   <input v-model="link.url" placeholder="https://..." class="link-url" :disabled="saving" />
-                  <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать ссылку" @click="emit('link-remove', i)" :disabled="saving">−</button>
+                  <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать ссылку" @click="emit('link-remove', i)" :disabled="saving" aria-label="Убрать ссылку">−</button>
                 </div>
                 <div class="links-defaults">
                   <button type="button" class="btn btn--gry btn--xs" title="Взять из конфигурации ученика" :disabled="saving || !singleStudentId" @click="emit('links-from-config')">Из конфигурации</button>

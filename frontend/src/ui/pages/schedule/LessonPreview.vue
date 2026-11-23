@@ -4,7 +4,7 @@
   <div v-if="hasInput && !items.length" class="pick-empty">Нет корректных уроков — проверьте даты и время</div>
   <div v-for="it in items" :key="it.key" class="pv-row">
     <span>{{ fmtPreview(it.start, it.end) }}</span>
-    <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать из списка" @click="dropItem(it.key)">−</button>
+    <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать из списка" @click="dropItem(it.key)" aria-label="Убрать из списка">−</button>
   </div>
 </template>
 

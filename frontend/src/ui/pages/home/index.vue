@@ -1,108 +1,110 @@
 <template>
   <MainLayout :is-logged-in="isLoggedIn" :role="role" @logout="handleLogout">
-    <div class="home-page">
-      <template v-if="isLoggedIn">
-        <div class="page-header">
-          <div class="page-title-row">
-            <h1 class="page-title">Главная</h1>
-          </div>
+    <template v-if="isLoggedIn">
+      <div class="page-header">
+        <p class="eyebrow">Ваш кабинет</p>
+        <h1 class="page-title">{{ userName ? `Здравствуйте, ${userName}` : 'Рабочее пространство' }}</h1>
+        <p class="page-desc">Занятия, люди и важные детали — всё под рукой.</p>
+      </div>
+      <section class="workspace-intro">
+        <div class="intro-icon"><UiIcon name="calendar" /></div>
+        <div><h2>Планы на неделю</h2><p>Откройте расписание, чтобы посмотреть занятия{{ role === 'tutor' ? ' или запланировать новый урок' : '' }}.</p></div>
+        <router-link to="/schedule" class="btn btn--pri">К расписанию <UiIcon name="arrowRight" /></router-link>
+      </section>
+      <h2 class="section-heading">Быстрый переход</h2>
+      <div class="home-menu">
+        <router-link v-for="item in menu" :key="item.to" :to="item.to" class="menu-card">
+          <span class="menu-icon"><UiIcon :name="item.icon" /></span>
+          <span class="menu-copy"><span class="menu-label">{{ item.label }}</span><span class="menu-description">{{ item.description }}</span></span>
+          <UiIcon name="arrowRight" class="menu-arrow" />
+        </router-link>
+      </div>
+    </template>
+    <template v-else>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">SHAD Tutoring</p>
+          <h1>Больше времени<br />на сами занятия</h1>
+          <p class="hero-subtitle">Расписание, запись на уроки и связь с репетитором — в одном спокойном рабочем пространстве.</p>
+          <div class="hero-actions"><router-link to="/register" class="btn btn--pri">Создать аккаунт <UiIcon name="arrowRight" /></router-link><router-link to="/how-it-works" class="btn btn--gry">Как это работает</router-link></div>
         </div>
-        <div class="home-menu">
-          <router-link to="/profile" class="menu-card">
-            <span class="menu-icon">⚙️</span>
-            <span class="menu-label">Профиль</span>
-          </router-link>
-          <router-link to="/schedule" class="menu-card">
-            <span class="menu-icon">📅</span>
-            <span class="menu-label">Расписание</span>
-          </router-link>
-          <router-link to="/notifications" class="menu-card">
-            <span class="menu-icon">🔔</span>
-            <span class="menu-label">Уведомления</span>
-          </router-link>
-          <router-link v-if="role === 'student'" to="/tutors" class="menu-card">
-            <span class="menu-icon">👤</span>
-            <span class="menu-label">Репетиторы</span>
-          </router-link>
-          <router-link v-if="role === 'tutor'" to="/students" class="menu-card">
-            <span class="menu-icon">👥</span>
-            <span class="menu-label">Ученики</span>
-          </router-link>
-          <router-link v-if="role === 'tutor'" to="/bookings" class="menu-card">
-            <span class="menu-icon">📋</span>
-            <span class="menu-label">Брони</span>
-          </router-link>
-          <router-link v-if="role === 'tutor'" to="/payments" class="menu-card">
-            <span class="menu-icon">💰</span>
-            <span class="menu-label">Оплаты</span>
-          </router-link>
-          <router-link v-if="role === 'admin'" to="/admin" class="menu-card">
-            <span class="menu-icon">🛡️</span>
-            <span class="menu-label">Управление</span>
-          </router-link>
+        <div class="hero-note">
+          <span class="intro-icon"><UiIcon name="calendar" /></span>
+          <h2>Учиться и преподавать проще, когда всё на своих местах.</h2>
+          <ul><li><UiIcon name="check" />Единое расписание занятий</li><li><UiIcon name="check" />Удобная запись на свободное время</li><li><UiIcon name="check" />Участники, ссылки и оплаты рядом</li></ul>
         </div>
-      </template>
-
-      <template v-else>
-        <div class="guest">
-          <section class="hero">
-            <h1 class="hero-title">SHAD Tutoring</h1>
-            <p class="hero-subtitle">Удобная платформа для организации занятий с репетиторами</p>
-          </section>
-
-          <section class="features">
-            <div class="feature-card">
-              <span class="feature-icon">📅</span>
-              <h3 class="feature-title">Расписание</h3>
-              <p class="feature-desc">Просматривайте расписание занятий, создавайте и отменяйте уроки в несколько кликов</p>
-            </div>
-            <div class="feature-card">
-              <span class="feature-icon">🤝</span>
-              <h3 class="feature-title">Связь с репетитором</h3>
-              <p class="feature-desc">Студенты находят репетиторов, репетиторы управляют своими учениками</p>
-            </div>
-            <div class="feature-card">
-              <span class="feature-icon">📋</span>
-              <h3 class="feature-title">Бронирование</h3>
-              <p class="feature-desc">Репетиторы настраивают доступные слоты, ученики записываются на удобное время</p>
-            </div>
-          </section>
-        </div>
-      </template>
-    </div>
+      </section>
+      <section class="features" aria-label="Возможности платформы">
+        <article v-for="item in features" :key="item.title" class="feature-card"><span class="menu-icon"><UiIcon :name="item.icon" /></span><h2>{{ item.title }}</h2><p>{{ item.description }}</p></article>
+      </section>
+    </template>
   </MainLayout>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import MainLayout from '../../blocks/layout/MainLayout.vue'
+import { UiIcon } from '../../components/index.js'
 import { useUser, useLogout } from '../../composables/index.js'
 
-const { role, isLoggedIn } = useUser()
+const { role, isLoggedIn, userName } = useUser()
 const { handleLogout } = useLogout()
+const menu = computed(() => [
+  { to: '/profile', icon: 'user', label: 'Профиль', description: 'Личные данные и код для связи' },
+  { to: '/notifications', icon: 'bell', label: 'Уведомления', description: 'Изменения и события занятий' },
+  ...(role.value === 'tutor' ? [
+    { to: '/students', icon: 'users', label: 'Ученики', description: 'Участники и персональные условия' },
+    { to: '/bookings', icon: 'clock', label: 'Брони', description: 'Окна для записи и правила доступа' },
+    { to: '/statistics', icon: 'chart', label: 'Статистика', description: 'Нагрузка и результаты за период' },
+    { to: '/payments', icon: 'wallet', label: 'Оплаты', description: 'Стоимость занятий и расчёты' },
+  ] : []),
+  ...(role.value === 'student' ? [{ to: '/tutors', icon: 'users', label: 'Репетиторы', description: 'Ваши преподаватели и условия занятий' }] : []),
+  ...(role.value === 'admin' ? [{ to: '/admin', icon: 'shield', label: 'Управление', description: 'Пользователи и состояние системы' }] : []),
+])
+const features = [
+  { icon: 'calendar', title: 'Видеть всю неделю', description: 'Занятия и свободные окна в наглядном расписании. Переключайтесь между неделей и календарём.' },
+  { icon: 'users', title: 'Оставаться на связи', description: 'Ученики и репетиторы, персональные условия и ссылки на занятия в одном месте.' },
+  { icon: 'clock', title: 'Планировать без суеты', description: 'Репетитор открывает удобные часы, ученик выбирает подходящее время для записи.' },
+]
 </script>
 
 <style scoped>
-.home-page { display: flex; flex-direction: column; }
-.home-menu { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
-.menu-card {
-  display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 24px;
-  background: white; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  text-decoration: none; transition: all 150ms; border: 1px solid var(--color-gray-200);
+.eyebrow { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; color: var(--accent); margin-bottom: 8px; }
+.workspace-intro { display: flex; align-items: center; gap: 24px; padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); margin-bottom: 32px; }
+.intro-icon { width: 48px; height: 48px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); border-radius: 12px; flex-shrink: 0; }
+.intro-icon .ui-icon { width: 24px; height: 24px; }
+.workspace-intro h2 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.workspace-intro p { font-size: 13px; color: var(--muted); }
+.workspace-intro > .btn { margin-left: auto; white-space: nowrap; }
+.section-heading { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; margin-bottom: 16px; }
+.home-menu { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.menu-card { display: flex; align-items: center; gap: 16px; padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); color: var(--text); transition: border-color var(--t), transform var(--t); }
+.menu-card:hover { border-color: var(--accent); transform: translateY(-2px); text-decoration: none; }
+.menu-icon { display: inline-flex; color: var(--accent); flex-shrink: 0; }
+.menu-copy { display: flex; flex-direction: column; gap: 4px; }
+.menu-label { font-size: 14px; font-weight: 600; }
+.menu-description { font-size: 12px; color: var(--muted); }
+.menu-arrow { width: 16px; height: 16px; color: var(--muted); margin-left: auto; }
+.hero { display: grid; grid-template-columns: 1.2fr 1fr; gap: 64px; padding: 48px 0 64px; align-items: center; }
+.hero h1 { font-size: clamp(32px, 4vw, 48px); line-height: 1.15; letter-spacing: -.035em; font-weight: 600; margin: 16px 0 24px; }
+.hero-subtitle { max-width: 44ch; font-size: 16px; color: var(--muted); }
+.hero-actions { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
+.hero-note { padding: 32px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.hero-note h2 { font-size: 22px; font-weight: 500; line-height: 1.45; margin: 24px 0; }
+.hero-note ul { display: flex; flex-direction: column; gap: 16px; }
+.hero-note li { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted); }
+.hero-note li .ui-icon { color: var(--accent); width: 16px; height: 16px; }
+.features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.feature-card { padding: 24px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); }
+.feature-card h2 { font-size: 16px; font-weight: 600; margin: 16px 0 8px; }
+.feature-card p { color: var(--muted); font-size: 13px; }
+@media (max-width: 950px) { .home-menu { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hero { gap: 24px; } }
+@media (max-width: 700px) {
+  .workspace-intro { flex-wrap: wrap; gap: 16px; }
+  .workspace-intro > .btn { margin-left: 0; }
+  .home-menu, .hero, .features { grid-template-columns: minmax(0, 1fr); }
+  .hero { padding: 16px 0 32px; }
+  .hero-note { padding: 24px; }
+  .menu-card { padding: 16px; }
 }
-.menu-card:hover { box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-color: var(--color-accent); text-decoration: none; }
-.menu-icon { font-size: 32px; }
-.menu-label { font-size: 16px; font-weight: 500; color: var(--color-gray-800); }
-
-.guest { max-width: 900px; margin: 0 auto; }
-.hero { text-align: center; padding: 48px 0 40px; }
-.hero-title { font-size: 36px; font-weight: 700; color: var(--color-primary); margin-bottom: 12px; }
-.hero-subtitle { font-size: 18px; color: var(--color-text-muted); }
-.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
-.feature-card {
-  padding: 24px; background: white; border-radius: 12px;
-  border: 1px solid var(--color-gray-200); box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-.feature-icon { font-size: 28px; }
-.feature-title { font-size: 16px; font-weight: 600; color: var(--color-primary); margin: 8px 0 6px; }
-.feature-desc { font-size: 14px; color: var(--color-text-muted); line-height: 1.5; margin: 0; }
 </style>

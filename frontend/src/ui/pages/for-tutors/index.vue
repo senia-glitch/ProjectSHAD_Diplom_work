@@ -3,17 +3,17 @@
     <PublicPage title="Репетиторам" subtitle="Ведение учеников, расписания и оплат в одном месте">
       <section class="guest">
         <div class="feature-card">
-          <span class="feature-icon">📅</span>
+          <span class="feature-icon"><UiIcon name="calendar" /></span>
           <h3 class="feature-title">Расписание и брони</h3>
           <p class="feature-desc">Настройте повторяющиеся окна доступности — студенты увидят только разрешённые слоты.</p>
         </div>
         <div class="feature-card">
-          <span class="feature-icon">👥</span>
+          <span class="feature-icon"><UiIcon name="users" /></span>
           <h3 class="feature-title">Ученики и связь</h3>
           <p class="feature-desc">Персональные ставки, скидки и правила самозаписи для каждой связи.</p>
         </div>
         <div class="feature-card">
-          <span class="feature-icon">💰</span>
+          <span class="feature-icon"><UiIcon name="wallet" /></span>
           <h3 class="feature-title">Оплаты и статистика</h3>
           <p class="feature-desc">Отмечайте оплату, следите за задолженностями и выручкой за период.</p>
         </div>
@@ -34,6 +34,7 @@
 </template>
 
 <script setup>
+import { UiIcon } from '../../components/index.js'
 import MainLayout from '../../blocks/layout/MainLayout.vue'
 import PublicPage from '../../blocks/public/PublicPage.vue'
 import { useUser, useLogout } from '../../composables/index.js'

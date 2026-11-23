@@ -10,10 +10,11 @@
       </div>
       <ScheduleTour v-if="showTour" @close="showTour = false" />
 
-      <div class="view-toggle">
+      <div class="view-toggle" role="group" aria-label="Вид расписания">
         <button
           v-for="m in viewModes" :key="m.value"
           type="button"
+          :aria-pressed="viewMode === m.value"
           :class="viewMode === m.value ? 'view-toggle--on' : ''"
           @click="viewMode = m.value"
         >{{ m.label }}</button>
@@ -26,9 +27,9 @@
         </div>
         <div v-else>
           <div class="cal-toolbar">
-            <button type="button" class="btn btn--sm btn--gry" @click="calendarShift(-1)">&larr;</button>
+            <button type="button" class="icon-btn" aria-label="Предыдущий месяц" title="Предыдущий месяц" @click="calendarShift(-1)"><UiIcon name="arrowLeft" /></button>
             <span class="cal-month">{{ calendarMonthLabel }}</span>
-            <button type="button" class="btn btn--sm btn--gry" @click="calendarShift(1)">&rarr;</button>
+            <button type="button" class="icon-btn" aria-label="Следующий месяц" title="Следующий месяц" @click="calendarShift(1)"><UiIcon name="arrowRight" /></button>
             <button type="button" class="btn btn--sm btn--gry" @click="calendarGoToday">Сегодня</button>
           </div>
           <MonthGrid
@@ -39,14 +40,14 @@
             @pick="calendarPickDay"
           />
           <div v-if="calendarSelectedDay" class="day-list">
-            <h3>Уроки на {{ calendarSelectedDay }}</h3>
+            <h3>Уроки на {{ new Date(`${calendarSelectedDay}T00:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) }}</h3>
             <div v-if="calendarDayLessons.length" class="day-cards">
               <router-link
                 v-for="lesson in calendarDayLessons" :key="lesson.lesson_id"
                 :to="`/lessons/${lesson.lesson_id}`"
                 class="lesson-card"
               >
-                <span class="lesson-time">{{ lesson.start }}–{{ lesson.end }}</span>
+                <span class="lesson-time">{{ fmtTime(lesson.start_time) }}–{{ fmtTime(lesson.end_time) }}</span>
                 <span class="lesson-status" :class="`status-${lesson.status}`">{{ statusLabel(lesson.status) }}</span>
               </router-link>
             </div>
@@ -58,39 +59,6 @@
       <template v-else>
         <div v-if="loading" class="loading">Загрузка...</div>
         <div v-else class="schedule-layout">
-          <div class="side-col" :style="colStyle">
-            <ScheduleInfoPanel
-              :role="role"
-              :lessons="lessons"
-              :selected-ids="selectedIds"
-              :editing-id="editingId"
-              :edit-form="editForm"
-              :edit-errors="editErrors"
-              :edit-msg="editMsg"
-              :edit-err="editErr"
-              :participants-map="participantsMap"
-              :participants-loading="participantsLoading"
-              :edit-rows="editRows"
-              :add-participant-err="addParticipantErr"
-              :students="students"
-              :tutors="tutors"
-              :saving="saving"
-              @start-edit="startEdit"
-              @delete-lesson="handleDelete"
-              @save-lesson="handleUpdate"
-              @cancel-edit="cancelEdit"
-              @row-add="addEditRow"
-              @row-remove="removeEditRow"
-              @single-pick="singlePick"
-              @load-participants="loadParticipants"
-              @link-add="addEditLink"
-              @link-remove="removeEditLink"
-              @links-from-config="applyLinksFromConfig"
-              @links-to-config="applyLinksToConfig"
-              @links-from-settings="applyLinksFromSettings"
-              @links-to-settings="applyLinksToSettings"
-            />
-          </div>
           <ScheduleGrid
             :lessons="lessons"
             :dim-bookings="dimBookings"
@@ -107,28 +75,62 @@
             @nav-prev="prevWeek"
             @nav-next="nextWeek"
             @nav-today="goToday"
-            @grid-ready="bindGridBox"
           />
-          <div v-if="role === 'tutor'" class="side-col side-col--wide" :style="colStyle">
-            <LessonCreator
-              :slots="createSlots"
-              :students="students"
-              v-model:saving="saving"
-              @clear="clearCreateForm"
-            />
-          </div>
-          <div v-else-if="role === 'student'" class="side-col side-col--wide" :style="colStyle">
-            <StudentLessonCreator
-              :slots="createSlots"
-              :tutors="tutors"
-              :tutor-colors="resolvedTutorColors"
-              :week-range="weekRange"
-              v-model:saving="saving"
-              @clear="clearCreateForm"
-              @ensure-color="ensureTutorColor"
-              @set-color="setTutorColor"
-            />
-          </div>
+          <aside class="workspace-tools" aria-label="Управление уроками">
+            <div v-if="role === 'tutor'" class="side-col side-col--wide">
+              <LessonCreator
+                :slots="createSlots"
+                :students="students"
+                v-model:saving="saving"
+                @clear="clearCreateForm"
+              />
+            </div>
+            <div v-else-if="role === 'student'" class="side-col side-col--wide">
+              <StudentLessonCreator
+                :slots="createSlots"
+                :tutors="tutors"
+                :tutor-colors="resolvedTutorColors"
+                :week-range="weekRange"
+                v-model:saving="saving"
+                @clear="clearCreateForm"
+                @ensure-color="ensureTutorColor"
+                @set-color="setTutorColor"
+              />
+            </div>
+            <div class="side-col">
+              <ScheduleInfoPanel
+                :role="role"
+                :lessons="lessons"
+                :selected-ids="selectedIds"
+                :editing-id="editingId"
+                :edit-form="editForm"
+                :edit-errors="editErrors"
+                :edit-msg="editMsg"
+                :edit-err="editErr"
+                :participants-map="participantsMap"
+                :participants-loading="participantsLoading"
+                :edit-rows="editRows"
+                :add-participant-err="addParticipantErr"
+                :students="students"
+                :tutors="tutors"
+                :saving="saving"
+                @start-edit="startEdit"
+                @delete-lesson="handleDelete"
+                @save-lesson="handleUpdate"
+                @cancel-edit="cancelEdit"
+                @row-add="addEditRow"
+                @row-remove="removeEditRow"
+                @single-pick="singlePick"
+                @load-participants="loadParticipants"
+                @link-add="addEditLink"
+                @link-remove="removeEditLink"
+                @links-from-config="applyLinksFromConfig"
+                @links-to-config="applyLinksToConfig"
+                @links-from-settings="applyLinksFromSettings"
+                @links-to-settings="applyLinksToSettings"
+              />
+            </div>
+          </aside>
         </div>
       </template>
     </div>
@@ -144,15 +146,15 @@ import LessonCreator from './LessonCreator.vue'
 import StudentLessonCreator from './StudentLessonCreator.vue'
 import ScheduleTour from './ScheduleTour.vue'
 import MonthGrid from '../calendar/MonthGrid.vue'
+import { UiIcon } from '../../components/index.js'
+import { fmtTime } from '../../../logic/utils/index.js'
 import { useUser, useLogout } from '../../composables/index.js'
 import { useSchedulePage } from './useSchedulePage.js'
-import { useSideHeights } from './useSideHeights.js'
 import { useCalendarPage } from '../calendar/useCalendarPage.js'
 import { LESSON_STATUSES } from '../../../logic/constants/index.js'
 
 const { role, isLoggedIn } = useUser()
 const { handleLogout } = useLogout()
-const { colStyle, bindGridBox } = useSideHeights()
 const showTour = ref(false)
 
 const viewMode = ref('week')
@@ -162,8 +164,7 @@ const viewModes = [
 ]
 
 const {
-  year, month, calendarSelectedDay,
-  lessons: calendarLessons,
+  selectedDay: calendarSelectedDay,
   loading: calendarLoading,
   error: calendarError,
   monthLabel: calendarMonthLabel,
@@ -242,11 +243,12 @@ const {
 </script>
 
 <style scoped>
+.schedule-page > .page-header { margin-bottom: 0; }
 .schedule-page { display: flex; flex-direction: column; gap: 16px; }
-.view-toggle { display: inline-flex; background: var(--color-gray-100); border-radius: 9px; padding: 3px; gap: 2px; align-self: flex-start; }
+.view-toggle { border: 1px solid var(--line); display: inline-flex; background: var(--color-gray-100); border-radius: 9px; padding: 3px; gap: 2px; align-self: flex-start; }
 .view-toggle button { border: none; background: none; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--color-gray-600); padding: 6px 16px; border-radius: 7px; white-space: nowrap; }
 .view-toggle button.view-toggle--on { background: var(--color-white); color: var(--color-gray-800); box-shadow: var(--shadow-sm); }
-.cal-toolbar { display: flex; align-items: center; gap: 8px; }
+.cal-toolbar { flex-wrap: wrap; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
 .cal-month { font-size: 16px; font-weight: 600; }
 .day-list { margin-top: 16px; }
 .day-list h3 { margin: 0 0 12px; font-size: 16px; }
@@ -256,11 +258,23 @@ const {
 .lesson-time { font-weight: 600; }
 .lesson-status { margin-left: auto; font-size: 12px; padding: 2px 8px; border-radius: var(--radius-full); }
 .status-SCHEDULED { background: var(--color-gray-100); color: var(--color-gray-600); }
-.status-FINISHED { background: #e8f5e9; color: #2e7d32; }
-.status-CANCELLED { background: #ffebee; color: #c62828; }
+.status-FINISHED { background: var(--rule-everyone-bg); color: var(--ok); }
+.status-CANCELLED { background: var(--rule-nobody-bg); color: var(--danger); }
 .empty-text { color: var(--color-gray-600); font-size: 14px; }
 .state-box { background: var(--color-white); border: 1px solid var(--color-gray-200); border-radius: var(--radius-lg); padding: 28px 20px; text-align: center; color: var(--color-gray-600); font-size: 14px; }
 .state-box p { margin: 0; }
 .state-box--warn { padding: 12px 16px; }
-.schedule-layout { display: flex; gap: 20px; flex: 1; align-items: stretch; }
+.schedule-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+
+.workspace-tools { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+@media (max-width: 1000px) {
+  .workspace-tools { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+}
+@media (max-width: 600px) {
+  .workspace-tools { display: flex; }
+}
+
+@media (max-width: 1000px) {
+  .schedule-layout { grid-template-columns: minmax(0, 1fr); }
+}
 </style>

@@ -44,10 +44,10 @@ const STEPS = [
   },
   {
     id: 'info',
-    sel: '.bookings-layout > .side-col:first-child .side-block',
+    sel: '.workspace-tools .side-col:last-child .side-block',
     prefer: 'right',
     title: 'Меняйте созданное',
-    text: 'Нажмите на бронь в списке слева, чтобы поправить время, правило или удалить её.',
+    text: 'Нажмите на бронь в сетке, чтобы поправить время, правило или удалить её.',
     example: ['Пн 09:00–10:00 · Все'],
   },
 ]

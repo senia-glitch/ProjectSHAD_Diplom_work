@@ -225,4 +225,7 @@ function exportCsv() {
 .stable tfoot td:first-child { border-bottom-left-radius: 7px; }
 .stable tfoot td:last-child { border-bottom-right-radius: 7px; }
 .sort-arrow { font-size: 10px; }
+
+.table-scroll { overflow: auto; }
+@media (max-width: 600px) { .table-head { flex-wrap: wrap; } .table-tools { flex-wrap: wrap; width: 100%; } .table-search { flex: 1; width: 0; min-width: 120px; } }
 </style>

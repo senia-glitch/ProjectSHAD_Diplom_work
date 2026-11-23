@@ -42,6 +42,13 @@ export function useNotifications() {
     closePanel()
   }
 
+  function onKeydown(e) {
+    if (e.key === 'Escape' && panelOpen.value) {
+      closePanel()
+      document.querySelector('.notif-bell')?.focus()
+    }
+  }
+
   function onHoverItem(item) {
     if (item && !item.read) markRead(item.id)
   }
@@ -50,11 +57,13 @@ export function useNotifications() {
     refreshUnread()
     timer = setInterval(refreshUnread, 30000)
     document.addEventListener('click', onDocClick)
+    document.addEventListener('keydown', onKeydown)
     window.addEventListener('resize', onResize)
   })
   onUnmounted(() => {
     if (timer) clearInterval(timer)
     document.removeEventListener('click', onDocClick)
+    document.removeEventListener('keydown', onKeydown)
     window.removeEventListener('resize', onResize)
   })
 

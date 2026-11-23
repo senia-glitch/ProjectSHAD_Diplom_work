@@ -86,7 +86,7 @@ button.mcell:disabled { cursor: default; }
   background: none; color: var(--color-gray-500); font-size: 10px; min-height: 18px;
 }
 .mcell--corner {
-  background: var(--color-primary); color: var(--color-white);
+  background: var(--accent); color: var(--on-accent);
   font-weight: 700; font-size: 12px;
 }
 .mcell--month {
@@ -96,11 +96,6 @@ button.mcell:disabled { cursor: default; }
 .mcell--void { background: var(--color-gray-100); opacity: 0.45; }
 .mcell--sel { outline: 2px solid var(--color-accent); outline-offset: -2px; }
 .shade-0 { background: var(--color-gray-50); color: var(--color-gray-400); }
-.shade-1 { background: #dbe9f7; }
-.shade-2 { background: #b3d1ee; }
-.shade-3 { background: #84b4e3; color: #0f2f4d; }
-.shade-4 { background: #4f93d3; color: #fff; }
-.shade-5 { background: #1f6cb5; color: #fff; font-weight: 600; }
 .matrix-hint { margin: 0; font-size: 12px; color: var(--color-gray-500); }
 @media (max-width: 700px) {
   .matrix-card { padding: 8px 10px; }
@@ -111,4 +106,12 @@ button.mcell:disabled { cursor: default; }
   .mcell--corner { font-size: 11px; }
   .matrix-hint { font-size: 11px; }
 }
+
+.matrix-scroll { overflow-x: auto; scrollbar-width: thin; }
+.matrix { min-width: 640px; }
+.shade-1 { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); color: var(--text); }
+.shade-2 { background: color-mix(in srgb, var(--accent) 25%, var(--surface)); color: var(--text); }
+.shade-3 { background: color-mix(in srgb, var(--accent) 40%, var(--surface)); color: var(--text); }
+.shade-4 { background: color-mix(in srgb, var(--accent) 70%, var(--surface)); color: var(--on-accent); }
+.shade-5 { background: var(--accent); color: var(--on-accent); }
 </style>

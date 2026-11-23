@@ -84,4 +84,8 @@ const periodCaption = computed(() => {
 @media (max-width: 1000px) {
   .dash { grid-template-columns: 1fr; }
 }
+
+.tabs { flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.tab-link.router-link-exact-active { background: var(--accent-soft); color: var(--accent); box-shadow: none; }
+@media (max-width: 600px) { .page-period { width: 100%; margin-left: 0; } .tabs { gap: 0; } .tab-link { padding: 8px 12px; font-size: 13px; } }
 </style>

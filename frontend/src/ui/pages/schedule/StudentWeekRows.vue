@@ -9,7 +9,7 @@
     <div v-if="slot.weekdays[wd.id].on" class="day-card">
       <div class="day-head">
         <span class="day-title">{{ wd.full }}</span>
-        <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать день" @click="toggleWeekday(wd.id)">−</button>
+        <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать день" @click="toggleWeekday(wd.id)" aria-label="Убрать день">−</button>
       </div>
       <label class="fl"><span class="info-k">Начать с</span>
         <input v-model="slot.weekdays[wd.id].startDate" type="date" />
@@ -29,7 +29,7 @@
       <template v-if="hasWindows(wd.id)">
         <div class="add-part">
           <span class="info-k">Время занятия</span>
-          <button type="button" class="icon-btn icon-btn--xs icon-btn--add" title="Добавить время" @click="addDayTime(wd.id)">+</button>
+          <button type="button" class="icon-btn icon-btn--xs icon-btn--add" title="Добавить время" @click="addDayTime(wd.id)" aria-label="Добавить время">+</button>
         </div>
         <div v-for="t in slot.weekdays[wd.id].times" :key="t.key" class="add-part add-part--sub">
         <select v-model="t.start" class="time-in" @change="onStart(wd.id, t.key)">
@@ -40,7 +40,7 @@
           <option :value="''" disabled>Длительность</option>
           <option v-for="o in durationOptions(wd.id, t)" :key="o.key" :value="o.key">{{ o.label }}</option>
         </select>
-          <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать время" @click="removeDayTime(wd.id, t.key)">−</button>
+          <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать время" @click="removeDayTime(wd.id, t.key)" aria-label="Убрать время">−</button>
         </div>
       </template>
       <div v-else class="pick-empty">Свободных окон нет — выбери другой день</div>

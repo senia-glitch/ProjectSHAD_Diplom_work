@@ -45,7 +45,7 @@
           <button
             v-if="editForm.access_rule === 'ONLY' || editForm.access_rule === 'ALL_EXCEPT'"
             type="button" class="icon-btn icon-btn--add" @click="emit('open-picker')" title="Добавить ученика"
-          >+</button>
+           aria-label="Добавить ученика">+</button>
         </div>
         <div v-if="editForm.access_rule === 'ONLY' || editForm.access_rule === 'ALL_EXCEPT'" class="targets">
           <div v-if="!students.length" class="pick-empty">Нет учеников</div>

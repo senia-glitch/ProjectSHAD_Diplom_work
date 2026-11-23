@@ -9,45 +9,45 @@
 
 /* Корпус значка: квадрат 32px, картинка целиком, без повторов. */
 .nav-ico {
-  width: 32px; height: 32px; flex-shrink: 0;
-  background-size: contain; background-repeat: no-repeat; background-position: center;
+  width: 20px; height: 20px; flex-shrink: 0;
+  background-color: currentColor; mask-size: contain; mask-repeat: no-repeat; mask-position: center;
   transition: transform 150ms;
 }
 
 /* === Общие страницы === */
 /* Профиль пользователя */
-.nav-ico--profile { background-image: url('/icons/profile.svg'); }
+.nav-ico--profile { mask-image: url('/icons/profile.svg'); }
 /* Расписание уроков */
-.nav-ico--schedule { background-image: url('/icons/schedule.svg'); }
+.nav-ico--schedule { mask-image: url('/icons/schedule.svg'); }
 /* Календарь месяцев */
-.nav-ico--calendar { background-image: url('/icons/calendar.svg'); }
+.nav-ico--calendar { mask-image: url('/icons/calendar.svg'); }
 
 /* === Связи ученик–репетитор === */
 /* Репетиторы (вид студента) */
-.nav-ico--tutors { background-image: url('/icons/tutors.svg'); }
+.nav-ico--tutors { mask-image: url('/icons/tutors.svg'); }
 /* Ученики (вид репетитора) */
-.nav-ico--students { background-image: url('/icons/students.svg'); }
+.nav-ico--students { mask-image: url('/icons/students.svg'); }
 
 /* === Брони и настройки (вид репетитора) === */
 /* График броней */
-.nav-ico--bookings { background-image: url('/icons/bookings.svg'); }
+.nav-ico--bookings { mask-image: url('/icons/bookings.svg'); }
 /* Реестр оплат */
-.nav-ico--payments { background-image: url('/icons/payments.svg'); }
+.nav-ico--payments { mask-image: url('/icons/payments.svg'); }
 /* Статистика репетитора */
-.nav-ico--statistics { background-image: url('/icons/statistics.svg'); }
+.nav-ico--statistics { mask-image: url('/icons/statistics.svg'); }
 /* Настройки репетитора */
-.nav-ico--settings { background-image: url('/icons/settings.svg'); }
+.nav-ico--settings { mask-image: url('/icons/settings.svg'); }
 
 /* === Администрирование === */
 /* Управление (вид администратора) */
-.nav-ico--admin { background-image: url('/icons/admin.svg'); }
+.nav-ico--admin { mask-image: url('/icons/admin.svg'); }
 
 /* === Аутентификация === */
 /* Вход */
-.nav-ico--login { background-image: url('/icons/login.svg'); }
+.nav-ico--login { mask-image: url('/icons/login.svg'); }
 /* Регистрация */
-.nav-ico--register { background-image: url('/icons/register.svg'); }
+.nav-ico--register { mask-image: url('/icons/register.svg'); }
 /* Выход */
-.nav-ico--logout { background-image: url('/icons/logout.svg'); }
+.nav-ico--logout { mask-image: url('/icons/logout.svg'); }
 /* Уведомления */
-.nav-ico--bell { background-image: url('/icons/bell.svg'); }
+.nav-ico--bell { mask-image: url('/icons/bell.svg'); }

@@ -2,7 +2,9 @@
   <MainLayout :is-logged-in="isLoggedIn" :role="role" @logout="handleLogout">
     <div class="login-page">
       <div class="login-card">
+        <p class="auth-eyebrow">SHAD Tutoring</p>
         <h1 class="login-title">Вход</h1>
+        <p class="auth-description">Рады видеть вас снова. Войдите, чтобы продолжить.</p>
         <form class="login-form" @submit.prevent="handleSubmit" novalidate>
           <div class="form-group" :class="{ 'has-error': errors.login }">
             <label for="login">Логин</label>
@@ -28,7 +30,7 @@
             />
             <span v-if="errors.password" class="field-error">{{ errors.password }}</span>
           </div>
-          <div v-if="serverError" class="server-error">{{ serverError }}</div>
+          <div v-if="serverError" class="server-error" role="alert">{{ serverError }}</div>
           <button type="submit" class="btn btn--primary btn--full" :disabled="loading">
             {{ loading ? 'Вход...' : 'Войти' }}
           </button>
@@ -132,4 +134,12 @@ async function handleSubmit() {
   font-size: 13px;
   color: var(--color-gray-600);
 }
+
+.login-page { padding: 24px 0; }
+.login-card { max-width: 440px; box-shadow: none; padding: 32px; }
+.login-title { text-align: left; font-size: 28px; font-weight: 600; margin-bottom: 8px; letter-spacing: -.02em; }
+.auth-eyebrow { color: var(--accent); text-transform: uppercase; font-size: 10px; font-weight: 600; letter-spacing: .12em; margin-bottom: 16px; }
+.auth-description { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+.login-footer { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 24px; }
+@media (max-width: 600px) { .login-card { padding: 24px; } .login-page { padding: 0; } }
 </style>

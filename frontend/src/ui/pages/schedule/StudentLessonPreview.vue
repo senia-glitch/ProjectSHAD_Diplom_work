@@ -7,7 +7,7 @@
     <div v-for="it in items" :key="it.key" class="pv-row" :class="{ 'pv-row--bad': !it.ok }">
       <span v-if="it.ok">{{ fmtPreview(it.start, it.end) }}</span>
       <span v-else>{{ fmtPreviewSafe(it) }} — {{ reasonText(it.reason) }}</span>
-      <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать из списка" @click="dropItem(it.key)">−</button>
+      <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать из списка" @click="dropItem(it.key)" aria-label="Убрать из списка">−</button>
     </div>
     <div v-if="invalidCount > 0" class="pick-empty">Вне окон или не по шагу: {{ invalidCount }} — при создании пропускаются</div>
   </template>

@@ -2,7 +2,9 @@
   <MainLayout :is-logged-in="isLoggedIn" :role="role" @logout="handleLogout">
     <div class="register-page">
       <div class="register-card">
+        <p class="auth-eyebrow">SHAD Tutoring</p>
         <h1 class="register-title">Регистрация</h1>
+        <p class="auth-description">Создайте своё пространство для занятий.</p>
         <form class="register-form" @submit.prevent="handleSubmit" novalidate>
         <div class="form-group" :class="{ 'has-error': errors.username }">
           <label for="username">Логин</label>
@@ -76,7 +78,7 @@
           </select>
         </div>
 
-        <div v-if="serverError" class="server-error">{{ serverError }}</div>
+        <div v-if="serverError" class="server-error" role="alert">{{ serverError }}</div>
         <button type="submit" class="btn btn--primary btn--full" :disabled="loading">
           {{ loading ? 'Регистрация...' : 'Зарегистрироваться' }}
         </button>
@@ -219,4 +221,15 @@ async function handleSubmit() {
   font-size: 13px;
   color: var(--color-gray-600);
 }
+
+.register-page { padding: 24px 0; }
+.register-card { max-width: 640px; box-shadow: none; padding: 32px; }
+.register-title { text-align: left; font-size: 28px; font-weight: 600; margin-bottom: 8px; letter-spacing: -.02em; }
+.auth-eyebrow { color: var(--accent); text-transform: uppercase; font-size: 10px; font-weight: 600; letter-spacing: .12em; margin-bottom: 16px; }
+.auth-description { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+.register-footer { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 24px; }
+@media (max-width: 600px) { .register-card { padding: 24px; } .register-page { padding: 0; } }
+.register-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.register-form > .server-error, .register-form > button { grid-column: 1 / -1; }
+@media (max-width: 600px) { .register-form { grid-template-columns: minmax(0, 1fr); } }
 </style>

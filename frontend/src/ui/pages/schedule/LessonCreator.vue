@@ -2,20 +2,23 @@
   <div class="side-block side-block--create">
     <div class="side-head">
       <h3 class="side-title">Создать урок</h3>
-              <button type="button" class="icon-btn icon-btn--add" title="Добавить форму урока" @click="addSlot">+</button>
+      <button v-if="slots.length" type="button" class="icon-btn icon-btn--add" title="Добавить форму урока" aria-label="Добавить форму урока" @click="addSlot"><UiIcon name="plus" /></button>
     </div>
-    <div v-if="!slots.length" class="side-hint">Нажмите на знак + для создания нового урока</div>
+    <div v-if="!slots.length" class="creator-empty">
+      <p>Выберите дату, время и ученика. Урок появится в вашем расписании.</p>
+      <button type="button" class="btn btn--pri btn--full" @click="addSlot"><UiIcon name="plus" />Добавить урок</button>
+    </div>
     <div v-else class="slots-scroll">
       <div v-for="(slot, i) in slots" :key="slot.key" class="slot">
         <div class="slot-head">
           <span class="slot-num">Форма {{ i + 1 }}</span>
-                  <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать форму" @click="removeSlot(i)">−</button>
+                  <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать форму" @click="removeSlot(i)" aria-label="Убрать форму">−</button>
         </div>
                 <div class="mode-row">
                   <span class="pick-lbl">Режим</span>
                   <label class="mode-opt"><input type="radio" :checked="slot.mode === 'weekly'" @change="slot.mode = 'weekly'" /> По дням недели</label>
                   <label class="mode-opt"><input type="radio" :checked="slot.mode === 'dates'" @change="slot.mode = 'dates'" /> По дате</label>
-                  <button v-if="slot.mode === 'dates'" type="button" class="icon-btn icon-btn--xs icon-btn--add" title="Добавить дату" @click="addFormDate(slot)">+</button>
+                  <button v-if="slot.mode === 'dates'" type="button" class="icon-btn icon-btn--xs icon-btn--add" title="Добавить дату" @click="addFormDate(slot)" aria-label="Добавить дату">+</button>
                 </div>
         <DateTimesEditor v-if="slot.mode === 'dates'" :slot="slot" />
         <WeekdaysEditor v-else :slot="slot" />
@@ -28,7 +31,7 @@
             v-if="slot.is_group" type="button"
             class="icon-btn icon-btn--xs icon-btn--add"
             title="Добавить ученика" @click="addGroupRow(slot)"
-          >+</button>
+           aria-label="Добавить ученика">+</button>
         </div>
         <template v-if="slot.is_group">
           <div v-if="!slot.groupRows.length" class="pick-empty">Нажмите + возле «Групповой», чтобы добавить учеников</div>
@@ -37,7 +40,7 @@
               <option :value="null" disabled>Выберите ученика</option>
               <option v-for="s in slotGroupOptions(slot, row.key)" :key="s.user_id" :value="s.user_id">{{ s.full_name }}</option>
             </select>
-            <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать" @click="removeGroupRow(slot, row.key)">−</button>
+            <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать" @click="removeGroupRow(slot, row.key)" aria-label="Убрать">−</button>
           </div>
         </template>
         <label v-else class="inline-field"><span>Ученик (на все уроки)</span>
@@ -58,7 +61,7 @@
       <button type="button" class="btn btn--pri btn--full" :disabled="saving" @click="handleCreate">
         {{ saving ? '...' : 'Создать' }}
       </button>
-      <button type="button" class="icon-btn icon-btn--remove" title="Очистить форму" @click="emit('clear')" :disabled="saving">
+      <button type="button" class="icon-btn icon-btn--remove" title="Очистить форму" @click="emit('clear')" :disabled="saving" aria-label="Очистить форму">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18" /><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
       </button>
     </div>
@@ -70,6 +73,7 @@
 // прямо здесь (слот — пропса, заменяется только массив целиком через
 // слот-эмиты выше). Создание — через actions, превью — через utils.
 import { ref, watch } from 'vue'
+import { UiIcon } from '../../components/index.js'
 import DateTimesEditor from './DateTimesEditor.vue'
 import WeekdaysEditor from './WeekdaysEditor.vue'
 import LessonPreview from './LessonPreview.vue'

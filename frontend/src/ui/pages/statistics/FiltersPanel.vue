@@ -250,7 +250,7 @@ onUnmounted(() => {
   color: var(--color-gray-800); cursor: pointer; width: 100%; box-sizing: border-box;
 }
 .fl select:hover { border-color: var(--color-accent); }
-.fl select:focus-visible { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(58, 122, 189, 0.18); }
+.fl select:focus-visible { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
 .seg { display: flex; background: var(--color-gray-100); border-radius: 9px; padding: 3px; gap: 2px; }
 .seg button {
   flex: 1; border: none; background: none; cursor: pointer; font-size: 12px; font-weight: 500;
@@ -266,7 +266,7 @@ onUnmounted(() => {
   background: var(--color-white); cursor: pointer; white-space: nowrap;
 }
 .students-btn:hover { border-color: var(--color-accent); }
-.students-btn:focus-visible { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(58, 122, 189, 0.18); }
+.students-btn:focus-visible { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
 .students-ico { display: inline-flex; width: 16px; height: 16px; color: var(--color-gray-500); flex-shrink: 0; }
 .students-ico svg { width: 100%; height: 100%; }
 .check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-gray-700); cursor: pointer; }

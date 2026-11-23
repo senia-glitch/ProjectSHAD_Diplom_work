@@ -1,14 +1,16 @@
 <template>
-  <div ref="gridBox" class="grid-wrap">
+  <div class="grid-wrap">
     <div class="calendar-nav">
-      <button class="btn-nav" @click="emit('nav-prev')">←</button>
+      <button type="button" class="btn-nav" aria-label="Предыдущая неделя" title="Предыдущая неделя" @click="emit('nav-prev')"><UiIcon name="arrowLeft" /></button>
       <span class="week-range">{{ weekRange }}</span>
-      <button class="btn-nav" @click="emit('nav-next')">→</button>
+      <button type="button" class="btn-nav" aria-label="Следующая неделя" title="Следующая неделя" @click="emit('nav-next')"><UiIcon name="arrowRight" /></button>
       <button class="btn btn--gry" @click="emit('nav-today')">Сегодня</button>
       <label v-if="dimBookings.length" class="dim-toggle" title="Показать фоновые брони">
         <input type="checkbox" v-model="showDim" /> Брони
       </label>
     </div>
+    <p class="grid-hint">Прокрутите сетку, чтобы увидеть остальные дни и часы.</p>
+    <div class="grid-scroll" role="region" tabindex="0" aria-label="Сетка недели. Прокрутите, чтобы увидеть остальные дни и часы.">
     <div class="grid-container">
       <div class="grid-header">
         <div class="corner"></div>
@@ -29,6 +31,11 @@
             v-for="l in lessonsOfDay(d.date)"
             :key="l.lesson_id"
             class="block block--lesson"
+            role="button" tabindex="0"
+            :aria-label="`${fmtTime(l.start_time)}–${fmtTime(l.end_time)}, ${statusLabel(l)}`"
+            :aria-pressed="selectedIds.has(l.lesson_id)"
+            @keydown.enter.stop.prevent="emit('lesson-select', l, $event)"
+            @keydown.space.stop.prevent="emit('lesson-select', l, $event)"
             :class="{ 'block--sel': selectedIds.has(l.lesson_id) }"
             :style="lessonStyle(l)"
             @click.stop="emit('lesson-select', l, $event)"
@@ -61,14 +68,15 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 // Сетка недели: только отображение. Данные — пропсами, действия — эмитами.
 // Чистая математика позиций — из logic/utils, цвета правил — из constants.
-// DOM-узел для замера высоты отдаёт событием grid-ready (для капа колонок).
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
+import { UiIcon } from '../../components/index.js'
 import { toDateStr, toMinutes, fmtTime } from '../../../logic/utils/index.js'
 import { WEEKDAY_ORDER, RULE_LABELS, MONTHS_SHORT, LESSON_STATUSES } from '../../../logic/constants/index.js'
 
@@ -91,17 +99,11 @@ const weekRange = computed(() => {
   const e = new Date(props.weekDays[6].date)
   return `${s.getDate()} ${MONTHS_SHORT[s.getMonth()]} — ${e.getDate()} ${MONTHS_SHORT[e.getMonth()]}`
 })
-const emit = defineEmits(['lesson-select', 'grid-clear', 'nav-prev', 'nav-next', 'nav-today', 'grid-ready'])
-
-const gridBox = ref(null)
+const emit = defineEmits(['lesson-select', 'grid-clear', 'nav-prev', 'nav-next', 'nav-today'])
 
 // Фон броней — чисто визуальный тумблер (по умолчанию выключен,
 // никуда не сохраняется, на бэкенд не влияет).
 const showDim = ref(false)
-
-onMounted(() => {
-  emit('grid-ready', gridBox.value)
-})
 
 function lessonsOfDay(ds) {
   return props.lessons.filter((l) => toDateStr(l.start_time) === ds)
@@ -164,8 +166,8 @@ function lessonStyle(l) {
 }</script>
 
 <style scoped>
-.calendar-nav { display: flex; align-items: center; gap: 12px; }
-.week-range { font-size: 16px; font-weight: 500; min-width: 200px; text-align: center; }
+.calendar-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.week-range { font-size: 16px; font-weight: 500; min-width: 0; flex: 1; text-align: center; }
 .btn-nav {
   width: 32px; height: 32px; border: 1px solid var(--color-gray-300); border-radius: 6px;
   background: var(--color-white); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -193,7 +195,7 @@ function lessonStyle(l) {
   text-align: center; padding: 8px 2px; font-size: 13px; font-weight: 600;
   color: var(--color-gray-700); border-right: 1px solid var(--color-gray-100); display: flex; flex-direction: column; gap: 2px;
 }
-.day-head--today { background: rgba(58,122,189,0.06); }
+.day-head--today { background: color-mix(in srgb, var(--accent) 6%, transparent); }
 .day-name { font-size: 11px; color: var(--color-gray-600); font-weight: 500; }
 .day-head:last-child { border-right: none; }
 
@@ -213,7 +215,7 @@ function lessonStyle(l) {
 /* Подпись самого верхнего часа не уезжает вверх под шапку таблицы. */
 .time-col .time-slot:first-child .time-lbl { top: 0; }
 .day-col { position: relative; border-right: 1px solid var(--color-gray-100); }
-.day-col--today { background: rgba(58,122,189,0.03); }
+.day-col--today { background: color-mix(in srgb, var(--accent) 3%, transparent); }
 .day-col:last-child { border-right: none; }
 .hour-cell { height: 25px; border-bottom: 1px solid var(--color-gray-100); }
 
@@ -256,22 +258,39 @@ function lessonStyle(l) {
 .block--free.block--outlined { border-width: 3px; }
 /* Цвета репетиторов: только оттенок (var(--tutor-c*)),
    заливка/рамка/прозрачность едины для всех. */
-.free--c1 { background: color-mix(in srgb, var(--tutor-c1) 16%, white); color: var(--tutor-c1); border: 1px dotted var(--tutor-c1); }
-.free--c2 { background: color-mix(in srgb, var(--tutor-c2) 16%, white); color: var(--tutor-c2); border: 1px dotted var(--tutor-c2); }
-.free--c3 { background: color-mix(in srgb, var(--tutor-c3) 16%, white); color: var(--tutor-c3); border: 1px dotted var(--tutor-c3); }
-.free--c4 { background: color-mix(in srgb, var(--tutor-c4) 16%, white); color: var(--tutor-c4); border: 1px dotted var(--tutor-c4); }
-.free--c5 { background: color-mix(in srgb, var(--tutor-c5) 16%, white); color: var(--tutor-c5); border: 1px dotted var(--tutor-c5); }
-.free--c6 { background: color-mix(in srgb, var(--tutor-c6) 16%, white); color: var(--tutor-c6); border: 1px dotted var(--tutor-c6); }
-.free--c7 { background: color-mix(in srgb, var(--tutor-c7) 16%, white); color: var(--tutor-c7); border: 1px dotted var(--tutor-c7); }
-.free--c8 { background: color-mix(in srgb, var(--tutor-c8) 16%, white); color: var(--tutor-c8); border: 1px dotted var(--tutor-c8); }
-.free--c9 { background: color-mix(in srgb, var(--tutor-c9) 16%, white); color: var(--tutor-c9); border: 1px dotted var(--tutor-c9); }
-.free--c10 { background: color-mix(in srgb, var(--tutor-c10) 16%, white); color: var(--tutor-c10); border: 1px dotted var(--tutor-c10); }
-.free--c11 { background: color-mix(in srgb, var(--tutor-c11) 16%, white); color: var(--tutor-c11); border: 1px dotted var(--tutor-c11); }
-.free--c12 { background: color-mix(in srgb, var(--tutor-c12) 16%, white); color: var(--tutor-c12); border: 1px dotted var(--tutor-c12); }
-.free--c13 { background: color-mix(in srgb, var(--tutor-c13) 16%, white); color: var(--tutor-c13); border: 1px dotted var(--tutor-c13); }
-.free--c14 { background: color-mix(in srgb, var(--tutor-c14) 16%, white); color: var(--tutor-c14); border: 1px dotted var(--tutor-c14); }
-.free--c15 { background: color-mix(in srgb, var(--tutor-c15) 16%, white); color: var(--tutor-c15); border: 1px dotted var(--tutor-c15); }
-.free--c16 { background: color-mix(in srgb, var(--tutor-c16) 16%, white); color: var(--tutor-c16); border: 1px dotted var(--tutor-c16); }
-.free--c17 { background: color-mix(in srgb, var(--tutor-c17) 16%, white); color: var(--tutor-c17); border: 1px dotted var(--tutor-c17); }
-.free--c18 { background: color-mix(in srgb, var(--tutor-c18) 16%, white); color: var(--tutor-c18); border: 1px dotted var(--tutor-c18); }
+.free--c1 { background: color-mix(in srgb, var(--tutor-c1) 16%, var(--surface)); color: var(--tutor-c1); border: 1px dotted var(--tutor-c1); }
+.free--c2 { background: color-mix(in srgb, var(--tutor-c2) 16%, var(--surface)); color: var(--tutor-c2); border: 1px dotted var(--tutor-c2); }
+.free--c3 { background: color-mix(in srgb, var(--tutor-c3) 16%, var(--surface)); color: var(--tutor-c3); border: 1px dotted var(--tutor-c3); }
+.free--c4 { background: color-mix(in srgb, var(--tutor-c4) 16%, var(--surface)); color: var(--tutor-c4); border: 1px dotted var(--tutor-c4); }
+.free--c5 { background: color-mix(in srgb, var(--tutor-c5) 16%, var(--surface)); color: var(--tutor-c5); border: 1px dotted var(--tutor-c5); }
+.free--c6 { background: color-mix(in srgb, var(--tutor-c6) 16%, var(--surface)); color: var(--tutor-c6); border: 1px dotted var(--tutor-c6); }
+.free--c7 { background: color-mix(in srgb, var(--tutor-c7) 16%, var(--surface)); color: var(--tutor-c7); border: 1px dotted var(--tutor-c7); }
+.free--c8 { background: color-mix(in srgb, var(--tutor-c8) 16%, var(--surface)); color: var(--tutor-c8); border: 1px dotted var(--tutor-c8); }
+.free--c9 { background: color-mix(in srgb, var(--tutor-c9) 16%, var(--surface)); color: var(--tutor-c9); border: 1px dotted var(--tutor-c9); }
+.free--c10 { background: color-mix(in srgb, var(--tutor-c10) 16%, var(--surface)); color: var(--tutor-c10); border: 1px dotted var(--tutor-c10); }
+.free--c11 { background: color-mix(in srgb, var(--tutor-c11) 16%, var(--surface)); color: var(--tutor-c11); border: 1px dotted var(--tutor-c11); }
+.free--c12 { background: color-mix(in srgb, var(--tutor-c12) 16%, var(--surface)); color: var(--tutor-c12); border: 1px dotted var(--tutor-c12); }
+.free--c13 { background: color-mix(in srgb, var(--tutor-c13) 16%, var(--surface)); color: var(--tutor-c13); border: 1px dotted var(--tutor-c13); }
+.free--c14 { background: color-mix(in srgb, var(--tutor-c14) 16%, var(--surface)); color: var(--tutor-c14); border: 1px dotted var(--tutor-c14); }
+.free--c15 { background: color-mix(in srgb, var(--tutor-c15) 16%, var(--surface)); color: var(--tutor-c15); border: 1px dotted var(--tutor-c15); }
+.free--c16 { background: color-mix(in srgb, var(--tutor-c16) 16%, var(--surface)); color: var(--tutor-c16); border: 1px dotted var(--tutor-c16); }
+.free--c17 { background: color-mix(in srgb, var(--tutor-c17) 16%, var(--surface)); color: var(--tutor-c17); border: 1px dotted var(--tutor-c17); }
+.free--c18 { background: color-mix(in srgb, var(--tutor-c18) 16%, var(--surface)); color: var(--tutor-c18); border: 1px dotted var(--tutor-c18); }
+
+.grid-scroll { overflow: auto; max-height: 680px; border: 1px solid var(--line); border-radius: var(--radius-lg); scrollbar-width: thin; scrollbar-color: var(--line-strong) var(--surface); }
+.grid-container { min-width: 560px; border: 0; border-radius: 0; }
+.grid-header { position: sticky; top: 0; z-index: 30; border-bottom-width: 1px; }
+.grid-header, .grid-body { grid-template-columns: 48px repeat(7, minmax(0, 1fr)); }
+.time-lbl { font-size: 10px; color: var(--muted); }
+.day-head { padding-block: 12px; }
+.day-head--today { color: var(--accent); background: var(--accent-soft); }
+.day-num { font-size: 17px; }
+@media (max-width: 600px) {
+  .grid-scroll { max-height: 520px; }
+  .calendar-nav { gap: 8px; }
+  .week-range { font-size: 13px; }
+}
+
+.grid-hint { display: none; font-size: 11px; color: var(--muted); }
+@media (max-width: 600px) { .grid-hint { display: block; } }
 </style>

@@ -176,7 +176,7 @@ onMounted(async () => {
 .load-err { margin-bottom: 12px; }
 
 .card {
-  background: white; border-radius: 12px; border: 1px solid var(--color-gray-200);
+  background: var(--surface); border-radius: 12px; border: 1px solid var(--color-gray-200);
   padding: 20px; display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px;
 }
 .card-title { font-size: 16px; font-weight: 600; color: var(--color-primary); margin: 0; }
@@ -185,4 +185,7 @@ onMounted(async () => {
 
 /* Save */
 .save-bar { display: flex; align-items: center; gap: 12px; justify-content: flex-end; padding: 8px 0; }
+
+.card { padding: 24px; }
+@media (max-width: 700px) { .form-grid { grid-template-columns: minmax(0, 1fr); } .card { padding: 16px; } }
 </style>

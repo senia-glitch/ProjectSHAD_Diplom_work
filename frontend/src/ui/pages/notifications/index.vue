@@ -174,7 +174,7 @@ onMounted(load)
   padding: 0 4px;
   border-radius: 8px;
   background: var(--color-danger);
-  color: var(--color-white);
+  color: var(--on-accent);
   font-size: 11px;
   font-weight: 700;
   line-height: 16px;
@@ -202,8 +202,8 @@ onMounted(load)
 }
 .notif-row:last-child { border-bottom: none; }
 .notif-row:hover { background: var(--color-gray-50); }
-.notif-row--unread { background: rgba(58, 122, 189, 0.04); }
-.notif-row--unread:hover { background: rgba(58, 122, 189, 0.08); }
+.notif-row--unread { background: color-mix(in srgb, var(--accent) 4%, transparent); }
+.notif-row--unread:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .notif-row-dot {
   width: 8px;
   height: 8px;

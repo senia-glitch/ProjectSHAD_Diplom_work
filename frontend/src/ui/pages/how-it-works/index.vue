@@ -57,7 +57,7 @@ const { handleLogout } = useLogout()
   height: 36px;
   border-radius: var(--radius-full, 50%);
   background: var(--color-accent);
-  color: var(--color-white);
+  color: var(--on-accent);
   font-size: 18px;
   font-weight: 700;
 }

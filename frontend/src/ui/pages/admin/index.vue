@@ -284,15 +284,15 @@ onMounted(fetchUsers)
 
 .filter-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
 .tab {
-  padding: 8px 16px; border-radius: 6px; border: 1px solid var(--color-gray-200); background: white;
+  padding: 8px 16px; border-radius: 6px; border: 1px solid var(--color-gray-200); background: var(--surface);
   font-size: 13px; font-weight: 500; color: var(--color-gray-700); cursor: pointer; transition: all 150ms;
 }
 .tab:hover { background: var(--color-gray-50); }
-.tab.active { background: var(--color-accent); color: white; border-color: var(--color-accent); }
+.tab.active { background: var(--color-accent); color: var(--on-accent); border-color: var(--color-accent); }
 
 .content-grid { display: grid; grid-template-columns: 1fr 380px; gap: 16px; min-height: 500px; }
 
-.table-panel { background: white; border-radius: 12px; border: 1px solid var(--color-gray-200); overflow: hidden; }
+.table-panel { background: var(--surface); border-radius: 12px; border: 1px solid var(--color-gray-200); overflow: hidden; }
 .table-wrap { overflow-x: auto; }
 .users-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .users-table th {
@@ -302,7 +302,7 @@ onMounted(fetchUsers)
 .users-table td { padding: 10px 16px; border-bottom: 1px solid var(--color-gray-100); }
 .users-table tr { cursor: pointer; transition: background 150ms; }
 .users-table tbody tr:hover { background: var(--color-gray-50); }
-.users-table tr.active { background: rgba(58,122,189,0.1); }
+.users-table tr.active { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 .col-id { color: var(--color-gray-600); font-size: 13px; }
 .col-login { font-weight: 500; color: var(--color-primary); }
 
@@ -314,11 +314,17 @@ onMounted(fetchUsers)
 .role-admin { background: var(--role-admin-bg); color: var(--role-admin-text); }
 
 .detail-panel {
-  background: white; border-radius: 12px; border: 1px solid var(--color-gray-200); padding: 24px;
+  background: var(--surface); border-radius: 12px; border: 1px solid var(--color-gray-200); padding: 24px;
   display: flex; flex-direction: column; gap: 16px; overflow-y: auto;
 }
 .detail-panel--empty { display: flex; align-items: center; justify-content: center; color: var(--color-gray-500); }
 .detail-title { font-size: 20px; font-weight: 600; margin: 0; }
 
 .edit-form { display: flex; flex-direction: column; gap: 14px; }
+
+.content-grid { grid-template-columns: minmax(0, 1fr) 340px; }
+.table-panel, .detail-panel { min-width: 0; }
+.tabs { flex-wrap: wrap; }
+@media (max-width: 1000px) { .content-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) { .detail-panel { padding: 16px; } }
 </style>

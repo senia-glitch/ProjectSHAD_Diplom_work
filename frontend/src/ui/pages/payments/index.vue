@@ -184,9 +184,9 @@ const {
 .pay-toggle--on {
   background: var(--color-success);
   border-color: var(--color-success);
-  color: var(--color-white);
+  color: var(--on-accent);
 }
-.pay-toggle--on:hover:not(:disabled) { border-color: var(--color-success); color: var(--color-white); }
+.pay-toggle--on:hover:not(:disabled) { border-color: var(--color-success); color: var(--on-accent); }
 .pay-toggle:disabled { opacity: 0.6; cursor: not-allowed; }
 .card {
   background: var(--color-white);

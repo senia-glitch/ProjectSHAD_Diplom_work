@@ -97,4 +97,10 @@ const stClass = computed(() => STATUS_META[props.lesson.status]?.cls || 'st--fac
 .pay-toggle--on:hover { border-color: var(--color-danger); color: var(--color-danger); background: var(--color-white); }
 .detail-notes { font-size: 13px; color: var(--color-gray-700); white-space: pre-wrap; }
 .detail-links { display: flex; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+
+@media (max-width: 700px) {
+  .lesson-row { grid-template-columns: 1fr auto auto; gap: 8px; padding-block: 12px; }
+  .lesson-who { grid-column: 1 / -1; grid-row: 2; white-space: normal; }
+  .lesson-detail { padding-left: 8px; }
+}
 </style>

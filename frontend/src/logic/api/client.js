@@ -4,6 +4,8 @@
 // Каждый вызов обёрнут в AbortController (timeout, по умолчанию 30000 мс);
 // отмена превращается в ApiError со status 0 (сетевой сбой, не HTTP).
 // Эндпойнты аутентификации ходят с { auth: false } — без ретраев.
+import { translateErrorMessage } from './errors.js'
+
 export class ApiError extends Error {
   constructor(status, message, payload) {
     super(message)
@@ -39,7 +41,7 @@ export function withQuery(path, params) {
 }
 
 function errorMessage(status, payload) {
-  return payload?.error?.message || `Request failed (${status})`
+  return translateErrorMessage(status, payload?.error?.message)
 }
 
 async function rawFetch(path, { method, body, token, signal }) {
@@ -73,7 +75,13 @@ export async function apiFetch(path, opts = {}) {
       return await rawFetch(path, { method, body, token: callToken, signal: ctrl.signal })
     } catch (e) {
       if (e?.name === 'AbortError') {
-        throw new ApiError(0, 'Request timeout', { error: { message: 'Request timeout' } })
+        throw new ApiError(0, translateErrorMessage(0, 'Request timeout'), {
+          error: { message: 'Request timeout' },
+        })
+      }
+      // fetch отклоняется TypeError при недоступной сети/сервере.
+      if (e instanceof TypeError) {
+        throw new ApiError(0, translateErrorMessage(0, ''), { error: { message: e.message } })
       }
       throw e
     } finally {

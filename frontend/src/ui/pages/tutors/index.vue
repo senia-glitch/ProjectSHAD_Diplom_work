@@ -23,10 +23,10 @@
             @click="selectConfig(c)"
           >
             <div class="item-avatar">
-              <span>{{ (c.tutor_username || '?').charAt(0).toUpperCase() }}</span>
+              <span>{{ (c.tutor_full_name || c.tutor_username || '?').charAt(0).toUpperCase() }}</span>
             </div>
             <div class="item-info">
-              <span class="item-name">{{ c.tutor_full_name || c.tutor_username }}</span>
+              <span class="item-name">{{ c.tutor_full_name || c.tutor_username || 'Репетитор' }}</span>
               <span class="item-sub" v-if="c.hourly_rate">{{ c.hourly_rate }} ₽/час</span>
             </div>
           </div>
@@ -59,7 +59,7 @@
               </div>
               <div class="detail-field">
                 <span class="detail-label">Статус работы</span>
-                <span class="detail-value">{{ selectedDetail.tutor_work_status || '—' }}</span>
+                <span class="detail-value">{{ workStatusLabel(selectedDetail.tutor_work_status) }}</span>
               </div>
               <div class="detail-field">
                 <span class="detail-label">Ставка (₽/час)</span>
@@ -105,18 +105,19 @@
     </div>
 
     <div class="modal-overlay" v-if="showAddModal" @click.self="closeModal">
-      <div class="modal">
-        <h3 class="modal-title">Добавить репетитора</h3>
-        <p class="modal-desc">Введите табельный номер репетитора</p>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="add-tutor-title">
+        <h3 id="add-tutor-title" class="modal-title">Добавить репетитора</h3>
+        <p class="modal-desc">Введите личный код репетитора — он указан в его профиле</p>
         <div class="form-group">
-          <label class="form-label" for="personal_number">Табельный номер</label>
+          <label class="form-label" for="personal_number">Личный код</label>
           <input
             id="personal_number"
             v-model="personalNumber"
             class="form-input"
             :class="{ 'form-input--error': formError }"
             type="text"
-            placeholder="Например: 12345"
+            placeholder="Например: IND-AB12CD34"
+            autocomplete="off"
             @keyup.enter="addTutor"
             :disabled="addLoading"
           />
@@ -137,7 +138,7 @@
 import { ref, computed, onMounted } from 'vue'
 import MainLayout from '../../blocks/layout/MainLayout.vue'
 import TutorsTour from './TutorsTour.vue'
-import { useUser, useLogout } from '../../composables/index.js'
+import { useUser, useLogout, useEscapeKey } from '../../composables/index.js'
 import {
   loadStudentConfigurations,
   loadStudentConfiguration,
@@ -147,6 +148,7 @@ import {
 } from '../../../logic/actions/index.js'
 import { logError } from '../../../logic/logger/index.js'
 import { finalPrice, discountAmount } from '../../../logic/utils/index.js'
+import { WORK_STATUSES } from '../../../logic/constants/index.js'
 import { useRosterStore } from '../../../logic/store/index.js'
 
 const { role, isLoggedIn } = useUser()
@@ -162,11 +164,17 @@ const detailError = ref('')
 const deleteError = ref('')
 
 const showAddModal = ref(false)
+useEscapeKey(() => showAddModal.value && !addLoading.value, () => closeModal())
 const showTour = ref(false)
 const personalNumber = ref('')
 const formError = ref('')
 const addLoading = ref(false)
 const myCode = ref('')
+
+function workStatusLabel(value) {
+  if (!value) return '—'
+  return WORK_STATUSES.find((s) => s.value === value)?.label || value
+}
 
 async function fetchConfigurations() {
   loading.value = true
@@ -230,7 +238,7 @@ function closeModal() {
 async function addTutor() {
   const code = personalNumber.value.trim()
   if (!code) {
-    formError.value = 'Введите табельный номер'
+    formError.value = 'Введите личный код'
     return
   }
   formError.value = ''
@@ -268,22 +276,22 @@ onMounted(async () => {
 
 .content-grid { display: grid; grid-template-columns: 300px 1fr; gap: 16px; min-height: 400px; }
 
-.list-panel { background: white; border-radius: 12px; border: 1px solid var(--color-gray-200); overflow: hidden; }
+.list-panel { background: var(--surface); border-radius: 12px; border: 1px solid var(--color-gray-200); overflow: hidden; }
 .list-item {
   display: flex; align-items: center; gap: 12px; padding: 12px 16px;
   cursor: pointer; border-bottom: 1px solid var(--color-gray-100); transition: background 150ms;
 }
 .list-item:hover { background: var(--color-gray-50); }
-.list-item.active { background: rgba(58,122,189,0.1); border-left: 3px solid var(--color-accent); }
+.list-item.active { background: color-mix(in srgb, var(--accent) 10%, transparent); border-left: 3px solid var(--color-accent); }
 .item-avatar {
-  width: 40px; height: 40px; border-radius: 50%; background: var(--color-primary);
-  display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;
+  width: 40px; height: 40px; border-radius: 50%; background: var(--accent);
+  display: flex; align-items: center; justify-content: center; color: var(--on-accent); font-weight: 600;
 }
 .item-info { display: flex; flex-direction: column; gap: 2px; }
 .item-name { font-weight: 500; color: var(--color-gray-800); }
 .item-sub { font-size: 12px; color: var(--color-gray-600); }
 
-.detail-panel { background: white; border-radius: 12px; border: 1px solid var(--color-gray-200); padding: 24px; }
+.detail-panel { background: var(--surface); border-radius: 12px; border: 1px solid var(--color-gray-200); padding: 24px; }
 .detail-panel--empty { display: flex; align-items: center; justify-content: center; color: var(--color-gray-500); }
 /* .detail-header/.detail-label/.detail-value — из base.css (single source). */
 .detail-loading { padding: 24px; text-align: center; color: var(--color-gray-500); }
@@ -306,4 +314,10 @@ onMounted(async () => {
 .modal-desc { margin: 0 0 20px; font-size: 14px; color: var(--color-gray-600); }
 .form-input--error { border-color: var(--color-danger); }
 .form-error { font-size: 12px; color: var(--color-danger); min-height: 16px; }
+
+.content-grid { grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); }
+.list-panel, .detail-panel { min-width: 0; }
+.item-info { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 850px) { .content-grid { grid-template-columns: minmax(0, 1fr); } .list-panel { max-height: 280px; overflow-y: auto; } .detail-panel--empty { min-height: 180px; } }
+@media (max-width: 600px) { .detail-grid { grid-template-columns: minmax(0, 1fr); } .detail-panel { padding: 16px; } }
 </style>

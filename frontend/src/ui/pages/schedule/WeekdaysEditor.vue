@@ -9,7 +9,7 @@
     <div v-if="slot.weekdays[wd.id].on" class="day-card">
       <div class="day-head">
         <span class="day-title">{{ wd.full }}</span>
-        <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать день" @click="toggleWeekday(wd.id)">−</button>
+        <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать день" @click="toggleWeekday(wd.id)" aria-label="Убрать день">−</button>
       </div>
       <label class="fl"><span class="info-k">Начать с</span>
         <input v-model="slot.weekdays[wd.id].startDate" type="date" />
@@ -27,12 +27,12 @@
       </div>
       <div class="add-part">
         <span class="info-k">Время занятия</span>
-        <button type="button" class="icon-btn icon-btn--xs icon-btn--add" title="Добавить время" @click="addDayTime(wd.id)">+</button>
+        <button type="button" class="icon-btn icon-btn--xs icon-btn--add" title="Добавить время" @click="addDayTime(wd.id)" aria-label="Добавить время">+</button>
       </div>
       <div v-for="t in slot.weekdays[wd.id].times" :key="t.key" class="add-part add-part--sub">
-        <input v-model="t.start" type="time" class="time-in" />
-        <input v-model="t.end" type="time" class="time-in" />
-        <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать время" @click="removeDayTime(wd.id, t.key)">−</button>
+        <input v-model="t.start" type="time" class="time-in" aria-label="Начало урока" />
+        <input v-model="t.end" type="time" class="time-in" aria-label="Конец урока" />
+        <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать время" @click="removeDayTime(wd.id, t.key)" aria-label="Убрать время">−</button>
       </div>
       <div v-if="dayDates(wd.id).length" class="day-dates">
         <span class="info-k">Даты</span>

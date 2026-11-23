@@ -16,26 +16,31 @@
           <div class="avatar"><span>{{ user.full_name?.charAt(0)?.toUpperCase() || user.username?.charAt(0)?.toUpperCase() || '?' }}</span></div>
           <div>
             <h2 class="profile-name">{{ user.full_name || user.username }}</h2>
-            <p class="profile-role">{{ user.role }}</p>
+            <p class="profile-role">{{ { tutor: 'Репетитор', student: 'Ученик', admin: 'Администратор' }[user.role] || user.role }}</p>
             <p v-if="user.personal_number" class="profile-code">Ваш личный код: <span class="mono">{{ user.personal_number }}</span></p>
           </div>
         </div>
       </div>
-      <div class="profile-card">
+      <div v-if="user" class="profile-card">
         <h3 class="card-title">Личные данные</h3>
         <form class="profile-form" @submit.prevent="handleUpdate" novalidate>
           <div class="form-group" :class="{ 'has-error': errors.full_name }">
-            <label>ФИО</label>
+            <label for="profile-name">ФИО</label>
             <input
+              id="profile-name"
               v-model="form.full_name"
               type="text"
+              autocomplete="name"
+              :aria-invalid="!!errors.full_name"
+              :aria-describedby="errors.full_name ? 'profile-name-error' : undefined"
               :class="{ error: errors.full_name }"
             />
-            <span v-if="errors.full_name" class="field-error">{{ errors.full_name }}</span>
+            <span v-if="errors.full_name" id="profile-name-error" class="field-error">{{ errors.full_name }}</span>
           </div>
           <div class="form-group" :class="{ 'has-error': errors.email }">
-            <label>Email</label>
+            <label for="profile-email">Почта</label>
             <input
+              id="profile-email"
               v-model="form.email"
               type="email"
               autocomplete="email"
@@ -43,8 +48,8 @@
             />
             <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
           </div>
-          <div v-if="serverError" class="server-error">{{ serverError }}</div>
-          <div v-if="successMsg" class="server-success">{{ successMsg }}</div>
+          <div v-if="serverError" class="server-error" role="alert">{{ serverError }}</div>
+          <div v-if="successMsg" class="server-success" role="status">{{ successMsg }}</div>
           <button type="submit" class="btn btn--primary" :disabled="loading">
             {{ loading ? 'Сохранение...' : 'Сохранить' }}
           </button>
@@ -138,10 +143,10 @@ async function handleUpdate() {
 
 <style scoped>
 .profile-page { display: flex; flex-direction: column; }
-.profile-card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid var(--color-gray-200); margin-bottom: 16px; }
+.profile-card { background: var(--surface); border-radius: 12px; padding: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid var(--color-gray-200); margin-bottom: 16px; }
 .profile-card:last-child { margin-bottom: 0; }
 .profile-header { display: flex; align-items: center; gap: 16px; }
-.avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 700; }
+.avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: var(--on-accent); font-size: 24px; font-weight: 700; }
 .profile-name { font-size: 20px; font-weight: 600; }
 .profile-role { font-size: 14px; color: var(--color-gray-600); }
 .profile-code { font-size: 13px; color: var(--color-gray-700); margin: 4px 0 0; }
@@ -151,4 +156,13 @@ async function handleUpdate() {
 .profile-form .form-group input { width: 100%; }
 .profile-form .btn { align-self: flex-start; }
 .loading-text { text-align: center; padding: 60px; color: var(--color-gray-600); }
+
+.profile-page { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 24px; align-items: start; }
+.profile-page > .page-header, .profile-page > .loading-text, .profile-page > .server-error { grid-column: 1 / -1; margin-bottom: 0; }
+.profile-card { margin-bottom: 0; box-shadow: none; min-width: 0; }
+.profile-header { flex-direction: column; align-items: flex-start; }
+.avatar { border-radius: 16px; background: var(--accent-soft); color: var(--accent); }
+.profile-code { overflow-wrap: anywhere; line-height: 1.8; }
+.profile-role { display: inline-block; margin-top: 8px; padding: 2px 8px; background: var(--accent-soft); color: var(--accent); border-radius: 6px; font-size: 12px; }
+@media (max-width: 800px) { .profile-page { grid-template-columns: minmax(0, 1fr); gap: 16px; } .profile-header { flex-direction: row; align-items: center; } .avatar { flex-shrink: 0; } }
 </style>

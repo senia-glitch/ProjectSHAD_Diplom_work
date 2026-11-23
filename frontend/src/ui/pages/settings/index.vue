@@ -140,8 +140,8 @@
       <!-- Student picker modal -->
       <Teleport to="body">
         <div v-if="showStudentPicker" class="modal-overlay" @click.self="showStudentPicker = false">
-          <div class="modal">
-            <h3 class="modal-title">Выберите ученика</h3>
+          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-student-picker-title">
+            <h3 id="settings-student-picker-title" class="modal-title">Выберите ученика</h3>
             <div v-if="!students.length" class="modal-empty">Нет учеников</div>
             <div v-else class="modal-list">
               <button
@@ -167,7 +167,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import MainLayout from '../../blocks/layout/MainLayout.vue'
 import SettingsTour from './SettingsTour.vue'
-import { useUser, useLogout } from '../../composables/index.js'
+import { useUser, useLogout, useEscapeKey } from '../../composables/index.js'
 import { loadTutorProfile, loadTutorStudents, saveTutorSettings } from '../../../logic/actions/index.js'
 import { logInfo, logError } from '../../../logic/logger/index.js'
 import { TIMEZONES, WORK_STATUSES, SCHEDULE_TYPES } from '../../../logic/constants/index.js'
@@ -185,6 +185,7 @@ const saveErr = ref('')
 const loadErr = ref('')
 const students = computed(() => useRosterStore().students)
 const showStudentPicker = ref(false)
+useEscapeKey(() => showStudentPicker.value, () => { showStudentPicker.value = false })
 
 const defaultForm = () => ({
   timezone_offset: 3,
@@ -369,7 +370,7 @@ onMounted(async () => {
 .load-err { margin-bottom: 12px; }
 
 .card {
-  background: white; border-radius: 12px; border: 1px solid var(--color-gray-200);
+  background: var(--surface); border-radius: 12px; border: 1px solid var(--color-gray-200);
   padding: 20px; display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px;
 }
 .card-title { font-size: 16px; font-weight: 600; color: var(--color-primary); margin: 0; }
@@ -411,7 +412,7 @@ onMounted(async () => {
 }
 .toggle-track::after {
   content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
-  background: white; border-radius: 50%; transition: transform 200ms; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  background: var(--surface); border-radius: 50%; transition: transform 200ms; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 .toggle input:checked + .toggle-track { background: var(--color-accent); }
 .toggle input:checked + .toggle-track::after { transform: translateX(18px); }
@@ -430,4 +431,10 @@ onMounted(async () => {
 .save-bar { display: flex; align-items: center; gap: 12px; justify-content: flex-end; padding: 8px 0; }
 
 
+
+.card { padding: 24px; gap: 16px; }
+.form-col, .input-with-suffix { min-width: 0; }
+.toggle-track::after { background: var(--toggle-thumb); }
+.toggle input:focus-visible + .toggle-track { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (max-width: 700px) { .form-grid { grid-template-columns: minmax(0, 1fr); } .card { padding: 16px; } .link-row { flex-wrap: wrap; } .link-url { flex-basis: 100%; } .final-price, .toggle-row { flex-wrap: wrap; } }
 </style>

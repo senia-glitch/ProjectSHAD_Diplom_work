@@ -2,7 +2,7 @@
   <div class="side-block side-block--create">
     <div class="side-head">
       <h3 class="side-title">Новый урок</h3>
-      <button type="button" class="icon-btn icon-btn--add" title="Добавить форму урока" @click="addSlot">+</button>
+      <button v-if="slots.length" type="button" class="icon-btn icon-btn--add" title="Добавить форму урока" aria-label="Добавить форму урока" @click="addSlot"><UiIcon name="plus" /></button>
     </div>
     <div v-if="pickedIds.length" class="week-sum">
       <button type="button" class="week-toggle" @click="weekOpen = !weekOpen">
@@ -21,12 +21,15 @@
       </template>
     </div>
     <div v-if="weekErr" class="ferr">{{ weekErr }}</div>
-    <div v-if="!slots.length" class="side-hint">Нажмите на знак + для записи на урок</div>
+    <div v-if="!slots.length" class="creator-empty">
+      <p>Выберите репетитора и удобное время из доступных окон.</p>
+      <button type="button" class="btn btn--pri btn--full" @click="addSlot"><UiIcon name="plus" />Записаться на урок</button>
+    </div>
     <div v-else class="slots-scroll">
       <div v-for="(slot, i) in slots" :key="slot.key" class="slot">
         <div class="slot-head">
           <span class="slot-num">Форма {{ i + 1 }}</span>
-          <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать форму" @click="removeSlot(i)">−</button>
+          <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать форму" @click="removeSlot(i)" aria-label="Убрать форму">−</button>
         </div>
         <label class="fl">Репетитор
           <select v-model="slot.tutor_user_id" @change="onTutorChange(slot)">
@@ -56,7 +59,7 @@
             <span class="pick-lbl">Режим</span>
             <label class="mode-opt"><input type="radio" :checked="slot.mode === 'weekly'" @change="slot.mode = 'weekly'" /> По дням недели</label>
             <label class="mode-opt"><input type="radio" :checked="slot.mode === 'dates'" @change="slot.mode = 'dates'" /> По дате</label>
-            <button v-if="slot.mode === 'dates'" type="button" class="icon-btn icon-btn--xs icon-btn--add" title="Добавить дату" @click="addFormDate(slot)">+</button>
+            <button v-if="slot.mode === 'dates'" type="button" class="icon-btn icon-btn--xs icon-btn--add" title="Добавить дату" @click="addFormDate(slot)" aria-label="Добавить дату">+</button>
           </div>
           <StudentDateRows v-if="slot.mode === 'dates'" :slot="slot" :windows="windowsOf(slot)" :step="stepOf(slot)" />
           <StudentWeekRows v-else :slot="slot" :windows="windowsOf(slot)" :step="stepOf(slot)" />
@@ -80,7 +83,7 @@
       <button type="button" class="btn btn--pri btn--full" :disabled="saving" @click="handleCreate">
         {{ saving ? '...' : 'Записаться' }}
       </button>
-      <button type="button" class="icon-btn icon-btn--remove" title="Очистить форму" @click="emit('clear')" :disabled="saving">
+      <button type="button" class="icon-btn icon-btn--remove" title="Очистить форму" @click="emit('clear')" :disabled="saving" aria-label="Очистить форму">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18" /><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
       </button>
     </div>
@@ -95,6 +98,7 @@
 // на сетке подсвечиваются фоном. Ручные удаления из превью
 // забываются при смене настроек формы (touch).
 import { ref, watch, computed } from 'vue'
+import { UiIcon } from '../../components/index.js'
 import StudentDateRows from './StudentDateRows.vue'
 import StudentWeekRows from './StudentWeekRows.vue'
 import StudentLessonPreview from './StudentLessonPreview.vue'

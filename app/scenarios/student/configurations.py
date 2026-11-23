@@ -25,6 +25,9 @@ class ConfigurationItem(BaseModel):
     allow_self_booking: bool
     link_visibility_enabled: bool = False
     link_lead_time_minutes: int = 0
+    # Имя репетитора для списка ученика; поля аддитивные и необязательные.
+    tutor_username: str | None = None
+    tutor_full_name: str | None = None
 
 
 class StudentGetMyConfigurationsResponse(BaseModel):
@@ -101,7 +104,11 @@ class StudentGetMyConfigurationsScenario(BaseScenario):
         student_id = students[0]["id"]
 
         rows = await self._db.query(
-            'SELECT * FROM "configurations" WHERE student_id = :sid ORDER BY id LIMIT :lim OFFSET :off',
+            'SELECT c.*, u.username AS tutor_username, u.full_name AS tutor_full_name '
+            'FROM "configurations" c '
+            'LEFT JOIN "tutors" t ON t.id = c.tutor_id '
+            'LEFT JOIN "users" u ON u.id = t.user_id '
+            'WHERE c.student_id = :sid ORDER BY c.id LIMIT :lim OFFSET :off',
             {"sid": student_id, "lim": dto.limit, "off": dto.offset},
         )
 
@@ -114,6 +121,8 @@ class StudentGetMyConfigurationsScenario(BaseScenario):
                 allow_self_booking=r["allow_self_booking"],
                 link_visibility_enabled=r["link_visibility_enabled"],
                 link_lead_time_minutes=r["link_lead_time_minutes"],
+                tutor_username=r.get("tutor_username"),
+                tutor_full_name=r.get("tutor_full_name"),
             )
             for r in rows
         ]

@@ -17,6 +17,8 @@
             :key="c.config_id"
             class="list-item"
             :class="{ active: selected?.config_id === c.config_id }"
+            role="button" tabindex="0"
+            @keydown.enter.prevent="selectConfig(c)" @keydown.space.prevent="selectConfig(c)"
             @click="selectConfig(c)"
           >
             <div class="item-avatar">
@@ -176,7 +178,7 @@
                   class="icon-btn icon-btn--add"
                   @click="addLink"
                   title="Добавить ссылку"
-                >+</button>
+                 aria-label="Добавить ссылку">+</button>
               </div>
               <div v-if="!editForm.default_links.length" class="pick-empty">Нет ссылок</div>
               <div v-for="(link, i) in editForm.default_links" :key="i" class="link-row">
@@ -210,9 +212,9 @@
 
     <Teleport to="body">
       <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-        <div class="modal">
-          <h3 class="modal-title">Добавить ученика</h3>
-          <p class="modal-desc">Введите личный код ученика</p>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="add-student-title">
+          <h3 id="add-student-title" class="modal-title">Добавить ученика</h3>
+          <p class="modal-desc">Введите личный код ученика — он указан в его профиле</p>
           <div class="form-group">
             <label class="form-label" for="personal-code">Личный код</label>
             <input
@@ -221,7 +223,8 @@
               class="form-input"
               :class="{ 'form-input--error': addError }"
               type="text"
-              placeholder="Например: 12345"
+              placeholder="Например: IND-AB12CD34"
+              autocomplete="off"
               @keyup.enter="addStudent"
               :disabled="addLoading"
             />
@@ -243,7 +246,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import MainLayout from '../../blocks/layout/MainLayout.vue'
 import StudentsTour from './StudentsTour.vue'
-import { useUser, useLogout } from '../../composables/index.js'
+import { useUser, useLogout, useEscapeKey } from '../../composables/index.js'
 import {
   loadTutorStudents,
   loadTutorConfigurations,
@@ -300,6 +303,7 @@ const showModal = ref(false)
 const personalCode = ref('')
 const addError = ref('')
 const addLoading = ref(false)
+useEscapeKey(() => showModal.value && !addLoading.value, () => closeModal())
 
 function studentName(studentId) {
   const s = students.value.find((x) => x.student_id === studentId)
@@ -565,8 +569,8 @@ onMounted(fetchRoster)
 .list-item:hover { background: var(--color-gray-50); }
 .list-item.active { background: var(--color-accent-50); border-left: 3px solid var(--color-accent); }
 .item-avatar {
-  width: 40px; height: 40px; border-radius: var(--radius-full); background: var(--color-primary);
-  display: flex; align-items: center; justify-content: center; color: var(--color-white); font-weight: 600;
+  width: 40px; height: 40px; border-radius: var(--radius-full); background: var(--accent);
+  display: flex; align-items: center; justify-content: center; color: var(--on-accent); font-weight: 600;
 }
 .item-info { display: flex; flex-direction: column; gap: 2px; }
 .item-name { font-weight: 500; color: var(--color-gray-800); }
@@ -621,4 +625,10 @@ onMounted(fetchRoster)
 .form-input--error { border-color: var(--color-danger); }
 .form-error { font-size: 12px; color: var(--color-danger); min-height: 16px; }
 .empty--err { color: var(--color-danger); }
+
+.content-grid { grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); }
+.list-panel, .detail-panel { min-width: 0; }
+.item-info { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 850px) { .content-grid { grid-template-columns: minmax(0, 1fr); } .list-panel { max-height: 280px; overflow-y: auto; } .detail-panel--empty { min-height: 180px; } }
+@media (max-width: 600px) { .detail-grid { grid-template-columns: minmax(0, 1fr); } .detail-panel { padding: 16px; } .link-row { flex-wrap: wrap; } .link-url { min-width: 0; flex-basis: 100%; } }
 </style>

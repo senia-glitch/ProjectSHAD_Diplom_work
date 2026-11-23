@@ -48,12 +48,14 @@ export function useCalendarPage() {
   }
 
   function shift(delta) {
+    selectedDay.value = ''
     const next = shiftMonth(year.value, month.value, delta)
     year.value = next.year
     month.value = next.month
   }
 
   function goToday() {
+    selectedDay.value = ''
     const d = new Date()
     year.value = d.getFullYear()
     month.value = d.getMonth() + 1

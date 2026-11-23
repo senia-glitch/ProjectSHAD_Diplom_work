@@ -188,69 +188,69 @@ onUnmounted(() => {
 <style scoped>
 .tour-overlay {
   position: fixed; inset: 0; z-index: 150;
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--overlay);
   overflow-y: auto;
 }
 .tour-spot {
   position: fixed;
   border: 3px solid var(--color-accent);
   border-radius: 10px;
-  box-shadow: 0 0 0 4px rgba(58, 122, 189, 0.22), 0 0 28px rgba(58, 122, 189, 0.55);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent), 0 0 0 1px var(--accent);
   pointer-events: none;
 }
 .tour-num {
   position: absolute; top: -15px; left: -15px;
   width: 28px; height: 28px; border-radius: 50%;
-  background: var(--color-accent); color: var(--color-white);
+  background: var(--color-accent); color: var(--on-accent);
   font-size: 14px; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 .tour-card {
   position: fixed;
-  background: var(--color-primary); color: var(--color-white);
-  border-radius: 14px; padding: 14px 16px 12px;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--line-strong); border-radius: 14px; padding: 14px 16px 12px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
 }
 .tour-card::after {
   content: ''; position: absolute; width: 16px; height: 16px;
-  background: var(--color-primary); transform: rotate(45deg);
+  background: var(--surface); transform: rotate(45deg);
 }
 .tour-card--top::after { bottom: -8px; left: 50%; margin-left: -8px; }
 .tour-card--bottom::after { top: -8px; left: 50%; margin-left: -8px; }
 .tour-card--left::after { right: -8px; top: 50%; margin-top: -8px; }
 .tour-card--right::after { left: -8px; top: 50%; margin-top: -8px; }
 .tour-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.tour-step { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; color: rgba(255, 255, 255, 0.65); }
+.tour-step { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; color: var(--muted); }
 .tour-skip {
   background: none; border: none; cursor: pointer;
-  font-size: 12px; color: rgba(255, 255, 255, 0.65); text-decoration: underline;
+  font-size: 12px; color: var(--muted); text-decoration: underline;
   padding: 0;
 }
-.tour-skip:hover { color: var(--color-white); }
+.tour-skip:hover { color: var(--text); }
 .tour-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-.tour-text { font-size: 13px; line-height: 1.5; color: rgba(255, 255, 255, 0.9); }
+.tour-text { font-size: 13px; line-height: 1.5; color: var(--text); }
 .tour-ex {
   margin-top: 10px; padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.12); border-radius: 8px;
+  background: var(--surface-2); border-radius: 8px;
 }
 .tour-ex-cap {
   font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
-  color: rgba(255, 255, 255, 0.65); margin-bottom: 4px;
+  color: var(--muted); margin-bottom: 4px;
 }
 .tour-ex-line {
-  font-size: 12px; line-height: 1.6; color: var(--color-white);
+  font-size: 12px; line-height: 1.6; color: var(--text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .tour-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
 .tour-dots { display: flex; gap: 5px; }
-.tour-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.3); }
-.tour-dot--active { background: var(--color-white); width: 18px; border-radius: 3px; }
+.tour-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--line-strong); }
+.tour-dot--active { background: var(--accent); width: 18px; border-radius: 3px; }
 .tour-btns { display: flex; gap: 8px; align-items: center; }
 .tour-back {
-  background: transparent; border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 8px;
-  color: var(--color-white); font-size: 12px; font-weight: 500;
+  background: transparent; border: 1px solid var(--line-strong); border-radius: 8px;
+  color: var(--text); font-size: 12px; font-weight: 500;
   padding: 5px 10px; cursor: pointer;
 }
-.tour-back:hover { border-color: var(--color-white); }
+.tour-back:hover { border-color: var(--text); }
 </style>

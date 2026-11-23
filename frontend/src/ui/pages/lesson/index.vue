@@ -200,8 +200,8 @@ function statusColor(status) {
   cursor: pointer;
 }
 .pay-toggle:hover:not(:disabled) { border-color: var(--color-accent); color: var(--color-accent); }
-.pay-toggle--on { background: var(--color-success); border-color: var(--color-success); color: var(--color-white); }
-.pay-toggle--on:hover:not(:disabled) { border-color: var(--color-success); color: var(--color-white); }
+.pay-toggle--on { background: var(--color-success); border-color: var(--color-success); color: var(--on-accent); }
+.pay-toggle--on:hover:not(:disabled) { border-color: var(--color-success); color: var(--on-accent); }
 .pay-toggle:disabled { opacity: 0.6; cursor: not-allowed; }
 .add-part { display: flex; gap: 8px; margin-top: 12px; }
 .add-part select { flex: 1; min-width: 0; }

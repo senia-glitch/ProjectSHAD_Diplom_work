@@ -2,14 +2,14 @@
   <div class="side-block">
     <div class="side-head">
       <h3 class="side-title">Создать бронь</h3>
-      <button type="button" class="icon-btn icon-btn--add" @click="addSlot" title="Добавить слот">+</button>
+      <button type="button" class="icon-btn icon-btn--add" @click="addSlot" title="Добавить слот" aria-label="Добавить слот">+</button>
     </div>
     <form class="create-form" @submit.prevent="handleCreate" novalidate>
       <div class="slots-scroll">
         <div v-for="(slot, si) in slots" :key="si" class="slot">
           <div class="slot-head">
             <span class="slot-label">Бронь</span>
-            <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" @click="removeSlot(si)" title="Удалить слот">−</button>
+            <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" @click="removeSlot(si)" title="Удалить слот" aria-label="Удалить слот">−</button>
           </div>
           <label class="fl">День
             <select v-model="slot.weekday">
@@ -33,7 +33,7 @@
             <button
               v-if="slot.access_rule === 'ONLY' || slot.access_rule === 'ALL_EXCEPT'"
               type="button" class="icon-btn icon-btn--add" @click="emit('pick-student', si)" title="Добавить ученика"
-            >+</button>
+             aria-label="Добавить ученика">+</button>
           </div>
           <div v-if="slot.access_rule === 'ONLY' || slot.access_rule === 'ALL_EXCEPT'" class="targets">
             <div v-if="!students.length" class="pick-empty">Нет учеников</div>
@@ -50,7 +50,7 @@
         <span class="pick-lbl">Предпросмотр ({{ slots.length }})</span>
         <div v-for="(slot, si) in slots" :key="si" class="pv-row">
           <span>{{ fmtSlot(slot) }}</span>
-          <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать из списка" @click="removeSlot(si)">−</button>
+          <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать из списка" @click="removeSlot(si)" aria-label="Убрать из списка">−</button>
         </div>
       </div>
 
@@ -60,7 +60,7 @@
       <div v-if="!slots.length" class="pick-empty">Нажмите на знак + чтобы добавить бронь</div>
       <div v-else class="create-actions">
         <button type="submit" class="btn btn--pri btn--full" :disabled="saving">{{ saving ? '...' : 'Создать' }}</button>
-        <button type="button" class="icon-btn icon-btn--remove" title="Очистить форму" @click="clearCreateForm" :disabled="saving">
+        <button type="button" class="icon-btn icon-btn--remove" title="Очистить форму" @click="clearCreateForm" :disabled="saving" aria-label="Очистить форму">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18" /><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
         </button>
       </div>

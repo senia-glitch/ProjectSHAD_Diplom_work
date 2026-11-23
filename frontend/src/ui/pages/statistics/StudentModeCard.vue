@@ -100,9 +100,9 @@ function shortMoney(v) {
 }
 .mode-head { display: flex; align-items: center; gap: 14px; }
 .mode-avatar {
-  width: 48px; height: 48px; border-radius: var(--radius-full); background: var(--color-primary);
+  width: 48px; height: 48px; border-radius: var(--radius-full); background: var(--accent);
   display: flex; align-items: center; justify-content: center;
-  color: var(--color-white); font-size: 20px; font-weight: 600; flex-shrink: 0;
+  color: var(--on-accent); font-size: 20px; font-weight: 600; flex-shrink: 0;
 }
 .mode-id { display: flex; flex-direction: column; gap: 4px; }
 .mode-name { margin: 0; font-size: 20px; font-weight: 600; color: var(--color-primary); }

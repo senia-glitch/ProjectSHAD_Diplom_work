@@ -1,5 +1,7 @@
 <template>
   <div class="grid-wrap">
+    <p class="grid-hint">Прокрутите сетку, чтобы увидеть остальные дни и часы.</p>
+    <div class="grid-scroll" role="region" tabindex="0" aria-label="Сетка недели. Прокрутите, чтобы увидеть остальные дни и часы.">
     <div class="grid-container">
       <div class="grid-header">
         <div class="corner"></div>
@@ -30,6 +32,7 @@
           ><span class="block-txt">{{ p.start_time }}–{{ p.end_time }}</span></div>
         </div>
       </div>
+    </div>
     </div>
     <div class="legend">
       <div v-for="(label, rule) in RULE_LABELS" :key="rule" class="legend-i">
@@ -151,4 +154,21 @@ function onGridClick(day, ev) {
 .legend-d--only { background: var(--rule-only-bg); border: 1px solid var(--rule-only-border); }
 .legend-d--all_except { background: var(--rule-all-except-bg); border: 1px solid var(--rule-all-except-border); }
 .legend-d--nobody { background: var(--rule-nobody-bg); border: 1px solid var(--rule-nobody-border); }
+
+.grid-scroll { overflow: auto; max-height: 680px; border: 1px solid var(--line); border-radius: var(--radius-lg); scrollbar-width: thin; scrollbar-color: var(--line-strong) var(--surface); }
+.grid-container { min-width: 560px; border: 0; border-radius: 0; }
+.grid-header { position: sticky; top: 0; z-index: 30; border-bottom-width: 1px; }
+.grid-header, .grid-body { grid-template-columns: 48px repeat(7, minmax(0, 1fr)); }
+.time-lbl { font-size: 10px; color: var(--muted); }
+.day-head { padding-block: 12px; }
+.day-head--today { color: var(--accent); background: var(--accent-soft); }
+.day-num { font-size: 17px; }
+@media (max-width: 600px) {
+  .grid-scroll { max-height: 520px; }
+  .calendar-nav { gap: 8px; }
+  .week-range { font-size: 13px; }
+}
+
+.grid-hint { display: none; font-size: 11px; color: var(--muted); }
+@media (max-width: 600px) { .grid-hint { display: block; } }
 </style>

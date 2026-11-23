@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div class="notif-panel" :style="{ top: pos.top + 'px', right: pos.right + 'px' }">
+    <section class="notif-panel" aria-label="Уведомления" :style="{ top: pos.top + 'px', right: pos.right + 'px' }">
       <div class="notif-head">Уведомления</div>
       <div v-if="loading && !items.length" class="notif-empty">Загрузка…</div>
       <div v-else-if="!items.length" class="notif-empty">Нет уведомлений</div>
@@ -20,7 +20,7 @@
         </div>
       </div>
       <router-link to="/notifications" class="notif-all" @click="emit('close')">Все уведомления</router-link>
-    </div>
+    </section>
   </Teleport>
 </template>
 
@@ -53,6 +53,8 @@ function formatTime(value) {
   box-shadow: var(--shadow-md);
   z-index: 150;
   overflow: hidden;
+  max-height: calc(100dvh - 80px);
+  overflow-y: auto;
 }
 .notif-head {
   padding: 10px 14px;
@@ -79,8 +81,8 @@ function formatTime(value) {
 }
 .notif-item:last-child { border-bottom: none; }
 .notif-item:hover { background: var(--color-gray-50, #fafafa); }
-.notif-item--unread { background: rgba(58, 122, 189, 0.04); }
-.notif-item--unread:hover { background: rgba(58, 122, 189, 0.08); }
+.notif-item--unread { background: color-mix(in srgb, var(--accent) 4%, transparent); }
+.notif-item--unread:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .notif-dot {
   width: 8px;
   height: 8px;

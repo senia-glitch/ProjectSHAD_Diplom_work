@@ -87,7 +87,7 @@ onUnmounted(() => {
   transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
 }
 .picker-btn:hover { border-color: var(--color-accent); }
-.picker-btn:focus-visible { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(58, 122, 189, 0.18); }
+.picker-btn:focus-visible { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
 .picker-ico { display: inline-flex; width: 16px; height: 16px; color: var(--color-gray-500); }
 .picker-ico svg { width: 100%; height: 100%; }
 .picker-pop {
@@ -112,7 +112,7 @@ onUnmounted(() => {
 }
 .month-cell:hover { background: var(--color-gray-100); }
 .month-cell.month--cur { box-shadow: inset 0 0 0 1.5px var(--color-accent); }
-.month-cell.month--sel { background: var(--color-accent); color: var(--color-white); font-weight: 600; }
+.month-cell.month--sel { background: var(--color-accent); color: var(--on-accent); font-weight: 600; }
 .month-cell.month--sel.month--cur { box-shadow: inset 0 0 0 1.5px var(--color-white); }
 @keyframes pop-in {
   from { opacity: 0; transform: translateY(-4px) scale(0.98); }

@@ -4,11 +4,11 @@
     <div class="add-part">
       <span class="nest-title">Дата:</span>
       <input v-model="d.date" type="date" class="add-part-select" />
-      <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать дату" @click="removeFormDate(d.key)">−</button>
+      <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать дату" @click="removeFormDate(d.key)" aria-label="Убрать дату">−</button>
     </div>
     <div class="add-part add-part--sub">
       <span class="nest-title">Время</span>
-      <button type="button" class="icon-btn icon-btn--xs icon-btn--add" title="Добавить время" @click="addDateTime(d)">+</button>
+      <button type="button" class="icon-btn icon-btn--xs icon-btn--add" title="Добавить время" @click="addDateTime(d)" aria-label="Добавить время">+</button>
     </div>
     <div v-for="t in d.times" :key="t.key" class="pick-block">
       <div class="add-part add-part--sub">
@@ -16,7 +16,7 @@
           <option :value="''" disabled>Окно</option>
           <option v-for="(w, i) in dayWindows(d.date)" :key="i" :value="i">{{ fmtWin(w) }}</option>
         </select>
-        <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать время" @click="removeDateTime(d, t.key)">−</button>
+        <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" title="Убрать время" @click="removeDateTime(d, t.key)" aria-label="Убрать время">−</button>
       </div>
       <div v-if="t.win !== ''" class="add-part add-part--sub">
         <select v-model="t.start" class="time-in" @change="onStart(d, t)">
