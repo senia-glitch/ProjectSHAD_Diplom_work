@@ -1,37 +1,77 @@
-from fastapi import APIRouter, Depends, Header, Query
 from core import run
-from app.api.v1.dependencies import get_current_user, require_auth
-
-from app.scenarios.tutor.profile import TutorGetMyProfileDTO, TutorUpdateMySettingsDTO
-from app.scenarios.tutor.lessons import (
-    TutorGetMyLessonsDTO, TutorGetLessonDTO, TutorCreateLessonDTO,
-    TutorUpdateLessonDTO, TutorDeleteLessonDTO,
-)
-from app.scenarios.tutor.participants import (
-    TutorGetParticipantsDTO, TutorAddParticipantDTO, TutorRemoveParticipantDTO,
-    TutorSetPaymentDTO,
-)
+from fastapi import APIRouter, Depends, Header, Query
+from app.api.access import external_scenario
+from app.api.v1.dependencies import get_current_user
 from app.scenarios.tutor.bookings import (
-    TutorGetMyBookingsDTO, TutorCreateBookingDTO,
-    TutorUpdateBookingDTO, TutorDeleteBookingDTO,
+    TutorCreateBookingDTO,
+    TutorCreateBookingResponse,
+    TutorDeleteBookingDTO,
+    TutorDeleteBookingResponse,
+    TutorGetMyBookingsDTO,
+    TutorGetMyBookingsResponse,
+    TutorUpdateBookingDTO,
+    TutorUpdateBookingResponse,
 )
 from app.scenarios.tutor.configurations import (
-    TutorGetMyConfigurationsDTO, TutorGetConfigurationDTO,
-    TutorCreateConfigurationDTO, TutorCreateConfigurationByCodeDTO,
-    TutorUpdateConfigurationDTO, TutorResetConfigurationDTO,
+    TutorCreateConfigurationByCodeDTO,
+    TutorCreateConfigurationByCodeResponse,
+    TutorCreateConfigurationDTO,
+    TutorCreateConfigurationResponse,
     TutorDeleteConfigurationDTO,
+    TutorDeleteConfigurationResponse,
+    TutorGetConfigurationDTO,
+    TutorGetConfigurationResponse,
+    TutorGetMyConfigurationsDTO,
+    TutorGetMyConfigurationsResponse,
+    TutorResetConfigurationDTO,
+    TutorResetConfigurationResponse,
+    TutorUpdateConfigurationDTO,
+    TutorUpdateConfigurationResponse,
 )
-from app.scenarios.tutor.students import TutorGetStudentBusySlotsDTO, TutorListStudentsDTO
-from app.scenarios.tutor.statistics import TutorGetStatisticsDTO
-from app.scenarios.tutor.lesson_details import TutorLessonDetailsDTO
+from app.scenarios.tutor.lesson_details import TutorLessonDetailsDTO, TutorLessonDetailsResponse
+from app.scenarios.tutor.lessons import (
+    TutorCreateLessonDTO,
+    TutorCreateLessonResponse,
+    TutorDeleteLessonDTO,
+    TutorDeleteLessonResponse,
+    TutorGetLessonDTO,
+    TutorGetLessonResponse,
+    TutorGetMyLessonsDTO,
+    TutorGetMyLessonsResponse,
+    TutorUpdateLessonDTO,
+    TutorUpdateLessonResponse,
+)
+from app.scenarios.tutor.participants import (
+    TutorAddParticipantDTO,
+    TutorAddParticipantResponse,
+    TutorGetParticipantsDTO,
+    TutorGetParticipantsResponse,
+    TutorRemoveParticipantDTO,
+    TutorRemoveParticipantResponse,
+    TutorSetPaymentDTO,
+    TutorSetPaymentResponse,
+)
+from app.scenarios.tutor.profile import (
+    TutorGetMyProfileDTO,
+    TutorGetMyProfileResponse,
+    TutorUpdateMySettingsDTO,
+    TutorUpdateMySettingsResponse,
+)
+from app.scenarios.tutor.statistics import TutorGetStatisticsDTO, TutorGetStatisticsResponse
+from app.scenarios.tutor.students import (
+    TutorGetStudentBusySlotsDTO,
+    TutorGetStudentBusySlotsResponse,
+    TutorListStudentsDTO,
+    TutorListStudentsResponse,
+)
 
 router = APIRouter(prefix="/tutor", tags=["tutor"])
 
 
 # === Profile ===
 
-@router.get("/me")
-@require_auth(["tutor"])
+@router.get("/me", response_model=TutorGetMyProfileResponse)
+@external_scenario("tutor.get_my_profile", core="tutor_get_my_profile")
 async def get_my_profile(
     authorization: str = Header(...),
     current_user: dict = Depends(get_current_user),
@@ -40,8 +80,8 @@ async def get_my_profile(
     return await run("tutor_get_my_profile", dto)
 
 
-@router.patch("/me/settings")
-@require_auth(["tutor"])
+@router.patch("/me/settings", response_model=TutorUpdateMySettingsResponse)
+@external_scenario("tutor.update_my_settings", core="tutor_update_my_settings")
 async def update_my_settings(
     dto: TutorUpdateMySettingsDTO,
     authorization: str = Header(...),
@@ -53,8 +93,8 @@ async def update_my_settings(
 
 # === Lessons ===
 
-@router.get("/me/lessons")
-@require_auth(["tutor"])
+@router.get("/me/lessons", response_model=TutorGetMyLessonsResponse)
+@external_scenario("tutor.get_my_lessons", core="tutor_get_my_lessons")
 async def get_my_lessons(
     date_from: str | None = None,
     date_to: str | None = None,
@@ -71,8 +111,8 @@ async def get_my_lessons(
     return await run("tutor_get_my_lessons", dto)
 
 
-@router.post("/lessons")
-@require_auth(["tutor"])
+@router.post("/lessons", response_model=TutorCreateLessonResponse)
+@external_scenario("tutor.create_lesson", core="tutor_create_lesson")
 async def create_lesson(
     dto: TutorCreateLessonDTO,
     authorization: str = Header(...),
@@ -82,8 +122,8 @@ async def create_lesson(
     return await run("tutor_create_lesson", dto)
 
 
-@router.get("/lessons/details")
-@require_auth(["tutor"])
+@router.get("/lessons/details", response_model=TutorLessonDetailsResponse)
+@external_scenario("tutor.get_lesson_details", core="tutor_lesson_details")
 async def get_lesson_details(
     date_from: str,
     date_to: str,
@@ -98,8 +138,8 @@ async def get_lesson_details(
     return await run("tutor_lesson_details", dto)
 
 
-@router.get("/lessons/{lesson_id}")
-@require_auth(["tutor"])
+@router.get("/lessons/{lesson_id}", response_model=TutorGetLessonResponse)
+@external_scenario("tutor.get_lesson", core="tutor_get_lesson")
 async def get_lesson(
     lesson_id: int,
     authorization: str = Header(...),
@@ -112,8 +152,8 @@ async def get_lesson(
     return await run("tutor_get_lesson", dto)
 
 
-@router.patch("/lessons/{lesson_id}")
-@require_auth(["tutor"])
+@router.patch("/lessons/{lesson_id}", response_model=TutorUpdateLessonResponse)
+@external_scenario("tutor.update_lesson", core="tutor_update_lesson")
 async def update_lesson(
     lesson_id: int,
     dto: TutorUpdateLessonDTO,
@@ -125,8 +165,8 @@ async def update_lesson(
     return await run("tutor_update_lesson", dto)
 
 
-@router.delete("/lessons/{lesson_id}")
-@require_auth(["tutor"])
+@router.delete("/lessons/{lesson_id}", response_model=TutorDeleteLessonResponse)
+@external_scenario("tutor.delete_lesson", core="tutor_delete_lesson")
 async def delete_lesson(
     lesson_id: int,
     authorization: str = Header(...),
@@ -141,8 +181,8 @@ async def delete_lesson(
 
 # === Participants ===
 
-@router.get("/lessons/{lesson_id}/participants")
-@require_auth(["tutor"])
+@router.get("/lessons/{lesson_id}/participants", response_model=TutorGetParticipantsResponse)
+@external_scenario("tutor.get_participants", core="tutor_get_participants")
 async def get_participants(
     lesson_id: int,
     authorization: str = Header(...),
@@ -155,8 +195,8 @@ async def get_participants(
     return await run("tutor_get_participants", dto)
 
 
-@router.post("/lessons/{lesson_id}/participants")
-@require_auth(["tutor"])
+@router.post("/lessons/{lesson_id}/participants", response_model=TutorAddParticipantResponse)
+@external_scenario("tutor.add_participant", core="tutor_add_participant")
 async def add_participant(
     lesson_id: int,
     dto: TutorAddParticipantDTO,
@@ -168,8 +208,8 @@ async def add_participant(
     return await run("tutor_add_participant", dto)
 
 
-@router.delete("/lessons/{lesson_id}/participants/{student_user_id}")
-@require_auth(["tutor"])
+@router.delete("/lessons/{lesson_id}/participants/{student_user_id}", response_model=TutorRemoveParticipantResponse)
+@external_scenario("tutor.remove_participant", core="tutor_remove_participant")
 async def remove_participant(
     lesson_id: int,
     student_user_id: int,
@@ -184,8 +224,8 @@ async def remove_participant(
     return await run("tutor_remove_participant", dto)
 
 
-@router.patch("/lessons/{lesson_id}/participants/{student_user_id}/payment")
-@require_auth(["tutor"])
+@router.patch("/lessons/{lesson_id}/participants/{student_user_id}/payment", response_model=TutorSetPaymentResponse)
+@external_scenario("tutor.set_participant_payment", core="tutor_set_payment")
 async def set_participant_payment(
     lesson_id: int,
     student_user_id: int,
@@ -201,8 +241,8 @@ async def set_participant_payment(
 
 # === Bookings ===
 
-@router.get("/me/bookings")
-@require_auth(["tutor"])
+@router.get("/me/bookings", response_model=TutorGetMyBookingsResponse)
+@external_scenario("tutor.get_my_bookings", core="tutor_get_my_bookings")
 async def get_my_bookings(
     weekday: str | None = None,
     limit: int = Query(default=100, ge=1, le=1000),
@@ -217,8 +257,8 @@ async def get_my_bookings(
     return await run("tutor_get_my_bookings", dto)
 
 
-@router.post("/bookings")
-@require_auth(["tutor"])
+@router.post("/bookings", response_model=TutorCreateBookingResponse)
+@external_scenario("tutor.create_booking", core="tutor_create_booking")
 async def create_booking(
     dto: TutorCreateBookingDTO,
     authorization: str = Header(...),
@@ -228,8 +268,8 @@ async def create_booking(
     return await run("tutor_create_booking", dto)
 
 
-@router.patch("/bookings/{booking_id}")
-@require_auth(["tutor"])
+@router.patch("/bookings/{booking_id}", response_model=TutorUpdateBookingResponse)
+@external_scenario("tutor.update_booking", core="tutor_update_booking")
 async def update_booking(
     booking_id: int,
     dto: TutorUpdateBookingDTO,
@@ -241,8 +281,8 @@ async def update_booking(
     return await run("tutor_update_booking", dto)
 
 
-@router.delete("/bookings/{booking_id}")
-@require_auth(["tutor"])
+@router.delete("/bookings/{booking_id}", response_model=TutorDeleteBookingResponse)
+@external_scenario("tutor.delete_booking", core="tutor_delete_booking")
 async def delete_booking(
     booking_id: int,
     authorization: str = Header(...),
@@ -257,8 +297,8 @@ async def delete_booking(
 
 # === Configurations ===
 
-@router.get("/configurations")
-@require_auth(["tutor"])
+@router.get("/configurations", response_model=TutorGetMyConfigurationsResponse)
+@external_scenario("tutor.get_my_configurations", core="tutor_get_my_configurations")
 async def get_my_configurations(
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
@@ -272,8 +312,8 @@ async def get_my_configurations(
     return await run("tutor_get_my_configurations", dto)
 
 
-@router.get("/configurations/{config_id}")
-@require_auth(["tutor"])
+@router.get("/configurations/{config_id}", response_model=TutorGetConfigurationResponse)
+@external_scenario("tutor.get_configuration", core="tutor_get_configuration")
 async def get_configuration(
     config_id: int,
     authorization: str = Header(...),
@@ -286,8 +326,8 @@ async def get_configuration(
     return await run("tutor_get_configuration", dto)
 
 
-@router.post("/configurations")
-@require_auth(["tutor"])
+@router.post("/configurations", response_model=TutorCreateConfigurationResponse)
+@external_scenario("tutor.create_configuration", core="tutor_create_configuration")
 async def create_configuration(
     dto: TutorCreateConfigurationDTO,
     authorization: str = Header(...),
@@ -297,8 +337,8 @@ async def create_configuration(
     return await run("tutor_create_configuration", dto)
 
 
-@router.post("/configurations/by-code")
-@require_auth(["tutor"])
+@router.post("/configurations/by-code", response_model=TutorCreateConfigurationByCodeResponse)
+@external_scenario("tutor.create_configuration_by_code", core="tutor_create_configuration_by_code")
 async def create_configuration_by_code(
     dto: TutorCreateConfigurationByCodeDTO,
     authorization: str = Header(...),
@@ -308,8 +348,8 @@ async def create_configuration_by_code(
     return await run("tutor_create_configuration_by_code", dto)
 
 
-@router.patch("/configurations/{config_id}")
-@require_auth(["tutor"])
+@router.patch("/configurations/{config_id}", response_model=TutorUpdateConfigurationResponse)
+@external_scenario("tutor.update_configuration", core="tutor_update_configuration")
 async def update_configuration(
     config_id: int,
     dto: TutorUpdateConfigurationDTO,
@@ -321,8 +361,8 @@ async def update_configuration(
     return await run("tutor_update_configuration", dto)
 
 
-@router.post("/configurations/{config_id}/reset")
-@require_auth(["tutor"])
+@router.post("/configurations/{config_id}/reset", response_model=TutorResetConfigurationResponse)
+@external_scenario("tutor.reset_configuration", core="tutor_reset_configuration")
 async def reset_configuration(
     config_id: int,
     authorization: str = Header(...),
@@ -335,8 +375,8 @@ async def reset_configuration(
     return await run("tutor_reset_configuration", dto)
 
 
-@router.delete("/configurations/{config_id}")
-@require_auth(["tutor"])
+@router.delete("/configurations/{config_id}", response_model=TutorDeleteConfigurationResponse)
+@external_scenario("tutor.delete_configuration", core="tutor_delete_configuration")
 async def delete_configuration(
     config_id: int,
     authorization: str = Header(...),
@@ -351,8 +391,8 @@ async def delete_configuration(
 
 # === Students ===
 
-@router.get("/students")
-@require_auth(["tutor"])
+@router.get("/students", response_model=TutorListStudentsResponse)
+@external_scenario("tutor.list_students", core="tutor_list_students")
 async def list_students(
     authorization: str = Header(...),
     current_user: dict = Depends(get_current_user),
@@ -365,8 +405,8 @@ async def list_students(
 
 # === Statistics ===
 
-@router.get("/statistics")
-@require_auth(["tutor"])
+@router.get("/statistics", response_model=TutorGetStatisticsResponse)
+@external_scenario("tutor.get_statistics", core="tutor_get_statistics")
 async def get_statistics(
     year: int | None = None,
     date_from: str | None = None,
@@ -386,8 +426,8 @@ async def get_statistics(
 
 # === Student Busy Slots ===
 
-@router.get("/students/{student_user_id}/busy-slots")
-@require_auth(["tutor"])
+@router.get("/students/{student_user_id}/busy-slots", response_model=TutorGetStudentBusySlotsResponse)
+@external_scenario("tutor.get_student_busy_slots", core="tutor_get_student_busy_slots")
 async def get_student_busy_slots(
     student_user_id: int,
     date_from: str,

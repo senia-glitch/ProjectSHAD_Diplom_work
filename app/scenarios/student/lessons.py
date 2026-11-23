@@ -131,7 +131,7 @@ class StudentLeaveLessonResponse(BaseModel):
     ok: bool
 
 
-@register_scenario("student_get_my_lessons")
+@register_scenario("student_get_my_lessons", dto=StudentGetMyLessonsDTO, response=StudentGetMyLessonsResponse)
 @tracked_scenario("student_get_my_lessons")
 class StudentGetMyLessonsScenario(BaseScenario):
     async def execute(self, dto: StudentGetMyLessonsDTO) -> StudentGetMyLessonsResponse:
@@ -186,7 +186,7 @@ class StudentGetMyLessonsScenario(BaseScenario):
         return StudentGetMyLessonsResponse(lessons=lessons[dto.offset:dto.offset + dto.limit])
 
 
-@register_scenario("student_get_lesson")
+@register_scenario("student_get_lesson", dto=StudentGetLessonDTO, response=StudentGetLessonResponse)
 @tracked_scenario("student_get_lesson")
 class StudentGetLessonScenario(BaseScenario):
     async def execute(self, dto: StudentGetLessonDTO) -> StudentGetLessonResponse:
@@ -234,7 +234,7 @@ class StudentGetLessonScenario(BaseScenario):
         )
 
 
-@register_scenario("student_get_tutor_lessons")
+@register_scenario("student_get_tutor_lessons", dto=StudentGetTutorLessonsDTO, response=StudentGetTutorLessonsResponse)
 @tracked_scenario("student_get_tutor_lessons")
 class StudentGetTutorLessonsScenario(BaseScenario):
     async def execute(self, dto: StudentGetTutorLessonsDTO) -> StudentGetTutorLessonsResponse:
@@ -312,7 +312,7 @@ class StudentGetTutorLessonsScenario(BaseScenario):
         return StudentGetTutorLessonsResponse(lessons=lessons)
 
 
-@register_scenario("student_create_lesson")
+@register_scenario("student_create_lesson", dto=StudentCreateLessonDTO, response=StudentCreateLessonResponse)
 @tracked_scenario("student_create_lesson")
 class StudentCreateLessonScenario(BaseScenario):
     async def execute(self, dto: StudentCreateLessonDTO) -> StudentCreateLessonResponse:
@@ -533,7 +533,7 @@ class StudentCreateLessonScenario(BaseScenario):
             )
 
 
-@register_scenario("student_join_lesson")
+@register_scenario("student_join_lesson", dto=StudentJoinLessonDTO, response=StudentJoinLessonResponse)
 @tracked_scenario("student_join_lesson")
 class StudentJoinLessonScenario(BaseScenario):
     async def execute(self, dto: StudentJoinLessonDTO) -> StudentJoinLessonResponse:
@@ -655,7 +655,7 @@ class StudentJoinLessonScenario(BaseScenario):
         return StudentJoinLessonResponse(participant_id=participant["id"])
 
 
-@register_scenario("student_leave_lesson")
+@register_scenario("student_leave_lesson", dto=StudentLeaveLessonDTO, response=StudentLeaveLessonResponse)
 @tracked_scenario("student_leave_lesson")
 class StudentLeaveLessonScenario(BaseScenario):
     async def execute(self, dto: StudentLeaveLessonDTO) -> StudentLeaveLessonResponse:

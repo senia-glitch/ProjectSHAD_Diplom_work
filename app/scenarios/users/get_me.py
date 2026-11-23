@@ -19,7 +19,7 @@ class GetMeResponse(BaseModel):
     additional_info: str | None
 
 
-@register_scenario("get_me")
+@register_scenario("get_me", dto=GetMeDTO, response=GetMeResponse)
 @tracked_scenario("get_me")
 class GetMeScenario(BaseScenario):
     async def execute(self, dto: GetMeDTO) -> GetMeResponse:

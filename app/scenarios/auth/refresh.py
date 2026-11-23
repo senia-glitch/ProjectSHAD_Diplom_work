@@ -19,7 +19,7 @@ class RefreshResponse(BaseModel):
     refresh_token: str
 
 
-@register_scenario("refresh")
+@register_scenario("refresh", dto=RefreshDTO, response=RefreshResponse)
 @tracked_scenario("refresh")
 class RefreshScenario(BaseScenario):
     async def execute(self, dto: RefreshDTO) -> RefreshResponse:

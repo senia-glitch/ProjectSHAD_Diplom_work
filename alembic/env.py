@@ -1,47 +1,29 @@
-
-from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
 from alembic import context
+from sqlalchemy import engine_from_config, pool
+from models import metadata
 
 config = context.config
 
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
-
-import sys
-target_metadata = None
-for module in sys.modules.values():
-    if hasattr(module, 'metadata') and hasattr(module.metadata, 'tables'):
-        target_metadata = module.metadata
-        break
 
 def run_migrations_offline():
-    url = config.get_main_option("sqlalchemy.url")
-    context.configure(
-        url=url,
-        target_metadata=target_metadata,
-        literal_binds=True,
-        compare_type=False,
-        compare_server_default=True,
-    )
+    context.configure(url=config.get_main_option("sqlalchemy.url"), target_metadata=metadata,
+                      literal_binds=True, compare_type=True)
     with context.begin_transaction():
         context.run_migrations()
 
+
 def run_migrations_online():
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            compare_type=False,
-            compare_server_default=True,
-        )
-        with context.begin_transaction():
-            context.run_migrations()
+    engine = engine_from_config(config.get_section(config.config_ini_section, {}),
+                                prefix="sqlalchemy.", poolclass=pool.NullPool,
+                                hide_parameters=True)
+    try:
+        with engine.connect() as connection:
+            context.configure(connection=connection, target_metadata=metadata, compare_type=True)
+            with context.begin_transaction():
+                context.run_migrations()
+    finally:
+        engine.dispose()
+
 
 if context.is_offline_mode():
     run_migrations_offline()

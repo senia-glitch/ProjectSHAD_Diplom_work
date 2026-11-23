@@ -34,7 +34,7 @@ class RegisterUserResponse(BaseModel):
     refresh_token: str
 
 
-@register_scenario("register")
+@register_scenario("register", dto=RegisterUserDTO, response=RegisterUserResponse)
 @tracked_scenario("register")
 class RegisterUserScenario(BaseScenario):
     async def execute(self, dto: RegisterUserDTO) -> RegisterUserResponse:

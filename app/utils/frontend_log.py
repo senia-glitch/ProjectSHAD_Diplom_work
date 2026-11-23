@@ -1,7 +1,7 @@
 """Файловый лог фронтенда (logs/frontend.log).
 
 Единая точка правды о пути и формате: писать сюда умеет
-app/api/v1/routes/logs.py, читать — сценарий системного журнала.
+app/scenarios/system/write_logs.py, читать — сценарий системного журнала.
 Лог пишется браузером параллельно с чтением, поэтому битые
 и неполные строки пропускаются, а не роняют выгрузку.
 """
@@ -48,3 +48,10 @@ def read_log_entries(path: str | Path | None = None, tail_bytes: int = TAIL_BYTE
 
     entries.reverse()
     return entries
+
+
+def write_log_entries(entries: list[dict]) -> None:
+    LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with LOG_FILE.open("a", encoding="utf-8") as stream:
+        for entry in entries:
+            stream.write(json.dumps(entry, ensure_ascii=False) + "\n")

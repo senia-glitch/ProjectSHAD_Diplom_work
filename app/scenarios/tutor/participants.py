@@ -31,7 +31,7 @@ class TutorGetParticipantsResponse(BaseModel):
     participants: list[TutorParticipantItem]
 
 
-@register_scenario("tutor_get_participants")
+@register_scenario("tutor_get_participants", dto=TutorGetParticipantsDTO, response=TutorGetParticipantsResponse)
 @tracked_scenario("tutor_get_participants")
 class TutorGetParticipantsScenario(BaseScenario):
     async def execute(self, dto: TutorGetParticipantsDTO) -> TutorGetParticipantsResponse:
@@ -90,7 +90,7 @@ class TutorAddParticipantResponse(BaseModel):
     student_id: int
 
 
-@register_scenario("tutor_add_participant")
+@register_scenario("tutor_add_participant", dto=TutorAddParticipantDTO, response=TutorAddParticipantResponse)
 @tracked_scenario("tutor_add_participant")
 class TutorAddParticipantScenario(BaseScenario):
     async def execute(self, dto: TutorAddParticipantDTO) -> TutorAddParticipantResponse:
@@ -209,7 +209,7 @@ class TutorRemoveParticipantResponse(BaseModel):
     ok: bool
 
 
-@register_scenario("tutor_remove_participant")
+@register_scenario("tutor_remove_participant", dto=TutorRemoveParticipantDTO, response=TutorRemoveParticipantResponse)
 @tracked_scenario("tutor_remove_participant")
 class TutorRemoveParticipantScenario(BaseScenario):
     async def execute(self, dto: TutorRemoveParticipantDTO) -> TutorRemoveParticipantResponse:
@@ -276,7 +276,7 @@ class TutorSetPaymentResponse(BaseModel):
     paid: bool
 
 
-@register_scenario("tutor_set_payment")
+@register_scenario("tutor_set_payment", dto=TutorSetPaymentDTO, response=TutorSetPaymentResponse)
 @tracked_scenario("tutor_set_payment")
 class TutorSetPaymentScenario(BaseScenario):
     async def execute(self, dto: TutorSetPaymentDTO) -> TutorSetPaymentResponse:

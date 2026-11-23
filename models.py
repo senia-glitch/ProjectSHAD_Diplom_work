@@ -1,9 +1,13 @@
 from typing import Optional, List, Dict, Any
 from datetime import datetime, time
 
+from pydantic import NaiveDatetime
 from sqlmodel import SQLModel, Field
 from sqlalchemy import JSON, UniqueConstraint
 
+# Existing event-infra CRUD payloads carry JSON as encoded strings. Both the
+# native Python form and the legacy encoded form are valid storage inputs;
+# application DTOs still expose lists/dicts through app.utils.json_codec.
 metadata = SQLModel.metadata
 
 
@@ -26,7 +30,7 @@ class User(SQLModel, table=True):
     """Пользователи системы."""
     __tablename__ = "users"
     id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: Optional[datetime] = Field(default_factory=datetime.now)
+    created_at: Optional[NaiveDatetime] = Field(default_factory=datetime.now)
     refresh_token: Optional[str] = Field(default=None, max_length=500)
 
     role_id: int = Field(foreign_key="roles.id")
@@ -96,10 +100,10 @@ class TutorSettings(SQLModel, table=True):
     display_time_from: str = Field(default="00:00", max_length=5)
     display_time_to: str = Field(default="23:59", max_length=5)
     self_booking_mode: str = Field(default="YES", max_length=20)
-    self_booking_whitelist: Optional[List[int]] = Field(default=None, sa_type=JSON)
+    self_booking_whitelist: Optional[List[int] | str] = Field(default=None, sa_type=JSON)
     booking_lead_time_hours: int = Field(default=24)
     cancellation_lead_time_hours: int = Field(default=24)
-    default_links: Optional[List[Dict[str, str]]] = Field(default=None, sa_type=JSON)
+    default_links: Optional[List[Dict[str, str]] | str] = Field(default=None, sa_type=JSON)
 
 
 # ============================================
@@ -121,7 +125,7 @@ class Configuration(SQLModel, table=True):
     cancellation_lead_time_hours: int = Field(default=24)
     notifications_enabled: bool = Field(default=True)
     notification_lead_time_hours: int = Field(default=24)
-    default_links: Optional[List[Dict[str, str]]] = Field(default=None, sa_type=JSON)
+    default_links: Optional[List[Dict[str, str]] | str] = Field(default=None, sa_type=JSON)
     allow_unpaid_lesson: bool = Field(default=False)
     student_notes: Optional[str] = None
     link_visibility_enabled: bool = Field(default=False)
@@ -140,8 +144,8 @@ class Booking(SQLModel, table=True):
     """Бронь — повторяющаяся блокировка времени репетитора."""
     __tablename__ = "bookings"
     id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: Optional[datetime] = Field(default_factory=datetime.now)
-    updated_at: Optional[datetime] = Field(default_factory=datetime.now)
+    created_at: Optional[NaiveDatetime] = Field(default_factory=datetime.now)
+    updated_at: Optional[NaiveDatetime] = Field(default_factory=datetime.now)
 
     tutor_id: int = Field(foreign_key="tutors.id")
     weekday: str = Field(max_length=20)
@@ -149,8 +153,8 @@ class Booking(SQLModel, table=True):
     end_time: time
 
     access_rule: str = Field(default="EVERYONE", max_length=20)
-    access_targets: Optional[List[int]] = Field(default=None, sa_type=JSON)
-    booking_metadata: Optional[Dict[str, Any]] = Field(default=None, sa_type=JSON)
+    access_targets: Optional[List[int] | str] = Field(default=None, sa_type=JSON)
+    booking_metadata: Optional[Dict[str, Any] | str] = Field(default=None, sa_type=JSON)
 
 
 # ============================================
@@ -161,19 +165,19 @@ class Lesson(SQLModel, table=True):
     """Уроки."""
     __tablename__ = "lessons"
     id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: Optional[datetime] = Field(default_factory=datetime.now)
-    updated_at: Optional[datetime] = Field(default_factory=datetime.now)
+    created_at: Optional[NaiveDatetime] = Field(default_factory=datetime.now)
+    updated_at: Optional[NaiveDatetime] = Field(default_factory=datetime.now)
 
     tutor_id: int = Field(foreign_key="tutors.id")
-    start_time: datetime
-    end_time: datetime
+    start_time: NaiveDatetime
+    end_time: NaiveDatetime
     created_by_id: int
 
     is_group: bool = Field(default=False)
     status: str = Field(default="SCHEDULED", max_length=20)
-    lesson_settings: Optional[Dict[str, Any]] = Field(default=None, sa_type=JSON)
-    lesson_links: Optional[List[Dict[str, str]]] = Field(default=None, sa_type=JSON)
-    lesson_metadata: Optional[Dict[str, Any]] = Field(default=None, sa_type=JSON)
+    lesson_settings: Optional[Dict[str, Any] | str] = Field(default=None, sa_type=JSON)
+    lesson_links: Optional[List[Dict[str, str]] | str] = Field(default=None, sa_type=JSON)
+    lesson_metadata: Optional[Dict[str, Any] | str] = Field(default=None, sa_type=JSON)
     lesson_descriptions: Optional[str] = None
 
 
@@ -181,14 +185,14 @@ class LessonParticipant(SQLModel, table=True):
     """Участники урока."""
     __tablename__ = "lesson_participants"
     id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: Optional[datetime] = Field(default_factory=datetime.now)
-    updated_at: Optional[datetime] = Field(default_factory=datetime.now)
+    created_at: Optional[NaiveDatetime] = Field(default_factory=datetime.now)
+    updated_at: Optional[NaiveDatetime] = Field(default_factory=datetime.now)
 
     lesson_id: int = Field(foreign_key="lessons.id")
     student_id: int = Field(foreign_key="students.id")
 
-    participant_settings: Optional[Dict[str, Any]] = Field(default=None, sa_type=JSON)
-    participant_metadata: Optional[Dict[str, Any]] = Field(default=None, sa_type=JSON)
+    participant_settings: Optional[Dict[str, Any] | str] = Field(default=None, sa_type=JSON)
+    participant_metadata: Optional[Dict[str, Any] | str] = Field(default=None, sa_type=JSON)
 
     __table_args__ = (
         UniqueConstraint("lesson_id", "student_id", name="uq_lesson_participant"),
@@ -203,12 +207,12 @@ class Notification(SQLModel, table=True):
     """Уведомления пользователей."""
     __tablename__ = "notifications"
     id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: Optional[datetime] = Field(default_factory=datetime.now)
+    created_at: Optional[NaiveDatetime] = Field(default_factory=datetime.now)
 
     user_id: int = Field(foreign_key="users.id", index=True)
     type: str = Field(max_length=50)
-    payload: Optional[Dict[str, Any]] = Field(default=None, sa_type=JSON)
-    read_at: Optional[datetime] = Field(default=None)
+    payload: Optional[Dict[str, Any] | str] = Field(default=None, sa_type=JSON)
+    read_at: Optional[NaiveDatetime] = Field(default=None)
 
 
 # ============================================

@@ -41,7 +41,7 @@ def _to_iso(value) -> str:
     return str(value)
 
 
-@register_scenario("student_get_available_slots")
+@register_scenario("student_get_available_slots", dto=StudentGetAvailableSlotsDTO, response=StudentGetAvailableSlotsResponse)
 @tracked_scenario("student_get_available_slots")
 class StudentGetAvailableSlotsScenario(BaseScenario):
     async def execute(self, dto: StudentGetAvailableSlotsDTO) -> StudentGetAvailableSlotsResponse:

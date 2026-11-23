@@ -21,7 +21,7 @@ class LoginResponse(BaseModel):
     role: str
 
 
-@register_scenario("login")
+@register_scenario("login", dto=LoginDTO, response=LoginResponse)
 @tracked_scenario("login")
 class LoginScenario(BaseScenario):
     async def execute(self, dto: LoginDTO) -> LoginResponse:

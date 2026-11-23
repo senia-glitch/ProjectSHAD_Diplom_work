@@ -36,7 +36,7 @@ class NotificationsReadAllResponse(BaseModel):
     updated: int
 
 
-@register_scenario("notifications_list")
+@register_scenario("notifications_list", dto=BaseDTO, response=NotificationsListResponse)
 @tracked_scenario("notifications_list")
 class NotificationsListScenario(BaseScenario):
     async def execute(self, dto: BaseDTO) -> NotificationsListResponse:
@@ -66,7 +66,7 @@ class NotificationsListScenario(BaseScenario):
         return NotificationsListResponse(notifications=items, unread_count=unread)
 
 
-@register_scenario("notifications_unread_count")
+@register_scenario("notifications_unread_count", dto=BaseDTO, response=NotificationsUnreadCountResponse)
 @tracked_scenario("notifications_unread_count")
 class NotificationsUnreadCountScenario(BaseScenario):
     async def execute(self, dto: BaseDTO) -> NotificationsUnreadCountResponse:
@@ -79,7 +79,7 @@ class NotificationsUnreadCountScenario(BaseScenario):
         return NotificationsUnreadCountResponse(count=count_rows[0]["cnt"] if count_rows else 0)
 
 
-@register_scenario("notifications_mark_read")
+@register_scenario("notifications_mark_read", dto=NotificationsMarkReadDTO, response=NotificationsMarkReadResponse)
 @tracked_scenario("notifications_mark_read")
 class NotificationsMarkReadScenario(BaseScenario):
     async def execute(self, dto: NotificationsMarkReadDTO) -> NotificationsMarkReadResponse:
@@ -98,7 +98,7 @@ class NotificationsMarkReadScenario(BaseScenario):
         return NotificationsMarkReadResponse(ok=True)
 
 
-@register_scenario("notifications_read_all")
+@register_scenario("notifications_read_all", dto=BaseDTO, response=NotificationsReadAllResponse)
 @tracked_scenario("notifications_read_all")
 class NotificationsReadAllScenario(BaseScenario):
     async def execute(self, dto: BaseDTO) -> NotificationsReadAllResponse:

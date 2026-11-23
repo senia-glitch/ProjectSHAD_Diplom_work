@@ -20,7 +20,7 @@ class TutorListStudentsResponse(BaseModel):
     students: list[TutorListStudentItem]
 
 
-@register_scenario("tutor_list_students")
+@register_scenario("tutor_list_students", dto=TutorListStudentsDTO, response=TutorListStudentsResponse)
 @tracked_scenario("tutor_list_students")
 class TutorListStudentsScenario(BaseScenario):
     async def execute(self, dto: TutorListStudentsDTO) -> TutorListStudentsResponse:
@@ -72,7 +72,7 @@ def _to_iso(value) -> str:
     return str(value)
 
 
-@register_scenario("tutor_get_student_busy_slots")
+@register_scenario("tutor_get_student_busy_slots", dto=TutorGetStudentBusySlotsDTO, response=TutorGetStudentBusySlotsResponse)
 @tracked_scenario("tutor_get_student_busy_slots")
 class TutorGetStudentBusySlotsScenario(BaseScenario):
     async def execute(self, dto: TutorGetStudentBusySlotsDTO) -> TutorGetStudentBusySlotsResponse:

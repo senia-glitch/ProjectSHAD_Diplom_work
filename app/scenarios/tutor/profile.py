@@ -62,7 +62,7 @@ class TutorGetMyProfileResponse(BaseModel):
     default_links: list[dict] | None
 
 
-@register_scenario("tutor_get_my_profile")
+@register_scenario("tutor_get_my_profile", dto=TutorGetMyProfileDTO, response=TutorGetMyProfileResponse)
 @tracked_scenario("tutor_get_my_profile")
 class TutorGetMyProfileScenario(BaseScenario):
     async def execute(self, dto: TutorGetMyProfileDTO) -> TutorGetMyProfileResponse:
@@ -117,7 +117,7 @@ class TutorUpdateMySettingsResponse(BaseModel):
     default_links: list[dict] | None
 
 
-@register_scenario("tutor_update_my_settings")
+@register_scenario("tutor_update_my_settings", dto=TutorUpdateMySettingsDTO, response=TutorUpdateMySettingsResponse)
 @tracked_scenario("tutor_update_my_settings")
 class TutorUpdateMySettingsScenario(BaseScenario):
     async def execute(self, dto: TutorUpdateMySettingsDTO) -> TutorUpdateMySettingsResponse:

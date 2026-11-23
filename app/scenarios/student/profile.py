@@ -35,7 +35,7 @@ class StudentGetMyProfileResponse(BaseModel):
     display_time_to: str
 
 
-@register_scenario("student_get_my_profile")
+@register_scenario("student_get_my_profile", dto=StudentGetMyProfileDTO, response=StudentGetMyProfileResponse)
 @tracked_scenario("student_get_my_profile")
 class StudentGetMyProfileScenario(BaseScenario):
     async def execute(self, dto: StudentGetMyProfileDTO) -> StudentGetMyProfileResponse:
@@ -86,7 +86,7 @@ class StudentUpdateMySettingsResponse(BaseModel):
     display_time_to: str
 
 
-@register_scenario("student_update_my_settings")
+@register_scenario("student_update_my_settings", dto=StudentUpdateMySettingsDTO, response=StudentUpdateMySettingsResponse)
 @tracked_scenario("student_update_my_settings")
 class StudentUpdateMySettingsScenario(BaseScenario):
     async def execute(self, dto: StudentUpdateMySettingsDTO) -> StudentUpdateMySettingsResponse:

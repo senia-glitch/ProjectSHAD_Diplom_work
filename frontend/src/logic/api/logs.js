@@ -8,6 +8,7 @@ export async function postLogs(batch) {
       body: { logs: batch },
       auth: true,
       retry: false,
+      optionalAuth: true,
     })
   } catch {
     // Потеря пачки логов — не ошибка приложения.

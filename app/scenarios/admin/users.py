@@ -2,7 +2,6 @@ from typing import Optional, Literal
 from pydantic import BaseModel, Field
 from core import BaseScenario, NotFoundError, ValidationError, ConflictError, register_scenario, tracked_scenario
 from core.utils.security import extract_token_info
-from app.core.exceptions import ForbiddenError
 from app.utils.db_errors import is_unique_violation
 from app.utils.validation import EMAIL_PATTERN, USERNAME_PATTERN
 from core.dto import BaseDTO
@@ -66,18 +65,16 @@ class AdminUpdateUserResponse(BaseModel):
     role_name: str
 
 
-def _verify_admin(dto: BaseDTO):
+def _actor(dto: BaseDTO):
     token = extract_token_info(dto.access_token)
-    if token.role != "admin":
-        raise ForbiddenError("Only admins can access this endpoint")
     return token
 
 
-@register_scenario("admin_list_users")
+@register_scenario("admin_list_users", dto=AdminListUsersDTO, response=AdminListUsersResponse)
 @tracked_scenario("admin_list_users")
 class AdminListUsersScenario(BaseScenario):
     async def execute(self, dto: AdminListUsersDTO) -> AdminListUsersResponse:
-        _verify_admin(dto)
+        _actor(dto)
 
         if dto.role:
             rows = await self._db.query(
@@ -106,11 +103,11 @@ class AdminListUsersScenario(BaseScenario):
         )
 
 
-@register_scenario("admin_get_user_by_id")
+@register_scenario("admin_get_user_by_id", dto=AdminGetUserByIdDTO, response=AdminGetUserByIdResponse)
 @tracked_scenario("admin_get_user_by_id")
 class AdminGetUserByIdScenario(BaseScenario):
     async def execute(self, dto: AdminGetUserByIdDTO) -> AdminGetUserByIdResponse:
-        _verify_admin(dto)
+        _actor(dto)
 
         user_rows = await self._db.query(
             """SELECT u.id AS user_id, u.username, u.full_name, u.email,
@@ -155,11 +152,11 @@ class AdminGetUserByIdScenario(BaseScenario):
         return AdminGetUserByIdResponse(**user)
 
 
-@register_scenario("admin_update_user")
+@register_scenario("admin_update_user", dto=AdminUpdateUserDTO, response=AdminUpdateUserResponse)
 @tracked_scenario("admin_update_user")
 class AdminUpdateUserScenario(BaseScenario):
     async def execute(self, dto: AdminUpdateUserDTO) -> AdminUpdateUserResponse:
-        _verify_admin(dto)
+        _actor(dto)
         if dto.target_user_id is None:
             raise ValidationError("target_user_id is required")
 

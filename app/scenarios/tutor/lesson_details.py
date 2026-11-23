@@ -59,7 +59,7 @@ def _parse_student_ids(raw: str | None) -> list[int]:
         raise ValidationError("Invalid student_ids: expected comma-separated integers")
 
 
-@register_scenario("tutor_lesson_details")
+@register_scenario("tutor_lesson_details", dto=TutorLessonDetailsDTO, response=TutorLessonDetailsResponse)
 @tracked_scenario("tutor_lesson_details")
 class TutorLessonDetailsScenario(BaseScenario):
     async def execute(self, dto: TutorLessonDetailsDTO) -> TutorLessonDetailsResponse:

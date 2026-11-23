@@ -7,7 +7,7 @@ class InitRolesResponse(BaseModel):
     already_exist: list[str]
 
 
-@register_scenario("init_roles")
+@register_scenario("init_roles", response=InitRolesResponse)
 @tracked_scenario("init_roles")
 class InitRolesScenario(BaseScenario):
     async def execute(self, dto=None) -> InitRolesResponse:

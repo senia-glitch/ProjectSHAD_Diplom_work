@@ -1,255 +1,105 @@
-# Установка и запуск связки: event-infra + core-package + fastbase
+# Установка и запуск SHAD Tutoring
 
-## Требования
+Инструкция относится к существующему приложению. Генераторы пакетов поверх
+него не запускаются. Проверенная среда: Windows, Python 3.14.6, PostgreSQL 17.5.
+Заявленная граница Python сохранена: >=3.11; другие версии в этом прогоне не проверялись.
 
-- Python **3.11+**
-- PostgreSQL **9.6+**, БД создана заранее:
-  ```bash
-  psql -U postgres -c "CREATE DATABASE my_project;"
-  ```
-- Git
+## Окружение и зависимости
 
----
-
-## Шаг 1. Виртуальное окружение
-
-```bash
-mkdir my_project && cd my_project
+```powershell
 python -m venv venv
+.\venv\Scripts\python.exe -m pip install -r requirements.lock
+.\venv\Scripts\python.exe -m pip check
+.\venv\Scripts\python.exe -m scripts.configure
 ```
 
-Активировать:
-```bash
-# Windows PowerShell
-.\venv\Scripts\Activate.ps1
+`requirements.lock` закрепляет установленные версии и точные Git-коммиты
+`event-infra`, `core-package`, `fastbase`. Включён `greenlet` для
+`SQLAlchemy[asyncio]`. Дополнительные зависимости CLI студии не нужны приложению.
+Новая установка по сети в текущем прогоне не выполнялась: проверялась имеющаяся среда.
 
-# Linux / macOS
-source venv/bin/activate
+## Локальные настройки
+
+`scripts.configure` копирует отсутствующие `.env.fastbase` и `.infra.env` из
+безопасных примеров и создаёт отсутствующий `.core-package.env` со случайным
+секретом. Существующие файлы, пароли и JWT-секреты сохраняются.
+
+В `.infra.env` задать реальные подключения вместо `USER:PASSWORD`:
+
+- `DB_URL` и `DB_URL_ASYNC` — одна основная БД, драйверы psycopg и asyncpg;
+- `TEST_DB_URL` и `TEST_DB_URL_ASYNC` — другая, выделенная тестовая БД.
+
+Создать БД средствами PostgreSQL. Имена в примере — `shad_tutoring` и
+`shad_tutoring_test`; существующая копия продолжает использовать свои имена.
+Имена основной и тестовой БД должны различаться. Тестовое имя должно содержать
+`test`; инструменты отказываются использовать основную БД как тестовую.
+
+`.env.fastbase` включает `FAT_INTEGRATIONS=core,event-infra`,
+`FAT_CORE_DISCOVER=app.scenarios`, `FAT_WORKERS=1`.
+Один worker нужен существующим блокировкам расписания и refresh-сессий в памяти.
+Разрешения заданы в `config/access.toml`, для неизвестного действия действует запрет.
+
+## Миграции и запуск
+
+```powershell
+.\venv\Scripts\python.exe -m scripts.migrate
+.\venv\Scripts\python.exe -m app.main
 ```
 
----
+Миграционная команда применяет только файлы `alembic/versions`, проверяет
+принадлежность таблиц и известность ревизий. Она не генерирует новые ревизии,
+не сбрасывает данные и не принимает непустую БД без известной миграционной истории.
+Изменение моделей требует написания и проверки следующей миграции.
 
-## Шаг 2. Установка трёх пакетов
+Старт выполняет read-only проверку схемы и ревизии, запускает event-infra,
+потом core, проверяет регистрацию внешних действий и сценариев, инициализирует
+отсутствующие роли. При остановке завершается core, затем EventRouter.
+Сбой регистрации/инициализации ролей прерывает запуск вместо работы с неполной системой.
+Кеш чтения event-infra отключён в wrapper: текущие сценарии изменяют данные и
+через custom SQL, поэтому кеш не гарантирует актуальность чтения после записи.
 
-Одна команда ставит `fastbase` + `core-package` + `event-infra`:
+В другом терминале:
 
-```bash
-pip install "fastbase[full] @ git+https://github.com/senia-glitch/fastapi-transport.git"
+```powershell
+cd frontend
+npm ci
+npm run dev
 ```
 
-Проверка: `fb version` → `0.2.0`.
+Адреса: frontend `http://localhost:3000`, backend `http://127.0.0.1:8000`.
+`GET /api/v1/health` — liveness, `GET /api/v1/ready` — настоящая проверка
+HTTP → core → PostgreSQL. Публичные docs/schema/health/time явно разрешены guest
+в том же конфиге, что бизнес-действия. `system` имеет только перечисленную диагностику.
 
----
+## Отдельный тестовый стенд
 
-## Шаг 3. Инициализация
-
-Три команды, **в корне проекта**, по порядку:
-
-```bash
-fb init                       # app/, .env.fastbase, docs/, pyproject.toml
-infra-init                    # models.py, .infra.env, alembic/, run_infrastructure.py
-core-init --target-dir app    # app/scenarios/, app/interfaces/, app/utils/
+```powershell
+.\venv\Scripts\python.exe -m scripts.migrate --test
+.\venv\Scripts\python.exe -m scripts.serve --test --port 18080
 ```
 
-Структура после:
-```
-my_project/
-├── app/
-│   ├── main.py              ← точка входа
-│   ├── api/v1/routes/       ← роуты (health.py создан)
-│   ├── scenarios/           ← сценарии (пусто)
-│   ├── core/config.py       ← свои настройки
-│   └── schemas/
-├── models.py                ← SQLModel-модели (демо: User, Post)
-├── alembic/
-├── run_infrastructure.py
-├── .env.fastbase
-├── .infra.env
-├── .core-package.env
-└── docs/
+В другом терминале:
+
+```powershell
+cd frontend
+$env:API_PROXY_TARGET = 'http://127.0.0.1:18080'
+npm run dev -- --host 127.0.0.1 --port 13000 --strictPort
 ```
 
----
+Без `API_PROXY_TARGET` прокси сохраняет прежний адрес backend на порту 8000.
+Рабочие процессы не нужно перезапускать ради тестового стенда.
 
-## Шаг 4. Правка конфигов
+## Регрессия
 
-### `.env.fastbase`
-```env
-FAT_INTEGRATIONS=core,event-infra
-FAT_CORE_DISCOVER=app.scenarios
-```
+Команды приведены в README. Для полного backend-прогона установить
+`SHAD_RUN_DB_TESTS=1`. По умолчанию DB-тесты выключены.
+Миграционные проверки требуют `CREATEDB`: создаются только собственные
+временные тестовые БД; удаляются только они. HTTP-проверка создаёт различимые
+учётные записи в выделенной тестовой БД, удаляет свои записи штатным lifecycle.
 
-### `.infra.env`
-```env
-DB_URL=postgresql+psycopg://postgres:123@localhost:5432/my_project
-DB_URL_ASYNC=postgresql+asyncpg://postgres:123@localhost:5432/my_project
+В `scripts/smoke/` сохранены прежние ручные API-проверки. Они не заменяют
+защищённые интеграционные тесты и не запускаются автоматически на рабочей БД.
 
-# для разработки достаточно
-READ_POOL_SIZE=5
-WRITE_POOL_SIZE=5
-ADMIN_POOL_SIZE=1
-```
-
----
-
-## Шаг 5. Запуск
-
-```bash
-python -m app.main
-```
-
-При старте автоматически:
-1. `event-infra` применяет миграции из `models.py`.
-2. `core-package` поднимает ядро и загружает сценарии из `app.scenarios`.
-3. `fastbase` собирает FastAPI, монтирует роуты, запускает uvicorn.
-
-Остановка — `Ctrl+C`.
-
----
-
-## Проверка работоспособности
-
-Пакеты можно запустить «пустыми» — сервер поднимется, но проверить связку HTTP → core → event-infra → БД не получится. Для этого нужны **хотя бы один сценарий и один роут**.
-
-### Что должно быть в логе при старте
-
-```
-Application startup complete.
-Uvicorn running on http://127.0.0.1:8000
-```
-
-Плюс строки от event-infra:
-```
-Конфигурация загружена: каналы=['read', 'write', 'admin']
-Схема актуальна, изменений нет        ← либо: Обнаружены изменения, создаём миграцию
-Диспетчер 'read': запущено N воркеров
-Оркестратор запущен с 3 каналами
-Зарегистрировано N сущностей: ...
-Integrations started.
-```
-
-Если этих строк нет — стек не собрался. Обычно причина — пустой `FAT_INTEGRATIONS` в `.env.fastbase` или неверный `DB_URL_ASYNC`.
-
-### Где живут роуты
-
-- Все роуты монтируются под префиксом `FAT_API_PREFIX` (по умолчанию `/api/v1`).
-- **Корневого роута `/` нет** — `GET /` вернёт 404. Это by design.
-- Роуты сканируются из пакета `FAT_ROUTES_PACKAGE` (`app.api.v1.routes`). В каждом модуле ищется атрибут `router: APIRouter`.
-- Модуль без `router` игнорируется. Модуль с именем на `_` — игнорируется.
-- Если ни один роут не найден — монтируется только `health_router`.
-- `fb init` создаёт `health.py`, поэтому `/api/v1/health` работает из коробки.
-
-### Проверочные URL
-
-| URL | Ожидание |
-|---|---|
-| `http://127.0.0.1:8000/docs` | Swagger UI |
-| `http://127.0.0.1:8000/api/v1/health` | `{"status":"ok"}` |
-| `http://127.0.0.1:8000/api/v1/definitely-not-a-route` | 404 в конверте fastbase: `{"success":false,"error":{"code":3001,...}}` |
-| `http://127.0.0.1:8000/` | 404 (корневого роута нет) |
-
-### Тест сквозного пути (рекомендуется)
-
-1. **Сценарий** — `app/scenarios/create_user.py`:
-
-```python
-from pydantic import BaseModel
-from core import BaseScenario, register_scenario
-
-
-class CreateUserDTO(BaseModel):
-    username: str
-    email: str
-
-
-@register_scenario("create_user")
-class CreateUserScenario(BaseScenario):
-    async def execute(self, dto: CreateUserDTO):
-        user = await self._db.create("users", {
-            "username": dto.username,
-            "email": dto.email,
-        })
-        return {"user_id": user["id"], "username": user["username"]}
-```
-
-2. **Роут** — `app/api/v1/routes/users.py`:
-
-```python
-from fastapi import APIRouter
-from core import run
-from app.scenarios.create_user import CreateUserDTO
-
-router = APIRouter(tags=["users"])
-
-
-@router.post("/users")
-async def create_user(dto: CreateUserDTO):
-    return await run("create_user", dto)
-```
-
-3. **Перезапуск** `python -m app.main` и POST на `/api/v1/users` через `/docs`.
-
-Если запись появилась в БД (`psql -d my_project -c "SELECT * FROM users;"`) — связка работает полностью.
-
-### Диагностика
-
-```bash
-fb check           # конфиг и структура проекта
-infra validate     # конфиг и подключение к БД
-```
-
-Обе команды должны выдать только `ok` / `[OK]`, без `fail`.
-
----
-
-## Основные команды
-
-### fastbase (`fb`)
-
-| Команда | Что делает |
-|---|---|
-| `fb init [--path app] [--force]` | Создать `app/`, `.env.fastbase`, `docs/` |
-| `fb check` | Проверить проект |
-| `fb version` | Версия пакета |
-| `fb help` | Справка |
-
-### event-infra (`infra-*`)
-
-| Команда | Что делает |
-|---|---|
-| `infra-init [-y] [--force]` | Создать `models.py`, `.infra.env`, `alembic/`, `run_infrastructure.py` |
-| `infra validate` | Проверить конфиг и БД |
-| `infra monitor [интервал]` | Мониторинг запущенного приложения |
-| `infra reset <db_url> [-y]` | Сбросить БД и миграции |
-| `infra test [-v]` | Тесты пакета |
-| `infra cheat` | Шпаргалка |
-
-### core-package
-
-| Команда | Что делает |
-|---|---|
-| `core-init [--target-dir <путь>] [--force]` | Создать `scenarios/`, `interfaces/`, `utils/` |
-
----
-
-## Ежедневный workflow
-
-- Добавил модель в `models.py` → перезапустил приложение → миграция создалась.
-- Добавил файл в `app/scenarios/` с `@register_scenario("...")` → подхватится при старте.
-- Добавил файл в `app/api/v1/routes/` с `router = APIRouter()` → подхватится при старте.
-
-Никаких ручных `alembic revision` и регистрации роутов. Единственное правило: **добавил файл — перезапустил приложение**.
-
----
-
-## Типичные ошибки
-
-| Симптом | Причина | Решение |
-|---|---|---|
-| `ImportError: fastbase requires core-package` | Установлен только `fastbase` | `pip install "fastbase[full]"` |
-| `Scenario 'x' not registered` | `FAT_CORE_DISCOVER` пуст или не тот | Проверить `.env.fastbase` |
-| 404 на свой роут | В модуле нет атрибута `router` | `router = APIRouter()` |
-| 404 на `/` | Норма — корневого роута нет | Обращаться к `/api/v1/...` |
-| Миграции не применяются | Неверный `DB_URL` | `infra validate` |
-| Ошибки core отдаются как 500 | Не включён `FAT_INTEGRATIONS` | `FAT_INTEGRATIONS=core,event-infra` |
-| `start_core() уже запущено` | Повторный запуск в одном процессе | Для тестов — `reset_core()` |
+Сохранён технический запуск `python run_infrastructure.py --test`: сначала
+выполняется защищённая проектная регрессия, затем запускается инфраструктура.
+Старое удаление пакетных тестовых таблиц из БД больше не используется.

@@ -9,7 +9,7 @@ class ServerTimeResponse(BaseModel):
     utc_datetime: str
 
 
-@register_scenario("server_time")
+@register_scenario("server_time", response=ServerTimeResponse)
 @tracked_scenario("server_time")
 class ServerTimeScenario(BaseScenario):
     async def execute(self, dto=None) -> ServerTimeResponse:

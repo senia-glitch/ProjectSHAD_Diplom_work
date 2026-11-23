@@ -1,26 +1,48 @@
-from fastapi import APIRouter, Depends, Header, Query
 from core import run
-from app.api.v1.dependencies import get_current_user, require_auth
-
-from app.scenarios.student.profile import StudentGetMyProfileDTO, StudentUpdateMySettingsDTO
-from app.scenarios.student.lessons import (
-    StudentGetMyLessonsDTO, StudentGetLessonDTO, StudentGetTutorLessonsDTO,
-    StudentCreateLessonDTO, StudentJoinLessonDTO, StudentLeaveLessonDTO,
-)
+from fastapi import APIRouter, Depends, Header, Query
+from app.api.access import external_scenario
+from app.api.v1.dependencies import get_current_user
 from app.scenarios.student.configurations import (
-    StudentGetMyConfigurationsDTO, StudentGetConfigurationDTO,
-    StudentCreateConfigurationDTO, StudentCreateConfigurationByCodeDTO,
+    StudentCreateConfigurationByCodeDTO,
+    StudentCreateConfigurationByCodeResponse,
+    StudentCreateConfigurationDTO,
+    StudentCreateConfigurationResponse,
     StudentDeleteConfigurationDTO,
+    StudentDeleteConfigurationResponse,
+    StudentGetConfigurationDTO,
+    StudentGetConfigurationResponse,
+    StudentGetMyConfigurationsDTO,
+    StudentGetMyConfigurationsResponse,
 )
-from app.scenarios.student.tutors import StudentGetAvailableSlotsDTO
+from app.scenarios.student.lessons import (
+    StudentCreateLessonDTO,
+    StudentCreateLessonResponse,
+    StudentGetLessonDTO,
+    StudentGetLessonResponse,
+    StudentGetMyLessonsDTO,
+    StudentGetMyLessonsResponse,
+    StudentGetTutorLessonsDTO,
+    StudentGetTutorLessonsResponse,
+    StudentJoinLessonDTO,
+    StudentJoinLessonResponse,
+    StudentLeaveLessonDTO,
+    StudentLeaveLessonResponse,
+)
+from app.scenarios.student.profile import (
+    StudentGetMyProfileDTO,
+    StudentGetMyProfileResponse,
+    StudentUpdateMySettingsDTO,
+    StudentUpdateMySettingsResponse,
+)
+from app.scenarios.student.tutors import StudentGetAvailableSlotsDTO, StudentGetAvailableSlotsResponse
 
 router = APIRouter(prefix="/student", tags=["student"])
 
 
 # === Profile ===
 
-@router.get("/me")
-@require_auth(["student"])
+@router.get("/me", response_model=StudentGetMyProfileResponse)
+@external_scenario("student.get_my_profile", core="student_get_my_profile")
 async def get_my_profile(
     authorization: str = Header(...),
     current_user: dict = Depends(get_current_user),
@@ -29,8 +51,8 @@ async def get_my_profile(
     return await run("student_get_my_profile", dto)
 
 
-@router.patch("/me/settings")
-@require_auth(["student"])
+@router.patch("/me/settings", response_model=StudentUpdateMySettingsResponse)
+@external_scenario("student.update_my_settings", core="student_update_my_settings")
 async def update_my_settings(
     dto: StudentUpdateMySettingsDTO,
     authorization: str = Header(...),
@@ -42,8 +64,8 @@ async def update_my_settings(
 
 # === Lessons ===
 
-@router.get("/me/lessons")
-@require_auth(["student"])
+@router.get("/me/lessons", response_model=StudentGetMyLessonsResponse)
+@external_scenario("student.get_my_lessons", core="student_get_my_lessons")
 async def get_my_lessons(
     date_from: str | None = None,
     date_to: str | None = None,
@@ -60,8 +82,8 @@ async def get_my_lessons(
     return await run("student_get_my_lessons", dto)
 
 
-@router.get("/tutors/{tutor_user_id}/lessons")
-@require_auth(["student"])
+@router.get("/tutors/{tutor_user_id}/lessons", response_model=StudentGetTutorLessonsResponse)
+@external_scenario("student.get_tutor_lessons", core="student_get_tutor_lessons")
 async def get_tutor_lessons(
     tutor_user_id: int,
     date_from: str | None = None,
@@ -80,8 +102,8 @@ async def get_tutor_lessons(
     return await run("student_get_tutor_lessons", dto)
 
 
-@router.post("/lessons")
-@require_auth(["student"])
+@router.post("/lessons", response_model=StudentCreateLessonResponse)
+@external_scenario("student.create_lesson", core="student_create_lesson")
 async def create_lesson(
     dto: StudentCreateLessonDTO,
     authorization: str = Header(...),
@@ -91,8 +113,8 @@ async def create_lesson(
     return await run("student_create_lesson", dto)
 
 
-@router.get("/lessons/{lesson_id}")
-@require_auth(["student"])
+@router.get("/lessons/{lesson_id}", response_model=StudentGetLessonResponse)
+@external_scenario("student.get_lesson", core="student_get_lesson")
 async def get_lesson(
     lesson_id: int,
     authorization: str = Header(...),
@@ -105,8 +127,8 @@ async def get_lesson(
     return await run("student_get_lesson", dto)
 
 
-@router.post("/lessons/{lesson_id}/join")
-@require_auth(["student"])
+@router.post("/lessons/{lesson_id}/join", response_model=StudentJoinLessonResponse)
+@external_scenario("student.join_lesson", core="student_join_lesson")
 async def join_lesson(
     lesson_id: int,
     authorization: str = Header(...),
@@ -119,8 +141,8 @@ async def join_lesson(
     return await run("student_join_lesson", dto)
 
 
-@router.delete("/lessons/{lesson_id}/leave")
-@require_auth(["student"])
+@router.delete("/lessons/{lesson_id}/leave", response_model=StudentLeaveLessonResponse)
+@external_scenario("student.leave_lesson", core="student_leave_lesson")
 async def leave_lesson(
     lesson_id: int,
     authorization: str = Header(...),
@@ -135,8 +157,8 @@ async def leave_lesson(
 
 # === Tutors ===
 
-@router.get("/tutors/{tutor_user_id}/slots")
-@require_auth(["student"])
+@router.get("/tutors/{tutor_user_id}/slots", response_model=StudentGetAvailableSlotsResponse)
+@external_scenario("student.get_available_slots", core="student_get_available_slots")
 async def get_available_slots(
     tutor_user_id: int,
     date_from: str,
@@ -154,8 +176,8 @@ async def get_available_slots(
 
 # === Configurations ===
 
-@router.get("/configurations")
-@require_auth(["student"])
+@router.get("/configurations", response_model=StudentGetMyConfigurationsResponse)
+@external_scenario("student.get_my_configurations", core="student_get_my_configurations")
 async def get_my_configurations(
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
@@ -169,8 +191,8 @@ async def get_my_configurations(
     return await run("student_get_my_configurations", dto)
 
 
-@router.get("/configurations/{config_id}")
-@require_auth(["student"])
+@router.get("/configurations/{config_id}", response_model=StudentGetConfigurationResponse)
+@external_scenario("student.get_configuration", core="student_get_configuration")
 async def get_configuration(
     config_id: int,
     authorization: str = Header(...),
@@ -183,8 +205,8 @@ async def get_configuration(
     return await run("student_get_configuration", dto)
 
 
-@router.post("/configurations")
-@require_auth(["student"])
+@router.post("/configurations", response_model=StudentCreateConfigurationResponse)
+@external_scenario("student.create_configuration", core="student_create_configuration")
 async def create_configuration(
     dto: StudentCreateConfigurationDTO,
     authorization: str = Header(...),
@@ -194,8 +216,8 @@ async def create_configuration(
     return await run("student_create_configuration", dto)
 
 
-@router.post("/configurations/by-code")
-@require_auth(["student"])
+@router.post("/configurations/by-code", response_model=StudentCreateConfigurationByCodeResponse)
+@external_scenario("student.create_configuration_by_code", core="student_create_configuration_by_code")
 async def create_configuration_by_code(
     dto: StudentCreateConfigurationByCodeDTO,
     authorization: str = Header(...),
@@ -205,8 +227,8 @@ async def create_configuration_by_code(
     return await run("student_create_configuration_by_code", dto)
 
 
-@router.delete("/configurations/{config_id}")
-@require_auth(["student"])
+@router.delete("/configurations/{config_id}", response_model=StudentDeleteConfigurationResponse)
+@external_scenario("student.delete_configuration", core="student_delete_configuration")
 async def delete_configuration(
     config_id: int,
     authorization: str = Header(...),

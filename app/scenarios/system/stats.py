@@ -21,13 +21,11 @@ class StatsResponse(BaseModel):
     channels: dict[str, ChannelStats]
 
 
-@register_scenario("stats")
+@register_scenario("stats", response=StatsResponse)
 @tracked_scenario("stats")
 class StatsScenario(BaseScenario):
     async def execute(self, dto=None) -> StatsResponse:
-        from core import get_db
-        db = get_db()
-        router = db._router
+        router = self._db._router
         metrics = router.get_metrics()
 
         channels = {}

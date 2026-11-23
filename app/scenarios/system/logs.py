@@ -41,7 +41,7 @@ def _matches(row: dict, dto: SystemGetLogsDTO, needle: str | None) -> bool:
     return True
 
 
-@register_scenario("system_get_logs")
+@register_scenario("system_get_logs", dto=SystemGetLogsDTO, response=SystemGetLogsResponse)
 @tracked_scenario("system_get_logs")
 class SystemGetLogsScenario(BaseScenario):
     async def execute(self, dto: SystemGetLogsDTO) -> SystemGetLogsResponse:

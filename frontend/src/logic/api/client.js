@@ -62,8 +62,10 @@ async function rawFetch(path, { method, body, token, signal }) {
 }
 
 export async function apiFetch(path, opts = {}) {
-  const { method = 'GET', body, auth = true, retry = true, timeout = 30000 } = opts
+  const { method = 'GET', body, auth = true, retry = true, timeout = 30000, optionalAuth = false } = opts
   const token = auth && tokenProvider ? tokenProvider() : null
+  // Background telemetry requires an existing session; it must not clear or refresh it.
+  if (optionalAuth && !token) return null
   const doCall = async (callToken) => {
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), timeout)
@@ -79,7 +81,7 @@ export async function apiFetch(path, opts = {}) {
     }
   }
   let result = await doCall(token)
-  if (result.res.status === 401 && auth && retry && refreshHandler) {
+  if (result.res.status === 401 && auth && retry && !optionalAuth && refreshHandler) {
     if (!refreshPromise) {
       refreshPromise = refreshHandler()
         .catch(() => null)
@@ -94,7 +96,7 @@ export async function apiFetch(path, opts = {}) {
   }
   const { res, data } = result
   if (!res.ok) {
-    if (res.status === 401 && auth && unauthorizedHandler) {
+    if (res.status === 401 && auth && !optionalAuth && unauthorizedHandler) {
       try {
         await unauthorizedHandler()
       } catch {

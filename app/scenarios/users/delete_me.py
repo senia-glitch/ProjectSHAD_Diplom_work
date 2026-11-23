@@ -12,7 +12,7 @@ class DeleteMeResponse(BaseModel):
     ok: bool
 
 
-@register_scenario("delete_me")
+@register_scenario("delete_me", dto=DeleteMeDTO, response=DeleteMeResponse)
 @tracked_scenario("delete_me")
 class DeleteMeScenario(BaseScenario):
     async def execute(self, dto: DeleteMeDTO) -> DeleteMeResponse:

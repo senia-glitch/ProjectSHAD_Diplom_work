@@ -1,0 +1,824 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/me",
+    "module": "admin",
+    "handler": "get_my_profile",
+    "action": "admin.get_my_profile",
+    "scenario": "admin_get_my_profile",
+    "response": "AdminGetMyProfileResponse",
+    "roles": [
+      "admin"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/users",
+    "module": "admin",
+    "handler": "list_users",
+    "action": "admin.list_users",
+    "scenario": "admin_list_users",
+    "response": "AdminListUsersResponse",
+    "roles": [
+      "admin"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/users/{user_id}",
+    "module": "admin",
+    "handler": "get_user_by_id",
+    "action": "admin.get_user_by_id",
+    "scenario": "admin_get_user_by_id",
+    "response": "AdminGetUserByIdResponse",
+    "roles": [
+      "admin"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/admin/users/{user_id}",
+    "module": "admin",
+    "handler": "update_user",
+    "action": "admin.update_user",
+    "scenario": "admin_update_user",
+    "response": "AdminUpdateUserResponse",
+    "roles": [
+      "admin"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/students",
+    "module": "admin",
+    "handler": "list_students",
+    "action": "admin.list_students",
+    "scenario": "admin_list_students",
+    "response": "AdminListStudentsResponse",
+    "roles": [
+      "admin"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/tutors",
+    "module": "admin",
+    "handler": "list_tutors",
+    "action": "admin.list_tutors",
+    "scenario": "admin_list_tutors",
+    "response": "AdminListTutorsResponse",
+    "roles": [
+      "admin"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/admin/admins",
+    "module": "admin",
+    "handler": "list_admins",
+    "action": "admin.list_admins",
+    "scenario": "admin_list_admins",
+    "response": "AdminListAdminsResponse",
+    "roles": [
+      "admin"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/login",
+    "module": "auth",
+    "handler": "login",
+    "action": "auth.login",
+    "scenario": "login",
+    "response": "LoginResponse",
+    "roles": [
+      "guest",
+      "student",
+      "tutor",
+      "admin",
+      "system"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/refresh",
+    "module": "auth",
+    "handler": "refresh",
+    "action": "auth.refresh",
+    "scenario": "refresh",
+    "response": "RefreshResponse",
+    "roles": [
+      "guest",
+      "student",
+      "tutor",
+      "admin",
+      "system"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/auth/logout",
+    "module": "auth",
+    "handler": "logout",
+    "action": "auth.logout",
+    "scenario": "logout",
+    "response": "LogoutResponse",
+    "roles": [
+      "guest",
+      "student",
+      "tutor",
+      "admin",
+      "system"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/logs",
+    "module": "logs",
+    "handler": "write_logs",
+    "action": "logs.write_logs",
+    "scenario": "system_write_logs",
+    "response": "WriteLogsResponse",
+    "roles": [
+      "student",
+      "tutor",
+      "admin"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/logs",
+    "module": "logs",
+    "handler": "read_logs",
+    "action": "logs.read_logs",
+    "scenario": "system_get_logs",
+    "response": "SystemGetLogsResponse",
+    "roles": [
+      "admin"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/notifications",
+    "module": "notifications",
+    "handler": "list_notifications",
+    "action": "notifications.list_notifications",
+    "scenario": "notifications_list",
+    "response": "NotificationsListResponse",
+    "roles": [
+      "student",
+      "tutor",
+      "admin"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/notifications/unread-count",
+    "module": "notifications",
+    "handler": "unread_count",
+    "action": "notifications.unread_count",
+    "scenario": "notifications_unread_count",
+    "response": "NotificationsUnreadCountResponse",
+    "roles": [
+      "student",
+      "tutor",
+      "admin"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/notifications/{notification_id}/read",
+    "module": "notifications",
+    "handler": "mark_read",
+    "action": "notifications.mark_read",
+    "scenario": "notifications_mark_read",
+    "response": "NotificationsMarkReadResponse",
+    "roles": [
+      "student",
+      "tutor",
+      "admin"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/notifications/read-all",
+    "module": "notifications",
+    "handler": "read_all",
+    "action": "notifications.read_all",
+    "scenario": "notifications_read_all",
+    "response": "NotificationsReadAllResponse",
+    "roles": [
+      "student",
+      "tutor",
+      "admin"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/student/me",
+    "module": "student",
+    "handler": "get_my_profile",
+    "action": "student.get_my_profile",
+    "scenario": "student_get_my_profile",
+    "response": "StudentGetMyProfileResponse",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/student/me/settings",
+    "module": "student",
+    "handler": "update_my_settings",
+    "action": "student.update_my_settings",
+    "scenario": "student_update_my_settings",
+    "response": "StudentUpdateMySettingsResponse",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/student/me/lessons",
+    "module": "student",
+    "handler": "get_my_lessons",
+    "action": "student.get_my_lessons",
+    "scenario": "student_get_my_lessons",
+    "response": "StudentGetMyLessonsResponse",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/student/tutors/{tutor_user_id}/lessons",
+    "module": "student",
+    "handler": "get_tutor_lessons",
+    "action": "student.get_tutor_lessons",
+    "scenario": "student_get_tutor_lessons",
+    "response": "StudentGetTutorLessonsResponse",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/student/lessons",
+    "module": "student",
+    "handler": "create_lesson",
+    "action": "student.create_lesson",
+    "scenario": "student_create_lesson",
+    "response": "StudentCreateLessonResponse",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/student/lessons/{lesson_id}",
+    "module": "student",
+    "handler": "get_lesson",
+    "action": "student.get_lesson",
+    "scenario": "student_get_lesson",
+    "response": "StudentGetLessonResponse",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/student/lessons/{lesson_id}/join",
+    "module": "student",
+    "handler": "join_lesson",
+    "action": "student.join_lesson",
+    "scenario": "student_join_lesson",
+    "response": "StudentJoinLessonResponse",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/student/lessons/{lesson_id}/leave",
+    "module": "student",
+    "handler": "leave_lesson",
+    "action": "student.leave_lesson",
+    "scenario": "student_leave_lesson",
+    "response": "StudentLeaveLessonResponse",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/student/tutors/{tutor_user_id}/slots",
+    "module": "student",
+    "handler": "get_available_slots",
+    "action": "student.get_available_slots",
+    "scenario": "student_get_available_slots",
+    "response": "StudentGetAvailableSlotsResponse",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/student/configurations",
+    "module": "student",
+    "handler": "get_my_configurations",
+    "action": "student.get_my_configurations",
+    "scenario": "student_get_my_configurations",
+    "response": "StudentGetMyConfigurationsResponse",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/student/configurations/{config_id}",
+    "module": "student",
+    "handler": "get_configuration",
+    "action": "student.get_configuration",
+    "scenario": "student_get_configuration",
+    "response": "StudentGetConfigurationResponse",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/student/configurations",
+    "module": "student",
+    "handler": "create_configuration",
+    "action": "student.create_configuration",
+    "scenario": "student_create_configuration",
+    "response": "StudentCreateConfigurationResponse",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/student/configurations/by-code",
+    "module": "student",
+    "handler": "create_configuration_by_code",
+    "action": "student.create_configuration_by_code",
+    "scenario": "student_create_configuration_by_code",
+    "response": "StudentCreateConfigurationByCodeResponse",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/student/configurations/{config_id}",
+    "module": "student",
+    "handler": "delete_configuration",
+    "action": "student.delete_configuration",
+    "scenario": "student_delete_configuration",
+    "response": "StudentDeleteConfigurationResponse",
+    "roles": [
+      "student"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/system/init-roles",
+    "module": "system",
+    "handler": "init_roles",
+    "action": "system.init_roles",
+    "scenario": "init_roles",
+    "response": "InitRolesResponse",
+    "roles": [
+      "admin"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/system/stats",
+    "module": "system",
+    "handler": "get_stats",
+    "action": "system.get_stats",
+    "scenario": "stats",
+    "response": "StatsResponse",
+    "roles": [
+      "admin"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/system/server-time",
+    "module": "system",
+    "handler": "server_time",
+    "action": "system.server_time",
+    "scenario": "server_time",
+    "response": "ServerTimeResponse",
+    "roles": [
+      "guest",
+      "student",
+      "tutor",
+      "admin",
+      "system"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tutor/me",
+    "module": "tutor",
+    "handler": "get_my_profile",
+    "action": "tutor.get_my_profile",
+    "scenario": "tutor_get_my_profile",
+    "response": "TutorGetMyProfileResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/tutor/me/settings",
+    "module": "tutor",
+    "handler": "update_my_settings",
+    "action": "tutor.update_my_settings",
+    "scenario": "tutor_update_my_settings",
+    "response": "TutorUpdateMySettingsResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tutor/me/lessons",
+    "module": "tutor",
+    "handler": "get_my_lessons",
+    "action": "tutor.get_my_lessons",
+    "scenario": "tutor_get_my_lessons",
+    "response": "TutorGetMyLessonsResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tutor/lessons",
+    "module": "tutor",
+    "handler": "create_lesson",
+    "action": "tutor.create_lesson",
+    "scenario": "tutor_create_lesson",
+    "response": "TutorCreateLessonResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tutor/lessons/details",
+    "module": "tutor",
+    "handler": "get_lesson_details",
+    "action": "tutor.get_lesson_details",
+    "scenario": "tutor_lesson_details",
+    "response": "TutorLessonDetailsResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tutor/lessons/{lesson_id}",
+    "module": "tutor",
+    "handler": "get_lesson",
+    "action": "tutor.get_lesson",
+    "scenario": "tutor_get_lesson",
+    "response": "TutorGetLessonResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/tutor/lessons/{lesson_id}",
+    "module": "tutor",
+    "handler": "update_lesson",
+    "action": "tutor.update_lesson",
+    "scenario": "tutor_update_lesson",
+    "response": "TutorUpdateLessonResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/tutor/lessons/{lesson_id}",
+    "module": "tutor",
+    "handler": "delete_lesson",
+    "action": "tutor.delete_lesson",
+    "scenario": "tutor_delete_lesson",
+    "response": "TutorDeleteLessonResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tutor/lessons/{lesson_id}/participants",
+    "module": "tutor",
+    "handler": "get_participants",
+    "action": "tutor.get_participants",
+    "scenario": "tutor_get_participants",
+    "response": "TutorGetParticipantsResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tutor/lessons/{lesson_id}/participants",
+    "module": "tutor",
+    "handler": "add_participant",
+    "action": "tutor.add_participant",
+    "scenario": "tutor_add_participant",
+    "response": "TutorAddParticipantResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/tutor/lessons/{lesson_id}/participants/{student_user_id}",
+    "module": "tutor",
+    "handler": "remove_participant",
+    "action": "tutor.remove_participant",
+    "scenario": "tutor_remove_participant",
+    "response": "TutorRemoveParticipantResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/tutor/lessons/{lesson_id}/participants/{student_user_id}/payment",
+    "module": "tutor",
+    "handler": "set_participant_payment",
+    "action": "tutor.set_participant_payment",
+    "scenario": "tutor_set_payment",
+    "response": "TutorSetPaymentResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tutor/me/bookings",
+    "module": "tutor",
+    "handler": "get_my_bookings",
+    "action": "tutor.get_my_bookings",
+    "scenario": "tutor_get_my_bookings",
+    "response": "TutorGetMyBookingsResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tutor/bookings",
+    "module": "tutor",
+    "handler": "create_booking",
+    "action": "tutor.create_booking",
+    "scenario": "tutor_create_booking",
+    "response": "TutorCreateBookingResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/tutor/bookings/{booking_id}",
+    "module": "tutor",
+    "handler": "update_booking",
+    "action": "tutor.update_booking",
+    "scenario": "tutor_update_booking",
+    "response": "TutorUpdateBookingResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/tutor/bookings/{booking_id}",
+    "module": "tutor",
+    "handler": "delete_booking",
+    "action": "tutor.delete_booking",
+    "scenario": "tutor_delete_booking",
+    "response": "TutorDeleteBookingResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tutor/configurations",
+    "module": "tutor",
+    "handler": "get_my_configurations",
+    "action": "tutor.get_my_configurations",
+    "scenario": "tutor_get_my_configurations",
+    "response": "TutorGetMyConfigurationsResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tutor/configurations/{config_id}",
+    "module": "tutor",
+    "handler": "get_configuration",
+    "action": "tutor.get_configuration",
+    "scenario": "tutor_get_configuration",
+    "response": "TutorGetConfigurationResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tutor/configurations",
+    "module": "tutor",
+    "handler": "create_configuration",
+    "action": "tutor.create_configuration",
+    "scenario": "tutor_create_configuration",
+    "response": "TutorCreateConfigurationResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tutor/configurations/by-code",
+    "module": "tutor",
+    "handler": "create_configuration_by_code",
+    "action": "tutor.create_configuration_by_code",
+    "scenario": "tutor_create_configuration_by_code",
+    "response": "TutorCreateConfigurationByCodeResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/tutor/configurations/{config_id}",
+    "module": "tutor",
+    "handler": "update_configuration",
+    "action": "tutor.update_configuration",
+    "scenario": "tutor_update_configuration",
+    "response": "TutorUpdateConfigurationResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/tutor/configurations/{config_id}/reset",
+    "module": "tutor",
+    "handler": "reset_configuration",
+    "action": "tutor.reset_configuration",
+    "scenario": "tutor_reset_configuration",
+    "response": "TutorResetConfigurationResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/tutor/configurations/{config_id}",
+    "module": "tutor",
+    "handler": "delete_configuration",
+    "action": "tutor.delete_configuration",
+    "scenario": "tutor_delete_configuration",
+    "response": "TutorDeleteConfigurationResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tutor/students",
+    "module": "tutor",
+    "handler": "list_students",
+    "action": "tutor.list_students",
+    "scenario": "tutor_list_students",
+    "response": "TutorListStudentsResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tutor/statistics",
+    "module": "tutor",
+    "handler": "get_statistics",
+    "action": "tutor.get_statistics",
+    "scenario": "tutor_get_statistics",
+    "response": "TutorGetStatisticsResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/tutor/students/{student_user_id}/busy-slots",
+    "module": "tutor",
+    "handler": "get_student_busy_slots",
+    "action": "tutor.get_student_busy_slots",
+    "scenario": "tutor_get_student_busy_slots",
+    "response": "TutorGetStudentBusySlotsResponse",
+    "roles": [
+      "tutor"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/users/register",
+    "module": "users",
+    "handler": "register_user",
+    "action": "users.register_user",
+    "scenario": "register",
+    "response": "RegisterUserResponse",
+    "roles": [
+      "guest",
+      "student",
+      "tutor",
+      "admin",
+      "system"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/users/me",
+    "module": "users",
+    "handler": "get_me",
+    "action": "users.get_me",
+    "scenario": "get_me",
+    "response": "GetMeResponse",
+    "roles": [
+      "student",
+      "tutor",
+      "admin"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/users/me",
+    "module": "users",
+    "handler": "update_me",
+    "action": "users.update_me",
+    "scenario": "update_me",
+    "response": "UpdateMeResponse",
+    "roles": [
+      "student",
+      "tutor",
+      "admin"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/users/me/change-password",
+    "module": "users",
+    "handler": "change_password",
+    "action": "users.change_password",
+    "scenario": "change_password",
+    "response": "ChangePasswordResponse",
+    "roles": [
+      "student",
+      "tutor",
+      "admin"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/users/me/delete",
+    "module": "users",
+    "handler": "delete_me",
+    "action": "users.delete_me",
+    "scenario": "delete_me",
+    "response": "DeleteMeResponse",
+    "roles": [
+      "student",
+      "tutor",
+      "admin"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/health",
+    "module": "health",
+    "handler": "health",
+    "action": "service.health",
+    "scenario": null,
+    "response": "HealthResponse",
+    "roles": [
+      "guest",
+      "student",
+      "tutor",
+      "admin",
+      "system"
+    ]
+  }
+]

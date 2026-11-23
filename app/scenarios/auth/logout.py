@@ -12,7 +12,7 @@ class LogoutResponse(BaseModel):
     ok: bool
 
 
-@register_scenario("logout")
+@register_scenario("logout", dto=LogoutDTO, response=LogoutResponse)
 @tracked_scenario("logout")
 class LogoutScenario(BaseScenario):
     async def execute(self, dto: LogoutDTO) -> LogoutResponse:

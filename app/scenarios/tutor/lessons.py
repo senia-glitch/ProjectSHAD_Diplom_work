@@ -125,7 +125,7 @@ class TutorDeleteLessonResponse(BaseModel):
     ok: bool
 
 
-@register_scenario("tutor_get_my_lessons")
+@register_scenario("tutor_get_my_lessons", dto=TutorGetMyLessonsDTO, response=TutorGetMyLessonsResponse)
 @tracked_scenario("tutor_get_my_lessons")
 class TutorGetMyLessonsScenario(BaseScenario):
     async def execute(self, dto: TutorGetMyLessonsDTO) -> TutorGetMyLessonsResponse:
@@ -177,7 +177,7 @@ class TutorGetMyLessonsScenario(BaseScenario):
         return TutorGetMyLessonsResponse(lessons=lessons)
 
 
-@register_scenario("tutor_get_lesson")
+@register_scenario("tutor_get_lesson", dto=TutorGetLessonDTO, response=TutorGetLessonResponse)
 @tracked_scenario("tutor_get_lesson")
 class TutorGetLessonScenario(BaseScenario):
     async def execute(self, dto: TutorGetLessonDTO) -> TutorGetLessonResponse:
@@ -263,7 +263,7 @@ class TutorGetLessonScenario(BaseScenario):
         )
 
 
-@register_scenario("tutor_create_lesson")
+@register_scenario("tutor_create_lesson", dto=TutorCreateLessonDTO, response=TutorCreateLessonResponse)
 @tracked_scenario("tutor_create_lesson")
 class TutorCreateLessonScenario(BaseScenario):
     async def execute(self, dto: TutorCreateLessonDTO) -> TutorCreateLessonResponse:
@@ -338,7 +338,7 @@ class TutorCreateLessonScenario(BaseScenario):
             )
 
 
-@register_scenario("tutor_update_lesson")
+@register_scenario("tutor_update_lesson", dto=TutorUpdateLessonDTO, response=TutorUpdateLessonResponse)
 @tracked_scenario("tutor_update_lesson")
 class TutorUpdateLessonScenario(BaseScenario):
     async def execute(self, dto: TutorUpdateLessonDTO) -> TutorUpdateLessonResponse:
@@ -468,7 +468,7 @@ class TutorUpdateLessonScenario(BaseScenario):
             )
 
 
-@register_scenario("tutor_delete_lesson")
+@register_scenario("tutor_delete_lesson", dto=TutorDeleteLessonDTO, response=TutorDeleteLessonResponse)
 @tracked_scenario("tutor_delete_lesson")
 class TutorDeleteLessonScenario(BaseScenario):
     async def execute(self, dto: TutorDeleteLessonDTO) -> TutorDeleteLessonResponse:

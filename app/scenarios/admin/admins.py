@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from core import BaseScenario, register_scenario, tracked_scenario
 from core.utils.security import extract_token_info
-from app.core.exceptions import ForbiddenError
 from core.dto import BaseDTO
 
 
@@ -24,13 +23,11 @@ class AdminListAdminsResponse(BaseModel):
     admins: list[AdminItem]
 
 
-@register_scenario("admin_list_admins")
+@register_scenario("admin_list_admins", dto=AdminListAdminsDTO, response=AdminListAdminsResponse)
 @tracked_scenario("admin_list_admins")
 class AdminListAdminsScenario(BaseScenario):
     async def execute(self, dto: AdminListAdminsDTO) -> AdminListAdminsResponse:
         token = extract_token_info(dto.access_token)
-        if token.role != "admin":
-            raise ForbiddenError("Only admins can access this endpoint")
 
         rows = await self._db.query(
             """SELECT a.id AS admin_id, a.user_id,

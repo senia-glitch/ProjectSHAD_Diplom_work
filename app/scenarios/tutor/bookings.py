@@ -54,7 +54,7 @@ class TutorGetMyBookingsResponse(BaseModel):
     total: int
 
 
-@register_scenario("tutor_get_my_bookings")
+@register_scenario("tutor_get_my_bookings", dto=TutorGetMyBookingsDTO, response=TutorGetMyBookingsResponse)
 @tracked_scenario("tutor_get_my_bookings")
 class TutorGetMyBookingsScenario(BaseScenario):
     async def execute(self, dto: TutorGetMyBookingsDTO) -> TutorGetMyBookingsResponse:
@@ -123,7 +123,7 @@ class TutorCreateBookingResponse(BaseModel):
     booking_metadata: dict | None
 
 
-@register_scenario("tutor_create_booking")
+@register_scenario("tutor_create_booking", dto=TutorCreateBookingDTO, response=TutorCreateBookingResponse)
 @tracked_scenario("tutor_create_booking")
 class TutorCreateBookingScenario(BaseScenario):
     async def execute(self, dto: TutorCreateBookingDTO) -> TutorCreateBookingResponse:
@@ -204,7 +204,7 @@ class TutorUpdateBookingResponse(BaseModel):
     booking_metadata: dict | None
 
 
-@register_scenario("tutor_update_booking")
+@register_scenario("tutor_update_booking", dto=TutorUpdateBookingDTO, response=TutorUpdateBookingResponse)
 @tracked_scenario("tutor_update_booking")
 class TutorUpdateBookingScenario(BaseScenario):
     async def execute(self, dto: TutorUpdateBookingDTO) -> TutorUpdateBookingResponse:
@@ -304,7 +304,7 @@ class TutorDeleteBookingResponse(BaseModel):
     ok: bool
 
 
-@register_scenario("tutor_delete_booking")
+@register_scenario("tutor_delete_booking", dto=TutorDeleteBookingDTO, response=TutorDeleteBookingResponse)
 @tracked_scenario("tutor_delete_booking")
 class TutorDeleteBookingScenario(BaseScenario):
     async def execute(self, dto: TutorDeleteBookingDTO) -> TutorDeleteBookingResponse:

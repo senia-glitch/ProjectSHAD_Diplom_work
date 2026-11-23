@@ -34,7 +34,7 @@ class UpdateMeResponse(BaseModel):
     additional_info: str | None
 
 
-@register_scenario("update_me")
+@register_scenario("update_me", dto=UpdateMeDTO, response=UpdateMeResponse)
 @tracked_scenario("update_me")
 class UpdateMeScenario(BaseScenario):
     async def execute(self, dto: UpdateMeDTO) -> UpdateMeResponse:

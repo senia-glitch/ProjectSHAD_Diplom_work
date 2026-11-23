@@ -1,39 +1,79 @@
-# OpenFullStackTest
+# SHAD Tutoring / OpenFullStackTest
 
-Fullstack-проект: FastAPI-бэкенд и Vue 3/Vite/Pinia-фронтенд.
+Сервис расписания занятий: репетиторы, ученики, брони, уроки, учёт оплат,
+уведомления и статистика. Backend: **event-infra + core-package + fastbase + PostgreSQL**.
+Frontend: Vue 3 / Vite / Pinia; существующие интерфейс и контракты сохранены.
 
-## Документация
+## Запуск существующей рабочей копии
 
-- [SPEC.md](docs/spec.md) — спецификация предметной области
-- [ROLE_CAPABILITIES.md](docs/role-capabilities.md) — возможности ролей
-- [Актуальные правила фронтенда](docs/frontend-rules.md) — архитектура фронтенда
-- [Паттерны UI](frontend/правила%20и%20паттерны%20frontend/паттерны%20UI.md) — дизайн-система
-- [Установка стека из 3 пакетов](docs/setup-3-packages.md) — как поднять проект
-- [Документация пакетов](docs/) — `fastbase`, `core-package`, `event-infra`
+Из корня проекта, PowerShell:
 
-## Запуск
-
-### Бэкенд
-
-```bash
-python -m app.main
+```powershell
+.\venv\Scripts\python.exe -m scripts.migrate
+.\venv\Scripts\python.exe -m app.main
 ```
 
-### Фронтенд
+Миграции применяются отдельной командой. Старт приложения проверяет схему
+и ревизию без изменения БД. Настройки подключения остаются в `.infra.env`,
+JWT — в `.core-package.env`, HTTP — в `.env.fastbase`.
 
-```bash
+В другом терминале:
+
+```powershell
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
-## Вспомогательные скрипты
+Frontend: [localhost:3000](http://localhost:3000/),
+API: [localhost:8000/docs](http://localhost:8000/docs),
+готовность HTTP → core → PostgreSQL: [localhost:8000/api/v1/ready](http://localhost:8000/api/v1/ready).
 
-- `scripts/debug/` — локальные отладочные сценарии (в .gitignore)
-- `scripts/smoke/` — ручные smoke-проверки API (`smoke_all.py`, `verify_grid.py`)
+## Установка в новую рабочую копию
 
-## Тесты
+Проверенный профиль: Python 3.14.6, PostgreSQL 17.5, три пакета стека 0.3.0
+на закреплённых Git-коммитах. Полный порядок — [docs/setup-3-packages.md](docs/setup-3-packages.md).
 
-```bash
-pytest
+```powershell
+python -m venv venv
+.\venv\Scripts\python.exe -m pip install -r requirements.lock
+.\venv\Scripts\python.exe -m scripts.configure
 ```
+
+Заполнить подключения в `.infra.env`, создать отдельные основную и тестовую БД,
+затем выполнить команды запуска выше. `scripts.configure` создаёт только
+отсутствующие настройки и генерирует локальный JWT-секрет.
+
+## Проверки
+
+```powershell
+.\venv\Scripts\python.exe -m pytest
+.\venv\Scripts\python.exe -m pip check
+.\venv\Scripts\python.exe -m fastbase.cli check
+
+# Интеграция на отдельной TEST_DB_URL, включая проверку миграций.
+# Для миграционных тестов пользователь PostgreSQL должен иметь CREATEDB.
+$env:SHAD_RUN_DB_TESTS = '1'
+.\venv\Scripts\python.exe -m pytest
+Remove-Item Env:SHAD_RUN_DB_TESTS
+
+cd frontend
+npm test
+npm run build
+```
+
+Без `SHAD_RUN_DB_TESTS` три проверки PostgreSQL пропускаются явно.
+Интеграционный прогон создаёт собственные записи в тестовой БД и удаляет их
+после проверки; рабочая БД не используется. Проверка миграций создаёт и удаляет
+свои временные БД с префиксом `shad_migration_test_`.
+
+## Документация
+
+- [Карта адаптации и результаты проверок](docs/stack-adaptation.md)
+- [Архитектура, правила и назначение проекта](PROJECT.md)
+- [Спецификация](docs/spec.md), [возможности ролей](docs/role-capabilities.md)
+- [Правила времени](docs/time-rules.md), [JSON-поля](docs/json-fields.md)
+- [Frontend](docs/frontend-rules.md), [паттерны UI](frontend/правила%20и%20паттерны%20frontend/паттерны%20UI.md)
+
+Единственная политика внешнего доступа — `config/access.toml`.
+У пользователя одна роль; неописанное действие запрещено.

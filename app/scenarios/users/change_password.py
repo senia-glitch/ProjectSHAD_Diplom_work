@@ -14,7 +14,7 @@ class ChangePasswordResponse(BaseModel):
     ok: bool
 
 
-@register_scenario("change_password")
+@register_scenario("change_password", dto=ChangePasswordDTO, response=ChangePasswordResponse)
 @tracked_scenario("change_password")
 class ChangePasswordScenario(BaseScenario):
     async def execute(self, dto: ChangePasswordDTO) -> ChangePasswordResponse:

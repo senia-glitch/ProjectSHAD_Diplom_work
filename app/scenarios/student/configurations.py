@@ -86,7 +86,7 @@ class StudentDeleteConfigurationResponse(BaseModel):
     ok: bool
 
 
-@register_scenario("student_get_my_configurations")
+@register_scenario("student_get_my_configurations", dto=StudentGetMyConfigurationsDTO, response=StudentGetMyConfigurationsResponse)
 @tracked_scenario("student_get_my_configurations")
 class StudentGetMyConfigurationsScenario(BaseScenario):
     async def execute(self, dto: StudentGetMyConfigurationsDTO) -> StudentGetMyConfigurationsResponse:
@@ -121,7 +121,7 @@ class StudentGetMyConfigurationsScenario(BaseScenario):
         return StudentGetMyConfigurationsResponse(configurations=configs)
 
 
-@register_scenario("student_get_configuration")
+@register_scenario("student_get_configuration", dto=StudentGetConfigurationDTO, response=StudentGetConfigurationResponse)
 @tracked_scenario("student_get_configuration")
 class StudentGetConfigurationScenario(BaseScenario):
     async def execute(self, dto: StudentGetConfigurationDTO) -> StudentGetConfigurationResponse:
@@ -195,7 +195,7 @@ class StudentGetConfigurationScenario(BaseScenario):
         )
 
 
-@register_scenario("student_create_configuration")
+@register_scenario("student_create_configuration", dto=StudentCreateConfigurationDTO, response=StudentCreateConfigurationResponse)
 @tracked_scenario("student_create_configuration")
 class StudentCreateConfigurationScenario(BaseScenario):
     async def execute(self, dto: StudentCreateConfigurationDTO) -> StudentCreateConfigurationResponse:
@@ -266,7 +266,7 @@ class StudentCreateConfigurationScenario(BaseScenario):
         )
 
 
-@register_scenario("student_create_configuration_by_code")
+@register_scenario("student_create_configuration_by_code", dto=StudentCreateConfigurationByCodeDTO, response=StudentCreateConfigurationByCodeResponse)
 @tracked_scenario("student_create_configuration_by_code")
 class StudentCreateConfigurationByCodeScenario(BaseScenario):
     async def execute(self, dto: StudentCreateConfigurationByCodeDTO) -> StudentCreateConfigurationByCodeResponse:
@@ -345,7 +345,7 @@ class StudentCreateConfigurationByCodeScenario(BaseScenario):
         )
 
 
-@register_scenario("student_delete_configuration")
+@register_scenario("student_delete_configuration", dto=StudentDeleteConfigurationDTO, response=StudentDeleteConfigurationResponse)
 @tracked_scenario("student_delete_configuration")
 class StudentDeleteConfigurationScenario(BaseScenario):
     async def execute(self, dto: StudentDeleteConfigurationDTO) -> StudentDeleteConfigurationResponse:

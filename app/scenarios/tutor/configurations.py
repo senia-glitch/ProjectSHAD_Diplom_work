@@ -115,7 +115,7 @@ class TutorResetConfigurationResponse(BaseModel):
     config_id: int
 
 
-@register_scenario("tutor_get_my_configurations")
+@register_scenario("tutor_get_my_configurations", dto=TutorGetMyConfigurationsDTO, response=TutorGetMyConfigurationsResponse)
 @tracked_scenario("tutor_get_my_configurations")
 class TutorGetMyConfigurationsScenario(BaseScenario):
     async def execute(self, dto: TutorGetMyConfigurationsDTO) -> TutorGetMyConfigurationsResponse:
@@ -148,7 +148,7 @@ class TutorGetMyConfigurationsScenario(BaseScenario):
         return TutorGetMyConfigurationsResponse(configurations=configs)
 
 
-@register_scenario("tutor_get_configuration")
+@register_scenario("tutor_get_configuration", dto=TutorGetConfigurationDTO, response=TutorGetConfigurationResponse)
 @tracked_scenario("tutor_get_configuration")
 class TutorGetConfigurationScenario(BaseScenario):
     async def execute(self, dto: TutorGetConfigurationDTO) -> TutorGetConfigurationResponse:
@@ -190,7 +190,7 @@ class TutorGetConfigurationScenario(BaseScenario):
         )
 
 
-@register_scenario("tutor_create_configuration")
+@register_scenario("tutor_create_configuration", dto=TutorCreateConfigurationDTO, response=TutorCreateConfigurationResponse)
 @tracked_scenario("tutor_create_configuration")
 class TutorCreateConfigurationScenario(BaseScenario):
     async def execute(self, dto: TutorCreateConfigurationDTO) -> TutorCreateConfigurationResponse:
@@ -261,7 +261,7 @@ class TutorCreateConfigurationScenario(BaseScenario):
         )
 
 
-@register_scenario("tutor_create_configuration_by_code")
+@register_scenario("tutor_create_configuration_by_code", dto=TutorCreateConfigurationByCodeDTO, response=TutorCreateConfigurationByCodeResponse)
 @tracked_scenario("tutor_create_configuration_by_code")
 class TutorCreateConfigurationByCodeScenario(BaseScenario):
     async def execute(self, dto: TutorCreateConfigurationByCodeDTO) -> TutorCreateConfigurationByCodeResponse:
@@ -340,7 +340,7 @@ class TutorCreateConfigurationByCodeScenario(BaseScenario):
         )
 
 
-@register_scenario("tutor_update_configuration")
+@register_scenario("tutor_update_configuration", dto=TutorUpdateConfigurationDTO, response=TutorUpdateConfigurationResponse)
 @tracked_scenario("tutor_update_configuration")
 class TutorUpdateConfigurationScenario(BaseScenario):
     async def execute(self, dto: TutorUpdateConfigurationDTO) -> TutorUpdateConfigurationResponse:
@@ -402,7 +402,7 @@ class TutorUpdateConfigurationScenario(BaseScenario):
         return TutorUpdateConfigurationResponse(config_id=dto.config_id)
 
 
-@register_scenario("tutor_delete_configuration")
+@register_scenario("tutor_delete_configuration", dto=TutorDeleteConfigurationDTO, response=TutorDeleteConfigurationResponse)
 @tracked_scenario("tutor_delete_configuration")
 class TutorDeleteConfigurationScenario(BaseScenario):
     async def execute(self, dto: TutorDeleteConfigurationDTO) -> TutorDeleteConfigurationResponse:
@@ -439,7 +439,7 @@ class TutorDeleteConfigurationScenario(BaseScenario):
         return TutorDeleteConfigurationResponse(ok=True)
 
 
-@register_scenario("tutor_reset_configuration")
+@register_scenario("tutor_reset_configuration", dto=TutorResetConfigurationDTO, response=TutorResetConfigurationResponse)
 @tracked_scenario("tutor_reset_configuration")
 class TutorResetConfigurationScenario(BaseScenario):
     async def execute(self, dto: TutorResetConfigurationDTO) -> TutorResetConfigurationResponse:
