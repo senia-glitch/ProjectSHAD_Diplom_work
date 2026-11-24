@@ -13,6 +13,9 @@ import {
   getMyBookings,
   getTutorProfile,
   getStudentProfile,
+  cancelStudentLesson,
+  confirmTutorLesson,
+  rejectTutorLesson,
 } from '../api/index.js'
 import { useScheduleStore, useAuthStore } from '../store/index.js'
 import { nextSeq, isCurrentSeq } from './loading.js'
@@ -230,4 +233,25 @@ export async function createStudentLessonsFromPreview(items, { tutorUserId }) {
     await loadScheduleLessons()
   }
   return { created: lessonIds.length, lessonIds, failed }
+}
+
+// Ученик отменяет урок (или отзывает заявку) с необязательной причиной.
+// Освободившееся время сразу видно в окнах: кэш окон сбрасывается.
+export async function cancelLessonAsStudent(lessonId, reason) {
+  await cancelStudentLesson(lessonId, reason)
+  windowsCache.clear()
+  await loadScheduleLessons()
+}
+
+// Репетитор решает заявку ученика.
+export async function confirmLessonRequest(lessonId, reason) {
+  const result = await confirmTutorLesson(lessonId, reason)
+  await loadScheduleLessons()
+  return result
+}
+
+export async function rejectLessonRequest(lessonId, reason) {
+  const result = await rejectTutorLesson(lessonId, reason)
+  await loadScheduleLessons()
+  return result
 }

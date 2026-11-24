@@ -36,10 +36,15 @@
             :aria-pressed="selectedIds.has(l.lesson_id)"
             @keydown.enter.stop.prevent="emit('lesson-select', l, $event)"
             @keydown.space.stop.prevent="emit('lesson-select', l, $event)"
-            :class="{ 'block--sel': selectedIds.has(l.lesson_id) }"
+            :class="{
+              'block--sel': selectedIds.has(l.lesson_id),
+              'block--pending': l.status === 'PENDING',
+              'block--inactive': l.status === 'CANCELLED' || l.status === 'REJECTED',
+              'block--frozen': Boolean(l.absence) && l.status !== 'CANCELLED' && l.status !== 'REJECTED',
+            }"
             :style="lessonStyle(l)"
             @click.stop="emit('lesson-select', l, $event)"
-          ><span v-if="statusColor(l)" class="block-dot" :style="{ background: statusColor(l) }" :title="statusLabel(l)"></span><span class="block-txt">{{ fmtTime(l.start_time) }}–{{ fmtTime(l.end_time) }}</span></div>
+          ><span v-if="statusColor(l)" class="block-dot" :style="{ background: statusColor(l) }" :title="statusLabel(l)"></span><span class="block-txt">{{ fmtTime(l.start_time) }}–{{ fmtTime(l.end_time) }}</span><span v-if="l.absence && l.status !== 'CANCELLED' && l.status !== 'REJECTED'" class="block-flag" title="Урок пришёлся на отпуск/болезнь репетитора">❄</span></div>
           <template v-if="showDim">
             <div
               v-for="g in dimOfDay(d.date)"
@@ -233,6 +238,12 @@ function lessonStyle(l) {
   overflow: hidden; text-overflow: ellipsis; padding: 0 3px; line-height: 1.2;
 }
 .block--lesson { background: var(--lesson-block-bg); color: var(--lesson-block-text); border-color: var(--lesson-block-border); }
+/* Заявка ждёт подтверждения, отменённые/отклонённые приглушены, замороженные (отпуск) помечены. */
+.block--pending { border-style: dashed; border-color: var(--rule-only-border, #d4a72c); }
+.block--inactive { opacity: .5; }
+.block--inactive .block-txt { text-decoration: line-through; }
+.block--frozen { border-style: dotted; border-color: var(--rule-except-border, #c77d3a); }
+.block-flag { margin-left: 4px; font-size: 10px; }
 /* Превью создаваемых уроков: серая штриховка, поверх реальных.
    Некликабельные — клики проходят сквозь на сетку. */
 .block--preview {

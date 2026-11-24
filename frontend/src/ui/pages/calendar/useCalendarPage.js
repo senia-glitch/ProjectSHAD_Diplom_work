@@ -4,11 +4,12 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { loadCalendarLessons } from '../../../logic/actions/index.js'
 import {
   monthMatrix, monthRangeISO, shiftMonth, countByDay, dayLessons,
+  userNowDate,
 } from '../../../logic/utils/index.js'
 import { logError } from '../../../logic/logger/index.js'
 
 export function useCalendarPage() {
-  const now = new Date()
+  const now = userNowDate()
   const year = ref(now.getFullYear())
   const month = ref(now.getMonth() + 1)
   const mode = ref('month')
@@ -56,7 +57,7 @@ export function useCalendarPage() {
 
   function goToday() {
     selectedDay.value = ''
-    const d = new Date()
+    const d = userNowDate()
     year.value = d.getFullYear()
     month.value = d.getMonth() + 1
   }

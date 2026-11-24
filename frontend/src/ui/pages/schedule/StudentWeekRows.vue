@@ -71,6 +71,7 @@ import {
   buildDurations,
   toHHMM,
   toMinutesOfDay,
+  userNowDate,
 } from '../../../logic/utils/index.js'
 
 const props = defineProps({
@@ -103,7 +104,7 @@ function toggleWeekday(dayId) {
 // «начать с 23.09», система понимает «отсчёт от недели 23.09».
 function nearestDate(dayId) {
   const jsDay = (WEEK_DAYS.findIndex((d) => d.id === dayId) + 1) % 7
-  const t = new Date()
+  const t = userNowDate()
   t.setHours(0, 0, 0, 0)
   const d = new Date(t)
   d.setDate(d.getDate() + ((jsDay - d.getDay() + 7) % 7))

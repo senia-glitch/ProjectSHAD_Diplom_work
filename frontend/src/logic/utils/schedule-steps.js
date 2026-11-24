@@ -3,6 +3,7 @@
 // формы для запроса окон, превью записи ученика. Без состояния,
 // без сети, без DOM. Время — минуты от полуночи; даты — 'YYYY-MM-DD'.
 import { SLOTS_RANGE_MAX_DAYS, PREVIEW_WEEKS_CAP, WEEK_DAYS, TUTOR_COLORS } from '../constants/index.js'
+import { userNowMs } from './tz.js'
 
 export function toMinutesOfDay(hhmm) {
   const [h, m] = String(hhmm).split(':').map(Number)
@@ -165,7 +166,7 @@ export function fmtDur(min) {
 
 // Видимость ссылок урока ученику: выключено — всегда видны;
 // включено — с (start − lead) и позже. Без конфигурации — видны.
-export function lessonLinksVisible(cfg, startIso, nowMs = Date.now()) {
+export function lessonLinksVisible(cfg, startIso, nowMs = userNowMs()) {
   if (!cfg || !cfg.link_visibility_enabled) return true
   const start = new Date(startIso).getTime()
   if (Number.isNaN(start)) return true
@@ -174,7 +175,7 @@ export function lessonLinksVisible(cfg, startIso, nowMs = Date.now()) {
 }
 
 // Сколько целых минут осталось до появления ссылок (0 — уже видны).
-export function lessonLinksRemainingMin(cfg, startIso, nowMs = Date.now()) {
+export function lessonLinksRemainingMin(cfg, startIso, nowMs = userNowMs()) {
   if (lessonLinksVisible(cfg, startIso, nowMs)) return 0
   const start = new Date(startIso).getTime()
   const lead = Math.max(0, Number(cfg?.link_lead_time_minutes) || 0)
@@ -200,7 +201,7 @@ function fmtDay(d) {
 // Каждый элемент: { start, end, key, ok, reason }.
 // reason: '' | 'outside' | 'off-grid' | 'bad-duration'.
 // Прошедшее время не попадает (skippedPast), ручные удаления — через slot.dropped.
-export function buildStudentPreview(slot, windows, stepMin, nowMs = Date.now()) {
+export function buildStudentPreview(slot, windows, stepMin, nowMs = userNowMs()) {
   const step = stepMin > 0 ? stepMin : 60
   const items = []
   let skippedPast = 0

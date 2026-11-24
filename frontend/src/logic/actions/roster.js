@@ -11,6 +11,10 @@ import {
   resetTutorConfiguration as apiResetTutorConfiguration,
   deleteTutorConfiguration,
   getTutorStudents,
+  acceptTutorConfiguration,
+  declineTutorConfiguration,
+  acceptStudentConfiguration,
+  declineStudentConfiguration,
 } from '../api/index.js'
 import { useRosterStore } from '../store/index.js'
 import { nextSeq, isCurrentSeq } from './loading.js'
@@ -39,7 +43,8 @@ export async function loadStudentTutors() {
   const my = nextSeq('rosterTutors')
   const data = await listStudentConfigurations()
   const out = []
-  for (const c of data.configurations || []) {
+  // Записываться можно только к репетиторам с действующей связью (не заявкой).
+  for (const c of (data.configurations || []).filter((x) => (x.status || 'ACTIVE') === 'ACTIVE')) {
     try {
       const d = await getStudentConfiguration(c.config_id)
       out.push({
@@ -118,4 +123,17 @@ export async function removeTutorConfiguration(configId) {
   await deleteTutorConfiguration(configId)
   const store = useRosterStore()
   store.setConfigurations(store.configurations.filter((c) => c.config_id !== configId))
+}
+
+// Ответ на заявку о связи (вторая сторона). Отклонение удаляет заявку.
+export async function answerLinkAsTutor(configId, accept) {
+  if (accept) await acceptTutorConfiguration(configId)
+  else await declineTutorConfiguration(configId)
+  await Promise.all([loadTutorStudents(), loadTutorConfigurations()])
+}
+
+export async function answerLinkAsStudent(configId, accept) {
+  if (accept) await acceptStudentConfiguration(configId)
+  else await declineStudentConfiguration(configId)
+  await loadStudentConfigurations()
 }

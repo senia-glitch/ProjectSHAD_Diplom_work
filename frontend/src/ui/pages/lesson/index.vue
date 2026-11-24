@@ -11,7 +11,7 @@
             </button>
           </div>
         </div>
-        <p class="page-desc">{{ lesson ? `${lessonDateLabel(lesson.start_time)} · ${lessonTimeLabel(lesson.start_time, lesson.end_time)}` : 'Загрузка...' }}</p>
+        <p v-if="lesson" class="page-desc">{{ `${lessonDateLabel(lesson.start_time)} · ${lessonTimeLabel(lesson.start_time, lesson.end_time)}` }}</p>
       </div>
 
       <div v-if="loading" class="loading">Загрузка...</div>
@@ -41,6 +41,30 @@
             </div>
           </div>
 
+          <LessonNotes
+            class="lesson-notes-block"
+            :note="lesson.status_note"
+            :absence="lesson.absence"
+            :history="lesson.status_history || []"
+            show-history
+          />
+
+          <div v-if="!isTutor && lesson.can_cancel" class="decision-row">
+            <button type="button" class="btn btn--dan btn--sm" :disabled="busy" @click="cancelDialog.open()">
+              {{ lesson.status === 'PENDING' ? 'Отозвать заявку' : 'Отменить урок' }}
+            </button>
+            <span v-if="lesson.cancel_deadline" class="decision-hint">Отменить можно до {{ formatMoment(lesson.cancel_deadline) }}</span>
+          </div>
+          <p v-else-if="!isTutor && lesson.cancel_deadline && isActiveStatus(lesson.status)" class="decision-hint">
+            Срок отмены прошёл {{ formatMoment(lesson.cancel_deadline) }}: отменить урок может только репетитор.
+          </p>
+
+          <div v-if="isTutor && lesson.status === 'PENDING'" class="decision-row">
+            <button type="button" class="btn btn--pri btn--sm" :disabled="busy" @click="confirmRequest">Подтвердить заявку</button>
+            <button type="button" class="btn btn--dan btn--sm" :disabled="busy" @click="rejectDialog.open()">Отклонить</button>
+            <span v-if="decisionError" class="decision-error" role="alert">{{ decisionError }}</span>
+          </div>
+
           <div v-if="safeLinks.length" class="links-row">
             <span class="info-k">Ссылки</span>
             <a v-for="l in safeLinks" :key="l.safe" :href="l.safe" target="_blank" rel="noopener noreferrer" class="link-btn">
@@ -66,7 +90,9 @@
                 <tr v-for="s in lesson.students" :key="s.student_id">
                   <td>
                     {{ s.student_name }}
-                    <span v-if="s.cancelled" class="part-cancel">(отменена: {{ s.cancelled_by === 'student' ? 'учеником' : 'репетитором' }})</span>
+                    <span v-if="s.cancelled" class="part-cancel">
+                      (отменена {{ s.cancelled_by === 'student' ? 'учеником' : s.cancelled_by === 'system' ? 'системой' : 'репетитором' }}<template v-if="s.cancelled_at">, {{ formatMoment(s.cancelled_at) }}</template><template v-if="s.cancel_reason">: {{ s.cancel_reason }}</template>)
+                    </span>
                   </td>
                   <td class="col-num">{{ formatMoney(s.amount) }}</td>
                   <td>
@@ -115,18 +141,36 @@
         </p>
       </template>
     </div>
+    <ReasonDialog
+      ref="cancelDialog"
+      :title="lesson?.status === 'PENDING' ? 'Отозвать заявку?' : 'Отменить урок?'"
+      text="Репетитор получит уведомление. Отмена попадёт в историю урока."
+      :confirm-label="lesson?.status === 'PENDING' ? 'Отозвать' : 'Отменить урок'"
+      :busy="busy"
+      :error="decisionError"
+      @confirm="onCancel"
+    />
+    <ReasonDialog
+      ref="rejectDialog"
+      title="Отклонить заявку?"
+      text="Ученик получит уведомление с причиной."
+      confirm-label="Отклонить"
+      :busy="busy"
+      :error="decisionError"
+      @confirm="onReject"
+    />
   </MainLayout>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import MainLayout from '../../blocks/layout/MainLayout.vue'
+import { LessonNotes, ReasonDialog } from '../../components/index.js'
 import { useUser, useLogout } from '../../composables/index.js'
 import { useLessonPage } from './useLessonPage.js'
 import { useRosterStore } from '../../../logic/store/index.js'
-import { lessonSafeLinks, tutorNameOf, lessonDateLabel, lessonTimeLabel } from '../../../logic/utils/index.js'
+import { lessonSafeLinks, tutorNameOf, lessonDateLabel, lessonTimeLabel, formatMoment, lessonStatusLabel, lessonStatusColor } from '../../../logic/utils/index.js'
 import { formatMoney } from '../../../logic/utils/index.js'
-import { LESSON_STATUSES } from '../../../logic/constants/index.js'
 
 const { role, isLoggedIn } = useUser()
 const { handleLogout } = useLogout()
@@ -134,20 +178,35 @@ const rosterStore = useRosterStore()
 const {
   lesson, loading, error, busy, isTutor, roster, newParticipant,
   togglePaid, addParticipant, removeParticipant, handleDelete,
+  decisionError, cancelAsStudent, confirmRequest, rejectRequest,
 } = useLessonPage()
+
+const cancelDialog = ref(null)
+const rejectDialog = ref(null)
+
+async function onCancel(reason) {
+  if (await cancelAsStudent(reason)) cancelDialog.value?.close()
+}
+async function onReject(reason) {
+  if (await rejectRequest(reason)) rejectDialog.value?.close()
+}
+function isActiveStatus(status) {
+  return status === 'SCHEDULED' || status === 'PENDING'
+}
 
 const safeLinks = computed(() => lessonSafeLinks(lesson.value?.links))
 const tutorName = computed(() => tutorNameOf(lesson.value, rosterStore.tutors))
 
-function statusLabel(status) {
-  return LESSON_STATUSES.find((s) => s.value === status)?.label || status
-}
-function statusColor(status) {
-  return LESSON_STATUSES.find((s) => s.value === status)?.color || 'var(--color-gray-600)'
-}
+const statusLabel = lessonStatusLabel
+const statusColor = lessonStatusColor
 </script>
 
 <style scoped>
+.lesson-notes-block { margin-top: 14px; }
+.decision-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.decision-hint { color: var(--muted, var(--color-gray-600)); font-size: 13px; margin: 10px 0 0; }
+.decision-row .decision-hint { margin: 0; }
+.decision-error { color: var(--danger); font-size: 13px; }
 .page-actions { display: flex; gap: 8px; }
 .card {
   background: var(--color-white);

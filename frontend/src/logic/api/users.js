@@ -1,10 +1,10 @@
 // Пользователь: регистрация и собственный профиль.
 import { apiFetch } from './client.js'
 
-export function postRegister({ role, username, password, fullName, email }) {
+export function postRegister({ role, username, password, fullName, email, timezoneOffset }) {
   return apiFetch('/api/v1/users/register', {
     method: 'POST',
-    body: { role, username, password, full_name: fullName, email },
+    body: { role, username, password, full_name: fullName, email, timezone_offset: timezoneOffset ?? 0 },
     auth: false,
     retry: false,
   })

@@ -11,6 +11,7 @@ import {
   registerUnauthorizedHandler,
 } from '../api/index.js'
 import { useAuthStore } from '../store/index.js'
+import { registerOffsetProvider } from '../utils/tz.js'
 import {
   useProfileStore,
   useScheduleStore,
@@ -66,6 +67,7 @@ function resetDomainState() {
 
 export function registerAuthProviders({ onUnauthorized }) {
   registerTokenProvider(() => useAuthStore().accessToken)
+  registerOffsetProvider(() => useAuthStore().user?.timezone_offset ?? 0)
   registerRefreshHandler(() => refreshSession())
   registerUnauthorizedHandler(async () => {
     clearPersistedSession()
@@ -80,16 +82,24 @@ export async function loginUser({ username, password }) {
     refreshToken: data.refresh_token,
     user: { user_id: data.user_id, role: data.role },
   })
+  // Профиль с личным поясом: без него время до перезагрузки показывалось бы в UTC.
+  try {
+    useAuthStore().setUser(await getMe())
+  } catch {
+    // Профиль догрузится при следующем восстановлении сессии; вход не срываем.
+  }
   return data
 }
 
 export async function registerUser({ role, username, password, fullName, email }) {
   // Регистрация сразу создаёт сессию: бэк возвращает токены, повторный логин не нужен.
-  const data = await postRegister({ role, username, password, fullName, email })
+  // Личный пояс по умолчанию — пояс браузера; потом меняется в настройках.
+  const timezoneOffset = Math.max(-12, Math.min(14, Math.round(-new Date().getTimezoneOffset() / 60)))
+  const data = await postRegister({ role, username, password, fullName, email, timezoneOffset })
   persistSession({
     accessToken: data.access_token,
     refreshToken: data.refresh_token,
-    user: { user_id: data.user_id, role: data.role },
+    user: { user_id: data.user_id, role: data.role, timezone_offset: timezoneOffset },
   })
   return data
 }

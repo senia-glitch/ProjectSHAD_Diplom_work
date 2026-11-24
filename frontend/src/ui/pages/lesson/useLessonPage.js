@@ -10,6 +10,9 @@ import {
   deleteLesson,
   loadTutorStudents,
   loadStudentTutors,
+  cancelLessonAsStudent,
+  confirmLessonRequest,
+  rejectLessonRequest,
 } from '../../../logic/actions/index.js'
 import { useRosterStore, useAuthStore } from '../../../logic/store/index.js'
 import { logError } from '../../../logic/logger/index.js'
@@ -95,6 +98,29 @@ export function useLessonPage() {
     }
   }
 
+  // Решения с причиной (отмена учеником, отклонение заявки): ошибку показывает диалог.
+  const decisionError = ref('')
+
+  async function decide(action, reason) {
+    busy.value = true
+    decisionError.value = ''
+    try {
+      await action(lessonId.value, reason)
+      await reload()
+      return true
+    } catch (e) {
+      decisionError.value = e.message || 'Не удалось сохранить'
+      logError('lesson', 'decision:error', { error: e.message })
+      return false
+    } finally {
+      busy.value = false
+    }
+  }
+
+  const cancelAsStudent = (reason) => decide(cancelLessonAsStudent, reason)
+  const confirmRequest = () => decide(confirmLessonRequest, '')
+  const rejectRequest = (reason) => decide(rejectLessonRequest, reason)
+
   onMounted(async () => {
     try {
       if (isTutor.value) await loadTutorStudents()
@@ -108,5 +134,6 @@ export function useLessonPage() {
   return {
     lessonId, lesson, loading, error, busy, isTutor, roster, newParticipant,
     togglePaid, addParticipant, removeParticipant, handleDelete,
+    decisionError, cancelAsStudent, confirmRequest, rejectRequest,
   }
 }

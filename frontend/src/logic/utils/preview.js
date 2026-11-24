@@ -1,6 +1,7 @@
 // Чистая генерация предпросмотра создаваемых уроков.
 // Без состояния, без сети, без DOM. Мутаций входных данных нет.
 import { WEEK_DAYS, PREVIEW_WEEKS_CAP } from '../constants/index.js'
+import { userNowMs } from './tz.js'
 
 export function validTime(t) {
   return Boolean(t.start && t.end && t.start < t.end)
@@ -17,7 +18,7 @@ export function periodWord(n) {
   return 'недель'
 }
 
-export function buildPreview(slot, nowMs = Date.now()) {
+export function buildPreview(slot, nowMs = userNowMs()) {
   // Возвращает { items, skippedPast }. Прошедшее время в список не попадает.
   const now = nowMs
   const items = []
@@ -97,12 +98,12 @@ export function fpOf(slot) {
   })
 }
 
-export function previewItems(slot, nowMs = Date.now()) {
+export function previewItems(slot, nowMs = userNowMs()) {
   const drop = new Set(slot.dropped || [])
   return buildPreview(slot, nowMs).items.filter((it) => !drop.has(it.key))
 }
 
-export function skippedPastCount(slot, nowMs = Date.now()) {
+export function skippedPastCount(slot, nowMs = userNowMs()) {
   return buildPreview(slot, nowMs).skippedPast
 }
 

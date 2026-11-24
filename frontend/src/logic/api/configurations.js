@@ -1,5 +1,6 @@
 // Связи ученик–репетитор: ветки обеих ролей.
 import { apiFetch } from './client.js'
+import { absenceToUser } from '../utils/tz.js'
 
 export function listTutorConfigurations() {
   return apiFetch('/api/v1/tutor/configurations')
@@ -35,8 +36,9 @@ export function listStudentConfigurations() {
   return apiFetch('/api/v1/student/configurations')
 }
 
-export function getStudentConfiguration(configId) {
-  return apiFetch(`/api/v1/student/configurations/${configId}`)
+export async function getStudentConfiguration(configId) {
+  const data = await apiFetch(`/api/v1/student/configurations/${configId}`)
+  return data && data.tutor_absence ? { ...data, tutor_absence: absenceToUser(data.tutor_absence) } : data
 }
 
 export function createStudentConfigurationByCode({ personalNumber }) {
@@ -48,4 +50,21 @@ export function createStudentConfigurationByCode({ personalNumber }) {
 
 export function deleteStudentConfiguration(configId) {
   return apiFetch(`/api/v1/student/configurations/${configId}`, { method: 'DELETE' })
+}
+
+// Заявки на связь: ответ второй стороны.
+export function acceptTutorConfiguration(configId) {
+  return apiFetch(`/api/v1/tutor/configurations/${configId}/accept`, { method: 'POST' })
+}
+
+export function declineTutorConfiguration(configId) {
+  return apiFetch(`/api/v1/tutor/configurations/${configId}/decline`, { method: 'POST' })
+}
+
+export function acceptStudentConfiguration(configId) {
+  return apiFetch(`/api/v1/student/configurations/${configId}/accept`, { method: 'POST' })
+}
+
+export function declineStudentConfiguration(configId) {
+  return apiFetch(`/api/v1/student/configurations/${configId}/decline`, { method: 'POST' })
 }

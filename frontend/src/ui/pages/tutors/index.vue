@@ -27,7 +27,10 @@
             </div>
             <div class="item-info">
               <span class="item-name">{{ c.tutor_full_name || c.tutor_username || 'Репетитор' }}</span>
-              <span class="item-sub" v-if="c.hourly_rate">{{ c.hourly_rate }} ₽/час</span>
+              <span v-if="c.status === 'PENDING'" class="item-sub item-sub--pending">
+                {{ c.requested_by === 'tutor' ? 'Просит добавить вас — ответьте' : 'Ждёт согласия репетитора' }}
+              </span>
+              <span class="item-sub" v-else-if="c.hourly_rate">{{ c.hourly_rate }} ₽/час</span>
             </div>
           </div>
           <div v-if="!configurations.length && !loading && !listError" class="empty">
@@ -47,7 +50,26 @@
           <div v-if="detailError" class="detail-loading detail-loading--err">{{ detailError }}</div>
           <div v-if="deleteError" class="detail-loading detail-loading--err">{{ deleteError }}</div>
 
+          <template v-else-if="selectedDetail && selectedDetail.status === 'PENDING'">
+            <template v-if="selectedDetail.requested_by === 'tutor'">
+              <p class="pending-text">Репетитор просит добавить вас в свои ученики. Пока вы не ответите, связь не действует.</p>
+              <div class="pending-actions">
+                <button type="button" class="btn btn--pri btn--sm" :disabled="answering" @click="answerLink(true)">Принять</button>
+                <button type="button" class="btn btn--dan btn--sm" :disabled="answering" @click="answerLink(false)">Отклонить</button>
+              </div>
+            </template>
+            <p v-else class="pending-text">
+              Заявка отправлена. Записаться на урок можно будет, когда репетитор подтвердит связь. Отозвать заявку — кнопка «Удалить».
+            </p>
+            <p v-if="answerErr" class="detail-loading detail-loading--err">{{ answerErr }}</p>
+          </template>
+
           <template v-else-if="selectedDetail">
+            <p v-if="selectedDetail.tutor_absence" class="absence-banner" role="note">
+              Репетитор {{ selectedDetail.tutor_absence.status === 'SICK' ? 'болеет' : 'в отпуске' }}
+              с {{ formatMoment(selectedDetail.tutor_absence.from) }} по {{ formatMoment(selectedDetail.tutor_absence.to) }}.
+              В эти даты запись закрыта, уроки заморожены.
+            </p>
             <div class="detail-grid">
               <div class="detail-field">
                 <span class="detail-label">Имя пользователя</span>
@@ -145,9 +167,10 @@ import {
   addTutorByCode,
   removeStudentConfiguration,
   loadMyProfile,
+  answerLinkAsStudent,
 } from '../../../logic/actions/index.js'
 import { logError } from '../../../logic/logger/index.js'
-import { finalPrice, discountAmount } from '../../../logic/utils/index.js'
+import { finalPrice, discountAmount, formatMoment } from '../../../logic/utils/index.js'
 import { WORK_STATUSES } from '../../../logic/constants/index.js'
 import { useRosterStore } from '../../../logic/store/index.js'
 
@@ -213,6 +236,28 @@ async function selectConfig(config) {
   }
 }
 
+// Ответ на заявку репетитора о связи.
+const answering = ref(false)
+const answerErr = ref('')
+
+async function answerLink(accept) {
+  if (!selected.value) return
+  answering.value = true
+  answerErr.value = ''
+  try {
+    const id = selected.value.config_id
+    await answerLinkAsStudent(id, accept)
+    const fresh = configurations.value.find((c) => c.config_id === id)
+    selected.value = null
+    selectedDetail.value = null
+    if (fresh) await selectConfig(fresh)
+  } catch (e) {
+    answerErr.value = e.message || 'Не удалось ответить на заявку'
+  } finally {
+    answering.value = false
+  }
+}
+
 async function deleteConfig() {
   if (!selected.value) return
   if (!confirm('Удалить этого репетитора?')) return
@@ -269,6 +314,13 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.item-sub--pending { color: var(--rule-only-border, #d4a72c); }
+.pending-text { margin: 12px 0; color: var(--muted, var(--color-gray-600)); font-size: 14px; line-height: 1.5; }
+.pending-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.absence-banner {
+  margin: 12px 0; padding: 10px 12px; border-radius: var(--r-sm, 8px); font-size: 14px; line-height: 1.5;
+  border: 1px solid var(--rule-except-border, #c77d3a); background: var(--rule-except-bg, transparent);
+}
 .tutors-page { display: flex; flex-direction: column; }
 .header-actions { display: flex; align-items: center; gap: 8px; }
 .my-code { font-size: 13px; color: var(--color-gray-700); margin: 8px 0 0; }

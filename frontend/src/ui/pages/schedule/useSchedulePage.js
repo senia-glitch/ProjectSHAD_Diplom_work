@@ -31,7 +31,7 @@ import {
   TUTOR_COLORS,
   SLOT_STEP_DEFAULT,
 } from '../../../logic/constants/index.js'
-import { fmtDate, getWeekStart, previewItems, fmtPreview, resolveTutorColor, buildStudentPreview } from '../../../logic/utils/index.js'
+import { fmtDate, getWeekStart, previewItems, fmtPreview, resolveTutorColor, buildStudentPreview, userNowDate } from '../../../logic/utils/index.js'
 
 export function useSchedulePage() {
   const scheduleStore = useScheduleStore()
@@ -62,7 +62,7 @@ export function useSchedulePage() {
   })
 
   const selectedIds = ref(new Set())
-  const currentDate = ref(new Date())
+  const currentDate = ref(userNowDate())
   const loading = ref(true)
   const saving = ref(false)
 
@@ -118,7 +118,7 @@ export function useSchedulePage() {
 
   const weekDays = computed(() => {
     const start = getWeekStart(currentDate.value)
-    const today = new Date()
+    const today = userNowDate()
     const todayStr = fmtDate(today)
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(start)
@@ -149,7 +149,7 @@ export function useSchedulePage() {
   }
 
   function goToday() {
-    currentDate.value = new Date()
+    currentDate.value = userNowDate()
     fetchWeekWindows()
   }
 

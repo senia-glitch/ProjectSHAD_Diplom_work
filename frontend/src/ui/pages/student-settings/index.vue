@@ -34,6 +34,13 @@
             </select>
           </label>
           <div v-if="form.status !== 'ACTIVE'" class="pick-empty">Неактивный статус блокирует самозапись на уроки</div>
+          <label class="consent-row">
+            <input v-model="form.require_link_consent" type="checkbox" />
+            <span>Добавлять меня в связи только с моего согласия</span>
+          </label>
+          <p class="field-hint">
+            Если включено, репетитор, узнавший ваш личный код, сможет только отправить заявку — связь появится после вашего подтверждения.
+          </p>
         </section>
 
         <section class="card">
@@ -88,6 +95,7 @@ const defaultForm = () => ({
   schedule_view: 'INFORMATIVE',
   display_time_from: '00:00',
   display_time_to: '23:59',
+  require_link_consent: true,
 })
 
 const form = reactive(defaultForm())
@@ -99,6 +107,7 @@ function applyProfile(data) {
     schedule_view: data.schedule_view ?? 'INFORMATIVE',
     display_time_from: data.display_time_from ?? '00:00',
     display_time_to: data.display_time_to ?? '23:59',
+    require_link_consent: data.require_link_consent !== false,
   })
 }
 
@@ -113,6 +122,7 @@ async function handleSave() {
       schedule_view: form.schedule_view,
       display_time_from: form.display_time_from,
       display_time_to: form.display_time_to,
+      require_link_consent: form.require_link_consent,
     })
     applyProfile(data)
     saveMsg.value = 'Настройки сохранены'
@@ -172,6 +182,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.consent-row { display: flex; gap: 8px; align-items: center; margin-top: 12px; font-size: 14px; cursor: pointer; }
+.field-hint { margin: 6px 0 0; color: var(--muted, var(--color-gray-600)); font-size: 13px; line-height: 1.45; }
 .student-settings-page { display: flex; flex-direction: column; }
 .load-err { margin-bottom: 12px; }
 

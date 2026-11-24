@@ -25,15 +25,38 @@
               <span>{{ studentInitial(c.student_id) }}</span>
             </div>
             <div class="item-info">
-              <span class="item-name">{{ studentName(c.student_id) }}</span>
-              <span class="item-sub" v-if="c.hourly_rate">{{ c.hourly_rate }} ₽/час</span>
+              <span class="item-name">{{ c.student_full_name || studentName(c.student_id) }}</span>
+              <span v-if="c.status === 'PENDING'" class="item-sub item-sub--pending">
+                {{ c.requested_by === 'student' ? 'Просит добавить его — ответьте' : 'Ждёт согласия ученика' }}
+              </span>
+              <span class="item-sub" v-else-if="c.hourly_rate">{{ c.hourly_rate }} ₽/час</span>
             </div>
           </div>
           <div v-if="!configurations.length && !listError" class="empty">Нет учеников</div>
           <div v-if="listError" class="empty empty--err">{{ listError }}</div>
         </div>
 
-        <div class="detail-panel" v-if="selected">
+        <div v-if="selected && selected.status === 'PENDING'" class="detail-panel">
+          <div class="detail-header">
+            <h2>{{ selected.student_full_name || studentName(selected.student_id) }}</h2>
+          </div>
+          <template v-if="selected.requested_by === 'student'">
+            <p class="pending-text">Ученик просит добавить его в ваши ученики. Пока вы не ответите, связь не действует.</p>
+            <div class="pending-actions">
+              <button type="button" class="btn btn--pri btn--sm" :disabled="answering" @click="answerLink(true)">Принять</button>
+              <button type="button" class="btn btn--dan btn--sm" :disabled="answering" @click="answerLink(false)">Отклонить</button>
+            </div>
+          </template>
+          <template v-else>
+            <p class="pending-text">Заявка отправлена. Связь появится, когда ученик подтвердит её.</p>
+            <div class="pending-actions">
+              <button type="button" class="btn btn--gry btn--sm" :disabled="answering" @click="withdrawLink">Отозвать заявку</button>
+            </div>
+          </template>
+          <p v-if="answerErr" class="ferr">{{ answerErr }}</p>
+        </div>
+
+        <div class="detail-panel" v-else-if="selected">
           <div class="detail-header">
             <h2>{{ selectedDetail?.student_name || studentName(selected.student_id) }}</h2>
             <div class="detail-buttons" v-if="selectedDetail && !editing">
@@ -161,6 +184,9 @@
               <input v-model="editForm.allow_self_booking" type="checkbox" /> Самозапись разрешена
             </label>
             <label class="fl checkbox-label">
+              <input v-model="editForm.auto_confirm_bookings" type="checkbox" /> Запись без моего подтверждения
+            </label>
+            <label class="fl checkbox-label">
               <input v-model="editForm.notifications_enabled" type="checkbox" /> Уведомления включены
             </label>
             <label class="fl checkbox-label">
@@ -252,6 +278,7 @@ import {
   loadTutorConfigurations,
   loadTutorConfiguration,
   addStudentByCode,
+  answerLinkAsTutor,
   updateTutorConfiguration,
   resetTutorConfiguration,
   removeTutorConfiguration,
@@ -290,6 +317,7 @@ const editForm = reactive({
   link_visibility_enabled: false,
   link_lead_time_minutes: 0,
   allow_self_booking: true,
+  auto_confirm_bookings: true,
   booking_lead_time_hours: 24,
   cancellation_lead_time_hours: 24,
   notifications_enabled: true,
@@ -298,6 +326,40 @@ const editForm = reactive({
   student_notes: '',
   default_links: [],
 })
+
+// Заявки о связи: ответ (входящая) или отзыв (своя).
+const answering = ref(false)
+const answerErr = ref('')
+
+async function answerLink(accept) {
+  if (!selected.value) return
+  answering.value = true
+  answerErr.value = ''
+  try {
+    await answerLinkAsTutor(selected.value.config_id, accept)
+    const fresh = configurations.value.find((c) => c.config_id === selected.value.config_id)
+    selected.value = null
+    if (fresh) await selectConfig(fresh)
+  } catch (e) {
+    answerErr.value = e.message || 'Не удалось ответить на заявку'
+  } finally {
+    answering.value = false
+  }
+}
+
+async function withdrawLink() {
+  if (!selected.value || !window.confirm('Отозвать заявку на связь с учеником?')) return
+  answering.value = true
+  answerErr.value = ''
+  try {
+    await removeTutorConfiguration(selected.value.config_id)
+    selected.value = null
+  } catch (e) {
+    answerErr.value = e.message || 'Не удалось отозвать заявку'
+  } finally {
+    answering.value = false
+  }
+}
 
 const showModal = ref(false)
 const personalCode = ref('')
@@ -373,6 +435,7 @@ function startEdit() {
   editForm.link_visibility_enabled = d.link_visibility_enabled ?? false
   editForm.link_lead_time_minutes = d.link_lead_time_minutes ?? 0
   editForm.allow_self_booking = d.allow_self_booking ?? true
+  editForm.auto_confirm_bookings = d.auto_confirm_bookings ?? true
   editForm.booking_lead_time_hours = d.booking_lead_time_hours ?? 24
   editForm.cancellation_lead_time_hours = d.cancellation_lead_time_hours ?? 24
   editForm.notifications_enabled = d.notifications_enabled ?? true
@@ -460,6 +523,7 @@ async function handleSave() {
       link_visibility_enabled: editForm.link_visibility_enabled,
       link_lead_time_minutes: editForm.link_lead_time_minutes,
       allow_self_booking: editForm.allow_self_booking,
+      auto_confirm_bookings: editForm.auto_confirm_bookings,
       booking_lead_time_hours: editForm.booking_lead_time_hours,
       cancellation_lead_time_hours: editForm.cancellation_lead_time_hours,
       notifications_enabled: editForm.notifications_enabled,
@@ -558,6 +622,9 @@ onMounted(fetchRoster)
 </script>
 
 <style scoped>
+.item-sub--pending { color: var(--rule-only-border, #d4a72c); }
+.pending-text { margin: 12px 0; color: var(--muted, var(--color-gray-600)); font-size: 14px; line-height: 1.5; }
+.pending-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .students-page { display: flex; flex-direction: column; }
 .content-grid { display: grid; grid-template-columns: 300px 1fr; gap: 16px; min-height: 400px; }
 

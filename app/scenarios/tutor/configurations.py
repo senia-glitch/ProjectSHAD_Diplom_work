@@ -44,6 +44,7 @@ class ConfigurationItem(BaseModel):
     status: str = "ACTIVE"
     requested_by: str | None = None
     auto_confirm_bookings: bool = True
+    student_full_name: str | None = None
 
 
 class TutorGetMyConfigurationsResponse(BaseModel):
@@ -149,7 +150,9 @@ class TutorGetMyConfigurationsScenario(BaseScenario):
         tutor_id = tutors[0]["id"]
 
         rows = await self._db.query(
-            'SELECT * FROM "configurations" WHERE tutor_id = :tid ORDER BY id LIMIT :lim OFFSET :off',
+            'SELECT c.*, u.full_name AS student_full_name FROM "configurations" c '
+            'LEFT JOIN "students" s ON s.id = c.student_id LEFT JOIN "users" u ON u.id = s.user_id '
+            'WHERE c.tutor_id = :tid ORDER BY c.id LIMIT :lim OFFSET :off',
             {"tid": tutor_id, "lim": dto.limit, "off": dto.offset},
         )
 
@@ -163,6 +166,7 @@ class TutorGetMyConfigurationsScenario(BaseScenario):
                 status=r.get("status") or "ACTIVE",
                 requested_by=r.get("requested_by"),
                 auto_confirm_bookings=bool(r.get("auto_confirm_bookings", True)),
+                student_full_name=r.get("student_full_name"),
             )
             for r in rows
         ]

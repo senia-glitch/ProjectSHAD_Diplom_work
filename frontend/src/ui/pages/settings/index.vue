@@ -23,12 +23,39 @@
                 <option v-for="tz in TIMEZONES" :key="tz.value" :value="tz.value">{{ tz.label }}</option>
               </select>
             </label>
-            <label class="fl">Статус работы
-              <select v-model="form.work_status">
-                <option v-for="st in WORK_STATUSES" :key="st.value" :value="st.value">{{ st.label }}</option>
+            <div class="fl">
+              <span>Сейчас</span>
+              <span class="status-now" :class="{ 'status-now--away': workStatus !== 'WORKING' }">{{ workStatusLabel }}</span>
+            </div>
+          </div>
+          <p class="field-hint">Время на всём сайте показывается в выбранном поясе. Сервер хранит время в UTC.</p>
+        </section>
+
+        <!-- === Отпуск и болезнь === -->
+        <section class="card">
+          <h2 class="card-title">Отпуск и болезнь</h2>
+          <p class="field-hint">
+            На время периода запись учеников закрыта, уроки периода помечаются как замороженные, но не отменяются.
+            Урок, начавшийся в этот период, завершает система; в оплатах он не учитывается. Ученики видят даты периода.
+          </p>
+          <div class="form-grid">
+            <label class="fl">Период
+              <select v-model="form.absence_status">
+                <option value="">Нет</option>
+                <option value="VACATION">Отпуск</option>
+                <option value="SICK">Болею</option>
               </select>
             </label>
+            <div class="frow">
+              <label class="fl">С
+                <input v-model="form.absence_from" type="datetime-local" :disabled="!form.absence_status" />
+              </label>
+              <label class="fl">По
+                <input v-model="form.absence_to" type="datetime-local" :disabled="!form.absence_status" />
+              </label>
+            </div>
           </div>
+          <div v-if="absenceErr" class="ferr">{{ absenceErr }}</div>
         </section>
 
         <!-- === Внешний вид расписания === -->
@@ -73,6 +100,23 @@
                 <span>{{ studentName(uid) }}</span>
                 <button type="button" class="icon-btn icon-btn--xs icon-btn--remove" :disabled="form.self_booking_mode === 'YES'" @click="removeFromWhitelist(uid)">−</button>
               </div>
+            </div>
+            <div class="toggle-row">
+              <span class="toggle-label">Запись учеников без подтверждения</span>
+              <label class="toggle">
+                <input v-model="form.auto_confirm_bookings" type="checkbox" />
+                <span class="toggle-track"></span>
+              </label>
+              <span class="toggle-hint">{{ form.auto_confirm_bookings ? 'Сразу в расписании' : 'Заявку подтверждаю я' }}</span>
+            </div>
+            <p class="field-hint">Значение для новых учеников; для каждого ученика меняется отдельно на странице «Ученики».</p>
+            <div class="toggle-row">
+              <span class="toggle-label">Добавлять меня в связи только с моего согласия</span>
+              <label class="toggle">
+                <input v-model="form.require_link_consent" type="checkbox" />
+                <span class="toggle-track"></span>
+              </label>
+              <span class="toggle-hint">{{ form.require_link_consent ? 'Подтверждаю заявки сам' : 'Связь создаётся сразу' }}</span>
             </div>
             <div class="frow">
               <label class="fl">Запись возможна за (часов)
@@ -171,7 +215,7 @@ import { useUser, useLogout, useEscapeKey } from '../../composables/index.js'
 import { loadTutorProfile, loadTutorStudents, saveTutorSettings } from '../../../logic/actions/index.js'
 import { logInfo, logError } from '../../../logic/logger/index.js'
 import { TIMEZONES, WORK_STATUSES, SCHEDULE_TYPES } from '../../../logic/constants/index.js'
-import { finalPrice, discountAmount } from '../../../logic/utils/index.js'
+import { finalPrice, discountAmount, userNowIso } from '../../../logic/utils/index.js'
 import { useRosterStore } from '../../../logic/store/index.js'
 
 const { role, isLoggedIn } = useUser()
@@ -189,7 +233,11 @@ useEscapeKey(() => showStudentPicker.value, () => { showStudentPicker.value = fa
 
 const defaultForm = () => ({
   timezone_offset: 3,
-  work_status: 'WORKING',
+  absence_status: '',
+  absence_from: '',
+  absence_to: '',
+  auto_confirm_bookings: true,
+  require_link_consent: true,
   schedule_type: 'INFORMATIVE',
   display_time_from: '08:00',
   display_time_to: '22:00',
@@ -258,10 +306,38 @@ function validateLinks() {
   return ok
 }
 
+const workStatus = ref('WORKING')
+const absenceErr = ref('')
+const workStatusLabel = computed(() => WORK_STATUSES.find((s) => s.value === workStatus.value)?.label || 'Работаю')
+
+// datetime-local хранит «YYYY-MM-DDTHH:MM» без секунд.
+const toInput = (iso) => (iso ? String(iso).slice(0, 16) : '')
+
+function absencePatch() {
+  absenceErr.value = ''
+  if (!form.absence_status) return { absence_status: 'NONE' }
+  if (!form.absence_from || !form.absence_to) {
+    absenceErr.value = 'Укажите начало и конец периода'
+    return null
+  }
+  if (form.absence_from >= form.absence_to) {
+    absenceErr.value = 'Конец периода должен быть позже начала'
+    return null
+  }
+  return { absence_status: form.absence_status, absence_from: form.absence_from, absence_to: form.absence_to }
+}
+
 function applyProfile(data) {
+  workStatus.value = data.work_status || 'WORKING'
+  // Закончившийся период не показываем: при сохранении он снимается.
+  const absenceOver = !data.absence_to || String(data.absence_to) <= userNowIso()
   Object.assign(form, {
     timezone_offset: data.timezone_offset,
-    work_status: data.work_status,
+    absence_status: absenceOver ? '' : (data.absence_status || ''),
+    absence_from: absenceOver ? '' : toInput(data.absence_from),
+    absence_to: absenceOver ? '' : toInput(data.absence_to),
+    auto_confirm_bookings: data.auto_confirm_bookings !== false,
+    require_link_consent: data.require_link_consent !== false,
     schedule_type: data.schedule_type,
     display_time_from: data.display_time_from,
     display_time_to: data.display_time_to,
@@ -279,12 +355,16 @@ async function handleSave() {
   saveMsg.value = ''
   saveErr.value = ''
   if (!validateLinks()) return
+  const absence = absencePatch()
+  if (!absence) return
 
   saving.value = true
   try {
     const data = await saveTutorSettings({
       timezone_offset: form.timezone_offset,
-      work_status: form.work_status,
+      ...absence,
+      auto_confirm_bookings: form.auto_confirm_bookings,
+      require_link_consent: form.require_link_consent,
       schedule_type: form.schedule_type,
       display_time_from: form.display_time_from,
       display_time_to: form.display_time_to,
@@ -320,7 +400,6 @@ async function handleReset() {
     const data = await saveTutorSettings({
       discount: 0,
       timezone_offset: 0,
-      work_status: 'WORKING',
       schedule_type: 'MINIMALISTIC',
       display_time_from: '00:00',
       display_time_to: '23:59',
@@ -366,6 +445,9 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.field-hint { margin: 8px 0 0; color: var(--muted, var(--color-gray-600)); font-size: 13px; line-height: 1.45; }
+.status-now { display: inline-flex; align-items: center; min-height: var(--ctl, 36px); font-weight: 600; }
+.status-now--away { color: var(--rule-except-border, #c77d3a); }
 .settings-page { display: flex; flex-direction: column; }
 .load-err { margin-bottom: 12px; }
 

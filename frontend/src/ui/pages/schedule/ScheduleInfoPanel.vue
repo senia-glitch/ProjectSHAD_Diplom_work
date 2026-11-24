@@ -23,6 +23,21 @@
                 <span v-else class="pick-empty">Появятся за {{ linksRemaining(l) }} мин</span>
               </div>
             </div>
+            <LessonNotes class="info-notes" :note="l.status_note" :absence="l.absence" />
+            <div class="info-actions info-actions--lesson">
+              <router-link :to="`/lessons/${l.lesson_id}`" class="btn btn--gry btn--sm">Открыть урок</router-link>
+              <template v-if="role === 'tutor' && l.status === 'PENDING'">
+                <button type="button" class="btn btn--pri btn--sm" :disabled="saving" @click="emit('confirm-request', l)">Подтвердить</button>
+                <button type="button" class="btn btn--dan btn--sm" :disabled="saving" @click="emit('reject-request', l)">Отклонить</button>
+              </template>
+              <button
+                v-if="role === 'student' && (l.status === 'SCHEDULED' || l.status === 'PENDING')"
+                type="button"
+                class="btn btn--dan btn--sm"
+                :disabled="saving"
+                @click="emit('cancel-lesson', l)"
+              >{{ l.status === 'PENDING' ? 'Отозвать заявку' : 'Отменить' }}</button>
+            </div>
                     <template v-if="role === 'tutor'">
                     <div class="part-section">
                       <div class="part-head">
@@ -136,6 +151,7 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { fmtDateTime, lessonLinksVisible, lessonLinksRemainingMin, safeUrl } from '../../../logic/utils/index.js'
 import { LESSON_STATUSES, MANUAL_LESSON_STATUSES } from '../../../logic/constants/index.js'
+import { LessonNotes } from '../../components/index.js'
 
 const props = defineProps({
   role: { type: String, default: '' },
@@ -169,6 +185,9 @@ const emit = defineEmits([
   'links-to-config',
   'links-from-settings',
   'links-to-settings',
+  'confirm-request',
+  'reject-request',
+  'cancel-lesson',
 ])
 
 // Единственный участник редактируемого урока (profile id) —
@@ -232,6 +251,8 @@ const singleEditStudent = computed({
 </script>
 
 <style scoped>
+.info-notes { margin-top: 10px; }
+.info-actions--lesson { flex-wrap: wrap; }
 /* Info block */
 .side-block--info { display: flex; flex-direction: column; min-height: 0; }
 .info-scroll {

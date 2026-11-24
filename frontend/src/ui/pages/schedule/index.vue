@@ -128,12 +128,24 @@
                 @links-to-config="applyLinksToConfig"
                 @links-from-settings="applyLinksFromSettings"
                 @links-to-settings="applyLinksToSettings"
+                @confirm-request="onConfirmRequest"
+                @reject-request="openDecision('reject', $event)"
+                @cancel-lesson="openDecision('cancel', $event)"
               />
             </div>
           </aside>
         </div>
       </template>
     </div>
+    <ReasonDialog
+      ref="decisionDialog"
+      :title="decisionTitle"
+      :text="decisionKind === 'reject' ? 'Ученик получит уведомление с причиной.' : 'Репетитор получит уведомление. Отмена попадёт в историю урока.'"
+      :confirm-label="decisionKind === 'reject' ? 'Отклонить' : (decisionLesson?.status === 'PENDING' ? 'Отозвать' : 'Отменить урок')"
+      :busy="decisionBusy"
+      :error="decisionError"
+      @confirm="onDecision"
+    />
   </MainLayout>
 </template>
 
@@ -146,8 +158,9 @@ import LessonCreator from './LessonCreator.vue'
 import StudentLessonCreator from './StudentLessonCreator.vue'
 import ScheduleTour from './ScheduleTour.vue'
 import MonthGrid from '../calendar/MonthGrid.vue'
-import { UiIcon } from '../../components/index.js'
-import { fmtTime } from '../../../logic/utils/index.js'
+import { UiIcon, ReasonDialog } from '../../components/index.js'
+import { cancelLessonAsStudent, confirmLessonRequest, rejectLessonRequest } from '../../../logic/actions/index.js'
+import { fmtTime, userNowDate } from '../../../logic/utils/index.js'
 import { useUser, useLogout } from '../../composables/index.js'
 import { useSchedulePage } from './useSchedulePage.js'
 import { useCalendarPage } from '../calendar/useCalendarPage.js'
@@ -156,6 +169,46 @@ import { LESSON_STATUSES } from '../../../logic/constants/index.js'
 const { role, isLoggedIn } = useUser()
 const { handleLogout } = useLogout()
 const showTour = ref(false)
+
+// Решения по уроку из панели: отмена учеником, отклонение заявки (с причиной), подтверждение.
+const decisionDialog = ref(null)
+const decisionKind = ref('cancel')
+const decisionLesson = ref(null)
+const decisionBusy = ref(false)
+const decisionError = ref('')
+const decisionTitle = computed(() => {
+  if (decisionKind.value === 'reject') return 'Отклонить заявку?'
+  return decisionLesson.value?.status === 'PENDING' ? 'Отозвать заявку?' : 'Отменить урок?'
+})
+
+function openDecision(kind, lesson) {
+  decisionKind.value = kind
+  decisionLesson.value = lesson
+  decisionError.value = ''
+  decisionDialog.value?.open()
+}
+
+async function onDecision(reason) {
+  decisionBusy.value = true
+  decisionError.value = ''
+  try {
+    const action = decisionKind.value === 'reject' ? rejectLessonRequest : cancelLessonAsStudent
+    await action(decisionLesson.value.lesson_id, reason)
+    decisionDialog.value?.close()
+  } catch (e) {
+    decisionError.value = e.message || 'Не удалось сохранить'
+  } finally {
+    decisionBusy.value = false
+  }
+}
+
+async function onConfirmRequest(lesson) {
+  try {
+    await confirmLessonRequest(lesson.lesson_id)
+  } catch (e) {
+    window.alert(e.message || 'Не удалось подтвердить заявку')
+  }
+}
 
 const viewMode = ref('week')
 const viewModes = [
@@ -177,7 +230,7 @@ const {
 } = useCalendarPage()
 
 const calendarTodayIso = computed(() => {
-  const d = new Date()
+  const d = userNowDate()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 })
 
