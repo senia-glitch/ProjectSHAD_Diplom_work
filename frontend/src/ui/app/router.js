@@ -4,6 +4,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { restoreSession } from '../../logic/actions/index.js'
 import { useAuthStore } from '../../logic/store/index.js'
 
+const TestingHost = () => import('../pages/testing/index.vue')
+
 export const routes = [
   { path: '/login', name: 'login', component: () => import('../pages/login/index.vue'), meta: { public: true } },
   { path: '/register', name: 'register', component: () => import('../pages/register/index.vue'), meta: { public: true } },
@@ -33,6 +35,24 @@ export const routes = [
     ],
   },
   { path: '/settings', name: 'settings', component: () => import('../pages/settings/index.vue'), meta: { roles: ['tutor'] } },
+  // Тестирование: страницы модуля отрисовывает один хост, конкретная — по имени маршрута и роли.
+  { path: '/testing', name: 'testing-home', component: TestingHost, meta: { roles: ['tutor', 'student'] } },
+  { path: '/testing/new', name: 'testing-new', component: TestingHost, meta: { roles: ['tutor'] } },
+  { path: '/testing/:id(\\d+)/edit', name: 'testing-edit', component: TestingHost, meta: { roles: ['tutor'] } },
+  { path: '/testing/:id(\\d+)', name: 'testing-test', component: TestingHost, meta: { roles: ['tutor'] } },
+  { path: '/testing/take/:id(\\d+)', name: 'testing-take', component: TestingHost, meta: { roles: ['student'] } },
+  { path: '/testing/results', name: 'testing-results', component: TestingHost, meta: { roles: ['student'] } },
+  { path: '/testing/results/:id(\\d+)', name: 'testing-result', component: TestingHost, meta: { roles: ['tutor', 'student'] } },
+  // Доски: список и вход по коду, сама доска — во весь экран.
+  { path: '/boards', name: 'boards', component: () => import('../pages/boards/index.vue'), meta: { roles: ['tutor', 'student'] } },
+  { path: '/boards/:id([A-Za-z0-9_-]{16,40})', name: 'board', component: () => import('../pages/board/index.vue'), meta: { roles: ['tutor', 'student'] } },
+  // Блог репетиторов: чтение открыто всем, управление записями — репетитору.
+  { path: '/blog', name: 'blog', component: () => import('../pages/blog/index.vue'), meta: { public: true, optionalAuth: true } },
+  { path: '/blog/authors/:authorId(\\d+)', name: 'blog-author', component: () => import('../pages/blog/index.vue'), meta: { public: true, optionalAuth: true } },
+  { path: '/blog/posts/:id(\\d+)', name: 'blog-post', component: () => import('../pages/blog/post.vue'), meta: { public: true, optionalAuth: true } },
+  { path: '/blog/manage', name: 'blog-manage', component: () => import('../pages/blog/manage.vue'), meta: { roles: ['tutor'] } },
+  { path: '/blog/manage/new', name: 'blog-new', component: () => import('../pages/blog/editor.vue'), meta: { roles: ['tutor'] } },
+  { path: '/blog/manage/:id(\\d+)', name: 'blog-edit', component: () => import('../pages/blog/editor.vue'), meta: { roles: ['tutor'] } },
   { path: '/admin', name: 'admin', component: () => import('../pages/admin/index.vue'), meta: { roles: ['admin'] } },
   { path: '/admin/system', name: 'admin-system', component: () => import('../pages/admin/system/index.vue'), meta: { roles: ['admin'] } },
   { path: '/admin/logs', name: 'admin-logs', component: () => import('../pages/admin/logs/index.vue'), meta: { roles: ['admin'] } },
@@ -56,6 +76,8 @@ export function createAppRouter() {
           }
         }
       }
+      // Публичные страницы с действиями для вошедших (блог): сессию восстанавливаем, но не требуем.
+      if (to.meta.optionalAuth && !store.user) await restoreSession()
       next()
       return
     }

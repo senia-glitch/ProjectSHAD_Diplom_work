@@ -8,6 +8,8 @@ import { installLogger, logInfo } from './logic/logger/index.js'
 import './ui/styles/tokens.css'
 import './ui/styles/base.css'
 import './ui/styles/icons.css'
+import './ui/styles/pp.css'
+import './ui/styles/pp-fixes.css'
 
 const app = createApp(App)
 app.use(createPinia())

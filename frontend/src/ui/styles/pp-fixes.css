@@ -1,0 +1,6 @@
+/* Совмещение стилей ProjectProgon (pp.css) с базовыми стилями приложения (base.css). */
+.pp .prose ul { list-style: disc; }
+.pp .prose ol { list-style: decimal; }
+.pp .prose li::marker { color: var(--muted); }
+/* Общий сброс отступов в base.css снимает margin: auto у <dialog>: возвращаем центрирование модальных окон. */
+.pp dialog, .board-page dialog { margin: auto; }
