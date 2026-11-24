@@ -1,0 +1,233 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/v1/blog/authors",
+    "action": "blog.authors",
+    "response": "AuthorList",
+    "scenario": "blog.authors"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/blog/authors/{author_id}",
+    "action": "blog.author",
+    "response": "BlogAuthor",
+    "scenario": "blog.author"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/blog/comments/{comment_id}",
+    "action": "blog.comment_delete",
+    "response": "Done",
+    "scenario": "blog.comment_delete"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/blog/my/posts",
+    "action": "blog.list_mine",
+    "response": "PostList",
+    "scenario": "blog.list_mine"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/blog/my/posts",
+    "action": "blog.create",
+    "response": "PostItem",
+    "scenario": "blog.create"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/blog/my/posts/{post_id}",
+    "action": "blog.delete",
+    "response": "Done",
+    "scenario": "blog.delete"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/blog/my/posts/{post_id}",
+    "action": "blog.update",
+    "response": "PostItem",
+    "scenario": "blog.update"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/blog/posts",
+    "action": "blog.feed",
+    "response": "PostList",
+    "scenario": "blog.feed"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/blog/posts/{post_id}",
+    "action": "blog.read",
+    "response": "PostItem",
+    "scenario": "blog.get"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/blog/posts/{post_id}/comments",
+    "action": "blog.comments",
+    "response": "CommentList",
+    "scenario": "blog.comments"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/blog/posts/{post_id}/comments",
+    "action": "blog.comment",
+    "response": "CommentItem",
+    "scenario": "blog.comment_create"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/boards",
+    "action": "boards.create",
+    "response": "BoardCreated",
+    "scenario": "boards.create"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/boards/joined",
+    "action": "boards.list_joined",
+    "response": "JoinedBoardList",
+    "scenario": "boards.list_joined"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/boards/mine",
+    "action": "boards.list_own",
+    "response": "BoardList",
+    "scenario": "boards.list_own"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/boards/resolve",
+    "action": "boards.resolve",
+    "response": null,
+    "scenario": "boards.resolve"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/boards/{board_id}",
+    "action": "boards.delete",
+    "response": "Done",
+    "scenario": "boards.delete"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/boards/{board_id}/import",
+    "action": "boards.import",
+    "response": null,
+    "scenario": "boards.admit"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/testing/student/results",
+    "action": "testing.results_mine",
+    "response": "AttemptList",
+    "scenario": "testing.attempts_list_mine"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/testing/student/results/{attempt_id}",
+    "action": "testing.result_mine",
+    "response": "AttemptDetail",
+    "scenario": "testing.attempts_get_mine"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/testing/student/tests",
+    "action": "testing.list_available",
+    "response": "QuizList",
+    "scenario": "testing.list_available"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/testing/student/tests/{test_id}",
+    "action": "testing.open",
+    "response": "QuizDetail",
+    "scenario": "testing.get_for_student"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/testing/student/tests/{test_id}/attempts",
+    "action": "testing.submit",
+    "response": "AttemptDetail",
+    "scenario": "testing.attempts_submit"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/testing/tutor/results/{attempt_id}",
+    "action": "testing.result_for_tutor",
+    "response": "AttemptDetail",
+    "scenario": "testing.attempts_get_for_teacher"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/testing/tutor/results/{attempt_id}/review",
+    "action": "testing.review",
+    "response": "AttemptSummary",
+    "scenario": "testing.attempts_review"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/testing/tutor/students",
+    "action": "testing.list_students",
+    "response": "StudentList",
+    "scenario": "testing.list_students"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/testing/tutor/tests",
+    "action": "testing.list_own",
+    "response": "QuizList",
+    "scenario": "testing.list_owned"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/testing/tutor/tests",
+    "action": "testing.create",
+    "response": "QuizDetail",
+    "scenario": "testing.create"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/testing/tutor/tests/{test_id}",
+    "action": "testing.delete",
+    "response": null,
+    "scenario": "testing.delete"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/testing/tutor/tests/{test_id}",
+    "action": "testing.get_own",
+    "response": "QuizDetail",
+    "scenario": "testing.get_owned"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/testing/tutor/tests/{test_id}",
+    "action": "testing.update",
+    "response": "QuizDetail",
+    "scenario": "testing.update"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/testing/tutor/tests/{test_id}/access",
+    "action": "testing.access_list",
+    "response": "AccessList",
+    "scenario": "testing.access_list"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/testing/tutor/tests/{test_id}/access/{student_id}",
+    "action": "testing.access_set",
+    "response": "AccessItem",
+    "scenario": "testing.access_set"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/testing/tutor/tests/{test_id}/results",
+    "action": "testing.results_for_test",
+    "response": "AttemptList",
+    "scenario": "testing.attempts_list_for_test"
+  }
+]

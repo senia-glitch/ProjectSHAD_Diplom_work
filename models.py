@@ -3,6 +3,7 @@ from datetime import datetime, time
 
 from pydantic import NaiveDatetime
 from sqlmodel import SQLModel, Field
+import sqlalchemy as sa
 from sqlalchemy import JSON, UniqueConstraint
 
 # Existing event-infra CRUD payloads carry JSON as encoded strings. Both the
@@ -213,6 +214,147 @@ class Notification(SQLModel, table=True):
     type: str = Field(max_length=50)
     payload: Optional[Dict[str, Any] | str] = Field(default=None, sa_type=JSON)
     read_at: Optional[NaiveDatetime] = Field(default=None)
+
+
+# ============================================
+# 9. ТЕСТИРОВАНИЕ (тесты репетитора, доступ ученикам, попытки)
+# ============================================
+
+def _tz(nullable=False):
+    return sa.Column(sa.DateTime(timezone=True), nullable=nullable)
+
+
+class Quiz(SQLModel, table=True):
+    """Тест репетитора. Задания — JSON-массив; изменение повышает версию."""
+    __tablename__ = "quizzes"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    owner_id: int = Field(sa_column=sa.Column(sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True))
+    title: str = Field(max_length=200)
+    description: str = Field(sa_column=sa.Column(sa.Text, nullable=False))
+    tasks: str = Field(sa_column=sa.Column(sa.Text, nullable=False))
+    version: int = Field(default=1)
+    good_percent: int = Field(default=60)
+    excellent_percent: int = Field(default=85)
+    created_at: datetime = Field(sa_column=_tz())
+    updated_at: datetime = Field(sa_column=_tz())
+
+
+class QuizAccess(SQLModel, table=True):
+    """Доступ ученика (users.id) к тесту; репетитор включает и выключает его в любой момент."""
+    __tablename__ = "quiz_access"
+    __table_args__ = (sa.UniqueConstraint("quiz_id", "student_id", name="uq_quiz_access"),)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    quiz_id: int = Field(sa_column=sa.Column(sa.Integer, sa.ForeignKey("quizzes.id", ondelete="CASCADE"), nullable=False))
+    student_id: int = Field(sa_column=sa.Column(sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True))
+    granted_at: datetime = Field(sa_column=_tz())
+
+
+class QuizAttempt(SQLModel, table=True):
+    """Попытка прохождения: ответы, результаты автопроверки и оценка репетитора."""
+    __tablename__ = "quiz_attempts"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    quiz_id: int = Field(sa_column=sa.Column(sa.Integer, sa.ForeignKey("quizzes.id", ondelete="CASCADE"), nullable=False, index=True))
+    student_id: int = Field(sa_column=sa.Column(sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True))
+    quiz_version: int
+    answers: str = Field(sa_column=sa.Column(sa.Text, nullable=False))
+    results: str = Field(sa_column=sa.Column(sa.Text, nullable=False))
+    score: float
+    max_score: float
+    auto_grade: Optional[str] = Field(default=None, max_length=32)
+    teacher_grade: Optional[str] = Field(default=None, max_length=32)
+    teacher_comment: str = Field(sa_column=sa.Column(sa.Text, nullable=False))
+    submitted_at: datetime = Field(sa_column=_tz())
+    reviewed_at: Optional[datetime] = Field(default=None, sa_column=_tz(nullable=True))
+
+
+# ============================================
+# 10. ДОСКИ (совместное рисование в реальном времени)
+# ============================================
+
+class Board(SQLModel, table=True):
+    """Доска репетитора. Вход по коду; сервер хранит только HMAC кода."""
+    __tablename__ = "boards"
+    id: str = Field(sa_column=sa.Column(sa.String(40), primary_key=True))
+    owner_id: int = Field(sa_column=sa.Column(sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True))
+    title: str = Field(sa_column=sa.Column(sa.String(120), nullable=False, server_default=""))
+    created_at: Optional[datetime] = Field(default=None, sa_column=sa.Column(
+        sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")))
+    code_lookup: Optional[str] = Field(default=None, sa_column=sa.Column(sa.String(64), nullable=True, unique=True))
+    creator_key: Optional[str] = Field(default=None, sa_column=sa.Column(sa.String(40), nullable=True))
+    last_active_at: Optional[datetime] = Field(default=None, sa_column=sa.Column(
+        sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()"), index=True))
+    saved_at: Optional[datetime] = Field(default=None, sa_column=sa.Column(sa.DateTime(timezone=True), nullable=True))
+
+
+class BoardStroke(SQLModel, table=True):
+    """Снимок штрихов доски; перезаписывается автосохранением, порядок — по id."""
+    __tablename__ = "board_strokes"
+    __table_args__ = (sa.Index("ix_board_strokes_board_id_id", "board_id", "id"),)
+    id: Optional[int] = Field(default=None, sa_column=sa.Column(sa.BigInteger, primary_key=True, autoincrement=True))
+    board_id: str = Field(sa_column=sa.Column(sa.String(40), sa.ForeignKey("boards.id", ondelete="CASCADE"), nullable=False))
+    stroke_key: str = Field(sa_column=sa.Column(sa.String(40), nullable=False))
+    author_key: str = Field(sa_column=sa.Column(sa.String(40), nullable=False))
+    tool: str = Field(sa_column=sa.Column(sa.String(16), nullable=False))
+    color: str = Field(sa_column=sa.Column(sa.String(7), nullable=False))
+    width: int = Field(sa_column=sa.Column(sa.SmallInteger, nullable=False))
+    points: str = Field(sa_column=sa.Column(sa.Text, nullable=False))
+    created_at: Optional[datetime] = Field(default=None, sa_column=sa.Column(
+        sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")))
+
+
+class BoardChatMessage(SQLModel, table=True):
+    """Сообщения чата доски (хранятся последние N)."""
+    __tablename__ = "board_chat_messages"
+    __table_args__ = (sa.Index("ix_board_chat_messages_board_id_id", "board_id", "id"),)
+    id: Optional[int] = Field(default=None, sa_column=sa.Column(sa.BigInteger, primary_key=True, autoincrement=True))
+    board_id: str = Field(sa_column=sa.Column(sa.String(40), sa.ForeignKey("boards.id", ondelete="CASCADE"), nullable=False))
+    author_key: str = Field(sa_column=sa.Column(sa.String(40), nullable=False))
+    name: str = Field(sa_column=sa.Column(sa.String(32), nullable=False))
+    color: str = Field(sa_column=sa.Column(sa.String(7), nullable=False))
+    text: str = Field(sa_column=sa.Column(sa.Text, nullable=False))
+    created_at: Optional[datetime] = Field(default=None, sa_column=sa.Column(
+        sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")))
+
+
+class BoardMember(SQLModel, table=True):
+    """Кто входил на доску (повторный вход без кода); banned — исключён владельцем."""
+    __tablename__ = "board_members"
+    board_id: str = Field(sa_column=sa.Column(sa.String(40), sa.ForeignKey("boards.id", ondelete="CASCADE"), primary_key=True))
+    author_key: str = Field(sa_column=sa.Column(sa.String(40), primary_key=True))
+    banned: bool = Field(default=False, sa_column=sa.Column(sa.Boolean, nullable=False, server_default=sa.false()))
+    joined_at: Optional[datetime] = Field(default=None, sa_column=sa.Column(
+        sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")))
+
+
+# ============================================
+# 11. БЛОГ РЕПЕТИТОРА
+# ============================================
+
+class BlogPost(SQLModel, table=True):
+    """Запись личного блога репетитора (Markdown). Черновик виден только автору."""
+    __tablename__ = "blog_posts"
+    __table_args__ = (sa.Index("ix_blog_posts_status_published", "status", "published_at"),)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    author_id: int = Field(sa_column=sa.Column(sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True))
+    title: str = Field(max_length=200)
+    body: str = Field(sa_column=sa.Column(sa.Text, nullable=False))
+    tags: str = Field(sa_column=sa.Column(sa.Text, nullable=False, server_default="[]"))
+    status: str = Field(default="draft", max_length=16)
+    pinned: bool = Field(default=False, sa_column=sa.Column(sa.Boolean, nullable=False, server_default=sa.false()))
+    created_at: datetime = Field(sa_column=_tz())
+    updated_at: datetime = Field(sa_column=_tz())
+    published_at: Optional[datetime] = Field(default=None, sa_column=_tz(nullable=True))
+
+
+class BlogComment(SQLModel, table=True):
+    """Комментарий к опубликованной записи; пишет вошедший пользователь."""
+    __tablename__ = "blog_comments"
+    __table_args__ = (sa.Index("ix_blog_comments_post_id_id", "post_id", "id"),)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    post_id: int = Field(sa_column=sa.Column(sa.Integer, sa.ForeignKey("blog_posts.id", ondelete="CASCADE"), nullable=False))
+    author_id: int = Field(sa_column=sa.Column(sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False))
+    text: str = Field(sa_column=sa.Column(sa.Text, nullable=False))
+    created_at: datetime = Field(sa_column=_tz())
 
 
 # ============================================
