@@ -1,4 +1,5 @@
 <template>
+  <MainLayout fill :is-logged-in="isLoggedIn" :role="role" @logout="handleLogout">
   <div class="board-page">
     <div ref="root" class="pp board-body">
       <header class="board-bar">
@@ -139,15 +140,25 @@
       </dialog>
     </div>
   </div>
+  </MainLayout>
 </template>
 
 <script setup>
-// Страница доски во весь экран. Разметка — здесь, поведение — перенесённый клиент ui/legacy/board.
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+// Страница доски — рабочий экран под общей шапкой. Разметка — здесь, поведение —
+// перенесённый клиент ui/legacy/board. Страница живёт в keep-alive (App.vue): при переходе
+// в другие разделы соединение не рвётся, возврат мгновенный; новая доска — новый экземпляр.
+import { onActivated, onBeforeUnmount, onDeactivated, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import MainLayout from '../../blocks/layout/MainLayout.vue'
+import { useUser, useLogout } from '../../composables/index.js'
 import { boardSocketToken, uploadBoardFile } from '../../../logic/actions/index.js'
-import { startBoard } from '../../legacy/board/board.js'
+import { startBoard, setBoardPortalVisible } from '../../legacy/board/board.js'
 import '../../legacy/board/board.css'
+
+defineOptions({ name: 'BoardPage' })
+
+const { role, isLoggedIn } = useUser()
+const { handleLogout } = useLogout()
 
 const route = useRoute()
 const router = useRouter()
@@ -168,6 +179,11 @@ function mount() {
 }
 
 onMounted(mount)
-watch(() => route.params.id, (id, old) => { if (id && id !== old) router.go(0) })
+// Вернулись на доску из другого раздела: показать её сообщения и пересчитать размер холста.
+onActivated(() => {
+  setBoardPortalVisible(true)
+  window.dispatchEvent(new Event('resize'))
+})
+onDeactivated(() => setBoardPortalVisible(false))
 onBeforeUnmount(() => { destroy?.(); destroy = null })
 </script>

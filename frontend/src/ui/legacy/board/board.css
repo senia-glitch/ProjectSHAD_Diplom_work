@@ -136,7 +136,7 @@
 .board-page .dialog h2 { margin: 0; }
 .board-page .dialog p { margin: 0; font-size: 14px; }
 /* ============================================================ Доска */
-.board-page .board-body { height: 100dvh; min-height: 0; overflow: hidden; }
+.board-page .board-body { height: calc(100dvh - var(--shell-h, 64px)); min-height: 0; overflow: hidden; }
 .board-page .board-bar { position: relative; display: flex; align-items: center; gap: 16px; height: 56px; padding: 0 16px; border-bottom: 1px solid var(--line); background: var(--bg); flex: none; z-index: 30; }
 .board-page .board-title-box { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
 .board-page .board-title { font-size: 16px; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -286,6 +286,8 @@
 }
 
 /* Перенос: в исходном проекте доска занимала body; здесь — корневой контейнер страницы. */
-.board-page .board-body { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font: 15px/1.65 var(--sans); -webkit-font-smoothing: antialiased; }
+/* Доска — рабочий экран сайта: под общей шапкой (она всегда видна), на всю оставшуюся высоту окна.
+   Переключение разделов не разрывает работу: страница доски живёт в keep-alive. */
+.board-page .board-body { position: relative; display: flex; flex-direction: column; height: calc(100dvh - var(--shell-h, 64px)); background: var(--bg); color: var(--text); font: 15px/1.65 var(--sans); -webkit-font-smoothing: antialiased; }
 .board-portal .toasts { z-index: 300; }
 .board-page [hidden] { display: none !important; }

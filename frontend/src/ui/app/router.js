@@ -19,6 +19,7 @@ export const routes = [
   { path: '/student-settings', name: 'student-settings', component: () => import('../pages/student-settings/index.vue'), meta: { roles: ['student'] } },
   { path: '/students', name: 'students', component: () => import('../pages/students/index.vue'), meta: { roles: ['tutor'] } },
   { path: '/schedule', name: 'schedule', component: () => import('../pages/schedule/index.vue') },
+  { path: '/upcoming', name: 'upcoming', component: () => import('../pages/upcoming/index.vue'), meta: { roles: ['tutor', 'student'] } },
   { path: '/lessons/:id', name: 'lesson', component: () => import('../pages/lesson/index.vue') },
   { path: '/bookings', name: 'bookings', component: () => import('../pages/bookings/index.vue'), meta: { roles: ['tutor'] } },
   { path: '/payments', name: 'payments', component: () => import('../pages/payments/index.vue'), meta: { roles: ['tutor'] } },

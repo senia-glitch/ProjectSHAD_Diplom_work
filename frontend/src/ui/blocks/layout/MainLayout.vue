@@ -1,7 +1,7 @@
 <template>
-  <div class="layout">
+  <div class="layout" :class="{ 'layout--fill': fill }">
     <a class="skip-link" href="#main-content">Перейти к содержимому</a>
-    <div class="pp shell-top">
+    <div ref="shellRef" class="pp shell-top">
       <header class="site-header">
         <div class="wrap header-inner">
           <router-link to="/" class="brand" aria-label="SHAD — на главную">
@@ -12,18 +12,66 @@
             <span class="brand-name">SHAD</span>
           </router-link>
           <nav ref="navLinks" class="nav-main" aria-label="Разделы">
-            <router-link
-              v-for="item in navItems"
-              :key="item.to"
-              v-slot="{ href, navigate, isActive }"
-              :to="item.to"
-              custom
-            >
-              <a :href="href" :data-tip="item.label" :aria-current="isActive || isSection(item) ? 'page' : null" @click="navigate">
-                <span class="icon" :data-icon="item.icon"><UiIcon :name="item.icon" /></span>
-                <span class="nav-label">{{ item.label }}</span>
-              </a>
-            </router-link>
+            <template v-for="item in navItems" :key="item.key">
+              <!-- Группа страниц: значок раскрывает список разделов -->
+              <div
+                v-if="item.items"
+                class="nav-group"
+                :class="{ 'nav-group--open': openGroup === item.key }"
+                @mouseenter="hoverOpen(item.key)"
+                @mouseleave="hoverClose(item.key)"
+              >
+                <button
+                  :ref="(el) => (groupButtons[item.key] = el)"
+                  type="button"
+                  class="nav-group-btn"
+                  :data-tip="openGroup === item.key ? null : item.label"
+                  :aria-expanded="openGroup === item.key"
+                  :aria-controls="`nav-${item.key}`"
+                  :aria-current="isGroupActive(item) ? 'page' : null"
+                  @click="toggleGroup(item.key)"
+                  @keydown.down.prevent="openAndFocus(item.key)"
+                >
+                  <span class="icon" :data-icon="item.icon"><UiIcon :name="item.icon" /></span>
+                  <span class="nav-label">{{ item.label }}</span>
+                  <span class="nav-caret" aria-hidden="true"></span>
+                </button>
+                <div
+                  v-show="openGroup === item.key"
+                  :id="`nav-${item.key}`"
+                  class="menu-panel nav-menu"
+                  role="menu"
+                  :aria-label="item.label"
+                  @keydown="onMenuKey($event, item.key)"
+                >
+                  <div class="nav-menu-title">{{ item.label }}</div>
+                  <router-link
+                    v-for="child in item.items"
+                    :key="child.to"
+                    v-slot="{ href, navigate }"
+                    :to="child.to"
+                    custom
+                  >
+                    <a
+                      :href="href"
+                      role="menuitem"
+                      :aria-current="isSection(child) ? 'page' : null"
+                      @click="navigate($event); closeGroup()"
+                    >
+                      <span class="icon" :data-icon="child.icon"><UiIcon :name="child.icon" /></span>
+                      <span>{{ child.label }}</span>
+                    </a>
+                  </router-link>
+                </div>
+              </div>
+              <!-- Одиночная страница -->
+              <router-link v-else v-slot="{ href, navigate, isActive }" :to="item.to" custom>
+                <a :href="href" :data-tip="item.label" :aria-current="isActive || isSection(item) ? 'page' : null" @click="navigate">
+                  <span class="icon" :data-icon="item.icon"><UiIcon :name="item.icon" /></span>
+                  <span class="nav-label">{{ item.label }}</span>
+                </a>
+              </router-link>
+            </template>
           </nav>
           <div class="header-actions">
             <div v-if="isLoggedIn" class="notif-area">
@@ -57,7 +105,7 @@
     <main id="main-content" class="main" tabindex="-1">
       <slot />
     </main>
-    <div class="pp">
+    <div v-if="!fill" class="pp">
       <footer class="site-footer">
         <div class="wrap footer-inner">
           <span>© SHAD — расписание, тесты, доски и блог репетиторов</span>
@@ -76,7 +124,8 @@
 // Оболочка страниц. Данных и вызовов не имеет: состояние — пропсами,
 // действия — эмитами от страницы (§10: blocks без logic).
 // Шапка и подвал оформлены по эталону ProjectProgon (My_Blog): классы из styles/pp.css внутри .pp.
-import { computed, ref, onMounted } from 'vue'
+// Шапка всегда видна (sticky на любом экране); её высота — в --shell-h для рабочих экранов (доска).
+import { computed, ref, reactive, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import NotificationPanel from './NotificationPanel.vue'
 import { UiIcon } from '../../components/index.js'
@@ -85,55 +134,166 @@ import { useNotifications, useTheme } from '../../composables/index.js'
 const props = defineProps({
   isLoggedIn: { type: Boolean, default: false },
   role: { type: String, default: '' },
+  // Рабочий экран на всю ширину без подвала (доска): контент сам занимает высоту под шапкой.
+  fill: { type: Boolean, default: false },
 })
 const emit = defineEmits(['logout'])
 const route = useRoute()
 const { theme, toggleTheme } = useTheme()
 
+// Группы объединяют страницы одной темы: значок группы раскрывает список.
+const LESSONS_GROUP = {
+  key: 'lessons', label: 'Занятия', icon: 'board',
+  items: [
+    { to: '/upcoming', label: 'Ближайшие уроки', icon: 'clock' },
+    { to: '/boards', label: 'Доски', icon: 'board' },
+    { to: '/testing', label: 'Тесты', icon: 'tests' },
+  ],
+}
+
 const NAV = {
   guest: [
-    { to: '/how-it-works', label: 'Как это работает', icon: 'info' },
-    { to: '/for-tutors', label: 'Репетиторам', icon: 'users' },
-    { to: '/blog', label: 'Блог', icon: 'blog' },
-    { to: '/faq', label: 'Вопросы', icon: 'chat' },
+    { key: 'how', to: '/how-it-works', label: 'Как это работает', icon: 'info' },
+    { key: 'for-tutors', to: '/for-tutors', label: 'Репетиторам', icon: 'users' },
+    { key: 'blog', to: '/blog', label: 'Блог', icon: 'blog' },
+    { key: 'faq', to: '/faq', label: 'Вопросы', icon: 'chat' },
   ],
   student: [
-    { to: '/schedule', label: 'Расписание', icon: 'calendar' },
-    { to: '/tutors', label: 'Репетиторы', icon: 'users' },
-    { to: '/testing', label: 'Тесты', icon: 'tests' },
-    { to: '/boards', label: 'Доски', icon: 'board' },
-    { to: '/blog', label: 'Блог', icon: 'blog' },
-    { to: '/profile', label: 'Профиль', icon: 'user' },
-    { to: '/student-settings', label: 'Настройки', icon: 'sliders' },
+    { key: 'schedule', to: '/schedule', label: 'Расписание', icon: 'calendar' },
+    { key: 'tutors', to: '/tutors', label: 'Репетиторы', icon: 'users' },
+    LESSONS_GROUP,
+    { key: 'blog', to: '/blog', label: 'Блог', icon: 'blog' },
+    {
+      key: 'profile', label: 'Профиль', icon: 'user',
+      items: [
+        { to: '/profile', label: 'Профиль', icon: 'user' },
+        { to: '/student-settings', label: 'Настройки', icon: 'sliders' },
+      ],
+    },
   ],
   tutor: [
-    { to: '/schedule', label: 'Расписание', icon: 'calendar' },
-    { to: '/students', label: 'Ученики', icon: 'users' },
-    { to: '/bookings', label: 'Брони', icon: 'clock' },
-    { to: '/statistics', label: 'Статистика', icon: 'chart' },
-    { to: '/testing', label: 'Тесты', icon: 'tests' },
-    { to: '/boards', label: 'Доски', icon: 'board' },
-    { to: '/blog/manage', label: 'Блог', icon: 'blog', section: '/blog' },
-    { to: '/profile', label: 'Профиль', icon: 'user' },
-    { to: '/settings', label: 'Настройки', icon: 'sliders' },
+    {
+      key: 'schedule', label: 'Расписание', icon: 'calendar',
+      items: [
+        { to: '/schedule', label: 'Расписание', icon: 'calendar' },
+        { to: '/bookings', label: 'Брони', icon: 'clock' },
+      ],
+    },
+    LESSONS_GROUP,
+    {
+      key: 'students', label: 'Ученики', icon: 'users',
+      items: [
+        { to: '/students', label: 'Ученики', icon: 'users' },
+        { to: '/statistics', label: 'Статистика', icon: 'chart' },
+        { to: '/payments', label: 'Оплаты', icon: 'wallet' },
+      ],
+    },
+    { key: 'blog', to: '/blog/manage', label: 'Блог', icon: 'blog', section: '/blog' },
+    {
+      key: 'profile', label: 'Профиль', icon: 'user',
+      items: [
+        { to: '/profile', label: 'Профиль', icon: 'user' },
+        { to: '/settings', label: 'Настройки', icon: 'sliders' },
+      ],
+    },
   ],
   admin: [
-    { to: '/admin', label: 'Управление', icon: 'shield' },
-    { to: '/blog', label: 'Блог', icon: 'blog' },
-    { to: '/profile', label: 'Профиль', icon: 'user' },
+    { key: 'admin', to: '/admin', label: 'Управление', icon: 'shield' },
+    { key: 'blog', to: '/blog', label: 'Блог', icon: 'blog' },
+    { key: 'profile', to: '/profile', label: 'Профиль', icon: 'user' },
   ],
 }
 const navItems = computed(() => (props.isLoggedIn ? NAV[props.role] || [] : NAV.guest))
+
 // Раздел подсвечивается и на вложенных страницах (тест, доска, запись блога).
 function isSection(item) {
   const base = item.section || item.to
   return route.path === base || route.path.startsWith(base + '/')
 }
+function isGroupActive(group) {
+  return group.items.some((child) => isSection(child))
+}
+
+// --- Раскрытие групп: наведение (мышь), нажатие (сенсор/клавиатура), Escape, щелчок вне ---
+const openGroup = ref('')
+const groupButtons = reactive({})
+const canHover = typeof window !== 'undefined' && window.matchMedia?.('(hover: hover) and (pointer: fine)').matches
+let hoverTimer = 0
+
+function toggleGroup(key) {
+  openGroup.value = openGroup.value === key ? '' : key
+}
+function closeGroup() {
+  openGroup.value = ''
+}
+function hoverOpen(key) {
+  if (!canHover) return
+  clearTimeout(hoverTimer)
+  openGroup.value = key
+}
+function hoverClose(key) {
+  if (!canHover) return
+  clearTimeout(hoverTimer)
+  hoverTimer = setTimeout(() => { if (openGroup.value === key) openGroup.value = '' }, 180)
+}
+function menuItems(key) {
+  return [...(document.getElementById(`nav-${key}`)?.querySelectorAll('[role="menuitem"]') || [])]
+}
+function openAndFocus(key) {
+  openGroup.value = key
+  requestAnimationFrame(() => menuItems(key)[0]?.focus())
+}
+function onMenuKey(event, key) {
+  const items = menuItems(key)
+  const index = items.indexOf(document.activeElement)
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    closeGroup()
+    groupButtons[key]?.focus()
+  } else if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    items[(index + 1) % items.length]?.focus()
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    items[(index - 1 + items.length) % items.length]?.focus()
+  } else if (event.key === 'Tab') {
+    closeGroup()
+  }
+}
+function onDocPointer(event) {
+  if (openGroup.value && !(event.target instanceof Element && event.target.closest('.nav-group'))) closeGroup()
+}
+function onDocKey(event) {
+  if (event.key === 'Escape' && openGroup.value) {
+    const key = openGroup.value
+    closeGroup()
+    groupButtons[key]?.focus()
+  }
+}
+watch(() => route.fullPath, closeGroup)
+
+// --- Высота шапки для рабочих экранов (доска занимает высоту под ней) ---
+const shellRef = ref(null)
+let shellObserver = null
 
 const navLinks = ref(null)
 onMounted(() => {
   const active = navLinks.value?.querySelector('[aria-current="page"]')
   if (active) navLinks.value.scrollLeft = Math.max(0, active.offsetLeft - navLinks.value.offsetLeft - 16)
+  document.addEventListener('pointerdown', onDocPointer)
+  document.addEventListener('keydown', onDocKey)
+  if (shellRef.value && typeof ResizeObserver !== 'undefined') {
+    shellObserver = new ResizeObserver(([entry]) => {
+      document.documentElement.style.setProperty('--shell-h', `${Math.round(entry.contentRect.height)}px`)
+    })
+    shellObserver.observe(shellRef.value)
+  }
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', onDocPointer)
+  document.removeEventListener('keydown', onDocKey)
+  shellObserver?.disconnect()
+  clearTimeout(hoverTimer)
 })
 
 const { items, unreadCount, panelOpen, loading: notifLoading, openPanel, closePanel, onHoverItem } = useNotifications()
@@ -154,6 +314,7 @@ function handleBellClick() {
 
 <style scoped>
 .layout { display: flex; flex-direction: column; min-height: 100dvh; }
+/* Шапка всегда видна: и на телефоне, и на компьютере. */
 .shell-top { position: sticky; top: 0; z-index: 100; }
 .pp .site-header { position: static; }
 .pp .brand-name { letter-spacing: .04em; }
@@ -162,9 +323,38 @@ function handleBellClick() {
 .pp .header-actions .btn.icon { width: var(--ctl); padding: 0; border: 1px solid var(--line); }
 .main { flex: 1; padding: 40px 24px 80px; max-width: 1208px; margin: 0 auto; width: 100%; min-width: 0; }
 .main:focus { outline: none; }
+.layout--fill .main { padding: 0; max-width: none; display: flex; flex-direction: column; }
+
+/* Группа меню: кнопка в стиле пунктов навигации + выпадающая панель эталона (.menu-panel). */
+.pp .nav-main { overflow: visible; }
+.nav-group { position: relative; display: flex; }
+.pp .nav-group-btn {
+  display: inline-flex; align-items: center; gap: 4px; padding: 0 12px;
+  font: inherit; font-size: 15px; color: var(--muted); background: none; border: 0;
+  border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer;
+  transition: color var(--t) var(--ease), border-color var(--t) var(--ease);
+}
+.pp .nav-group-btn:hover, .nav-group--open .nav-group-btn { color: var(--text); }
+.pp .nav-group-btn[aria-current="page"] { color: var(--text); border-bottom-color: var(--accent); }
+.pp .nav-group-btn .icon { color: var(--muted); transition: color var(--t) var(--ease); }
+.pp .nav-group-btn:hover .icon, .nav-group--open .nav-group-btn .icon { color: var(--text); }
+.pp .nav-group-btn[aria-current="page"] .icon { color: var(--accent); }
+.nav-caret {
+  width: 6px; height: 6px; margin-left: 2px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-2px); opacity: .7; transition: transform var(--t) var(--ease);
+}
+.nav-group--open .nav-caret { transform: rotate(-135deg) translateY(-1px); }
+.pp .nav-menu { left: 0; right: auto; top: calc(100% + 4px); min-width: 220px; }
+.nav-menu-title { padding: 6px 12px 4px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.pp .nav-menu a[aria-current="page"] { color: var(--accent); background: var(--surface-2); }
+.pp .nav-menu a[aria-current="page"] .icon { color: var(--accent); }
+
 @media (max-width: 720px) {
-  .shell-top { position: static; }
   .main { padding: 28px 16px 56px; }
+  .layout--fill .main { padding: 0; }
   .nav-register { display: none !important; }
+  .pp .nav-group-btn { padding: 0 10px; font-size: 14px; }
+  /* На телефоне панель группы — во всю ширину под шапкой. */
+  .pp .nav-menu { position: fixed; left: 8px; right: 8px; top: calc(var(--shell-h, 104px) + 4px); min-width: 0; }
 }
 </style>

@@ -1,7 +1,8 @@
 // UI-логика страницы расписания: выбор, редактирование, сетка, монтирование.
 // Сеть — только через actions, состояние предметной области — в store.
 // Формы создания живут в LessonCreator (одно место использования).
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useNarrowScreen, NARROW_DAYS } from '../../composables/index.js'
 import {
   loadScheduleLessons,
   loadScheduleSettings,
@@ -116,11 +117,16 @@ export function useSchedulePage() {
 
   const dynamicGridH = computed(() => visibleHours.value.length * HOUR_CELL_H || GRID_H)
 
+  // На телефоне — 3 дня от выбранной даты (неделя слишком широкая), иначе — неделя с понедельника.
+  const narrow = useNarrowScreen()
+  const span = computed(() => (narrow.value ? NARROW_DAYS : 7))
+
   const weekDays = computed(() => {
-    const start = getWeekStart(currentDate.value)
+    const start = narrow.value ? new Date(currentDate.value) : getWeekStart(currentDate.value)
+    start.setHours(0, 0, 0, 0)
     const today = userNowDate()
     const todayStr = fmtDate(today)
-    return Array.from({ length: 7 }, (_, i) => {
+    return Array.from({ length: span.value }, (_, i) => {
       const d = new Date(start)
       d.setDate(d.getDate() + i)
       return {
@@ -136,17 +142,20 @@ export function useSchedulePage() {
 
   function prevWeek() {
     const d = new Date(currentDate.value)
-    d.setDate(d.getDate() - 7)
+    d.setDate(d.getDate() - span.value)
     currentDate.value = d
     fetchWeekWindows()
   }
 
   function nextWeek() {
     const d = new Date(currentDate.value)
-    d.setDate(d.getDate() + 7)
+    d.setDate(d.getDate() + span.value)
     currentDate.value = d
     fetchWeekWindows()
   }
+
+  // Повернули телефон / сменился размер окна: период сетки другой — окна за новый период.
+  watch(narrow, () => fetchWeekWindows())
 
   function goToday() {
     currentDate.value = userNowDate()
@@ -228,7 +237,7 @@ export function useSchedulePage() {
 
   const weekRange = computed(() => {
     if (!weekDays.value.length) return { dateFrom: '', dateTo: '' }
-    return { dateFrom: weekDays.value[0].date, dateTo: weekDays.value[6].date }
+    return { dateFrom: weekDays.value[0].date, dateTo: weekDays.value[weekDays.value.length - 1].date }
   })
 
   async function fetchWeekWindows() {

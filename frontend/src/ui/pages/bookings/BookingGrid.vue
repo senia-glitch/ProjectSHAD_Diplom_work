@@ -1,11 +1,16 @@
 <template>
   <div class="grid-wrap">
+    <div v-if="narrow" class="days-nav">
+      <button type="button" class="btn-nav" aria-label="Предыдущие дни" :disabled="dayStart === 0" @click="shiftDays(-1)"><UiIcon name="arrowLeft" /></button>
+      <span class="days-range">{{ weekdayShort[visibleDays[0]] }} — {{ weekdayShort[visibleDays[visibleDays.length - 1]] }}</span>
+      <button type="button" class="btn-nav" aria-label="Следующие дни" :disabled="dayStart >= WEEKDAY_ORDER.length - NARROW_DAYS" @click="shiftDays(1)"><UiIcon name="arrowRight" /></button>
+    </div>
     <p class="grid-hint">Прокрутите сетку, чтобы увидеть остальные дни и часы.</p>
     <div class="grid-scroll" role="region" tabindex="0" aria-label="Сетка недели. Прокрутите, чтобы увидеть остальные дни и часы.">
-    <div class="grid-container">
+    <div class="grid-container" :style="{ '--days': visibleDays.length }" :class="{ 'grid-container--short': narrow }">
       <div class="grid-header">
         <div class="corner"></div>
-        <div v-for="day in WEEKDAY_ORDER" :key="day" class="day-head">{{ weekdayShort[day] }}</div>
+        <div v-for="day in visibleDays" :key="day" class="day-head">{{ weekdayShort[day] }}</div>
       </div>
       <div class="grid-body">
         <div class="time-col">
@@ -13,7 +18,7 @@
             <span class="time-lbl">{{ String(h - 1).padStart(2, '0') }}:00</span>
           </div>
         </div>
-        <div v-for="day in WEEKDAY_ORDER" :key="day" class="day-col" @click="onGridClick(day, $event)">
+        <div v-for="day in visibleDays" :key="day" class="day-col" @click="onGridClick(day, $event)">
           <div v-for="h in 24" :key="h" class="hour-cell"></div>
           <div
             v-for="b in bookingsOfDay(day)"
@@ -48,6 +53,18 @@
 import { toMin, blockGeometry } from '../../../logic/utils/index.js'
 import { WEEKDAY_ORDER, WEEKDAY_SHORT, RULE_LABELS, GRID_H } from '../../../logic/constants/index.js'
 import { logState } from '../../../logic/logger/index.js'
+import { computed, ref } from 'vue'
+import { UiIcon } from '../../components/index.js'
+import { useNarrowScreen, NARROW_DAYS } from '../../composables/index.js'
+
+// На телефоне — окно из 3 дней недели со стрелками (неделя целиком слишком широкая).
+const narrow = useNarrowScreen()
+const dayStart = ref(0)
+const visibleDays = computed(() => (narrow.value ? WEEKDAY_ORDER.slice(dayStart.value, dayStart.value + NARROW_DAYS) : WEEKDAY_ORDER))
+function shiftDays(direction) {
+  const max = WEEKDAY_ORDER.length - NARROW_DAYS
+  dayStart.value = Math.max(0, Math.min(max, dayStart.value + direction * NARROW_DAYS))
+}
 
 const props = defineProps({
   bookings: { type: Array, default: () => [] },
@@ -93,7 +110,7 @@ function onGridClick(day, ev) {
   display: flex; flex-direction: column; overflow: hidden; flex: 1;
 }
 .grid-header {
-  display: grid; grid-template-columns: 44px repeat(7, 1fr);
+  display: grid; grid-template-columns: 44px repeat(var(--days, 7), 1fr);
   background: var(--color-gray-50); border-bottom: 2px solid var(--color-gray-200); flex-shrink: 0;
 }
 .corner { border-right: 1px solid var(--color-gray-200); }
@@ -104,7 +121,7 @@ function onGridClick(day, ev) {
 .day-head:last-child { border-right: none; }
 
 .grid-body {
-  display: grid; grid-template-columns: 44px repeat(7, 1fr);
+  display: grid; grid-template-columns: 44px repeat(var(--days, 7), 1fr);
   height: 600px; overflow: hidden;
 }
 .time-col { border-right: 1px solid var(--color-gray-200); }
@@ -157,8 +174,14 @@ function onGridClick(day, ev) {
 
 .grid-scroll { overflow: auto; max-height: 680px; border: 1px solid var(--line); border-radius: var(--radius-lg); scrollbar-width: thin; scrollbar-color: var(--line-strong) var(--surface); }
 .grid-container { min-width: 560px; border: 0; border-radius: 0; }
+.grid-container--short { min-width: 0; }
+.days-nav { display: flex; align-items: center; gap: 8px; }
+.days-range { font-weight: 600; min-width: 80px; text-align: center; }
+.btn-nav { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); cursor: pointer; }
+.btn-nav:disabled { opacity: .4; cursor: default; }
+.btn-nav :deep(svg) { width: 18px; height: 18px; }
 .grid-header { position: sticky; top: 0; z-index: 30; border-bottom-width: 1px; }
-.grid-header, .grid-body { grid-template-columns: 48px repeat(7, minmax(0, 1fr)); }
+.grid-header, .grid-body { grid-template-columns: 48px repeat(var(--days, 7), minmax(0, 1fr)); }
 .time-lbl { font-size: 10px; color: var(--muted); }
 .day-head { padding-block: 12px; }
 .day-head--today { color: var(--accent); background: var(--accent-soft); }

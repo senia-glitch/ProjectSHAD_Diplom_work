@@ -1,9 +1,9 @@
 <template>
   <div class="grid-wrap">
     <div class="calendar-nav">
-      <button type="button" class="btn-nav" aria-label="Предыдущая неделя" title="Предыдущая неделя" @click="emit('nav-prev')"><UiIcon name="arrowLeft" /></button>
+      <button type="button" class="btn-nav" :aria-label="weekDays.length < 7 ? 'Предыдущие дни' : 'Предыдущая неделя'" :title="weekDays.length < 7 ? 'Предыдущие дни' : 'Предыдущая неделя'" @click="emit('nav-prev')"><UiIcon name="arrowLeft" /></button>
       <span class="week-range">{{ weekRange }}</span>
-      <button type="button" class="btn-nav" aria-label="Следующая неделя" title="Следующая неделя" @click="emit('nav-next')"><UiIcon name="arrowRight" /></button>
+      <button type="button" class="btn-nav" :aria-label="weekDays.length < 7 ? 'Следующие дни' : 'Следующая неделя'" :title="weekDays.length < 7 ? 'Следующие дни' : 'Следующая неделя'" @click="emit('nav-next')"><UiIcon name="arrowRight" /></button>
       <button class="btn btn--gry" @click="emit('nav-today')">Сегодня</button>
       <label v-if="dimBookings.length" class="dim-toggle" title="Показать фоновые брони">
         <input type="checkbox" v-model="showDim" /> Брони
@@ -11,7 +11,7 @@
     </div>
     <p class="grid-hint">Прокрутите сетку, чтобы увидеть остальные дни и часы.</p>
     <div class="grid-scroll" role="region" tabindex="0" aria-label="Сетка недели. Прокрутите, чтобы увидеть остальные дни и часы.">
-    <div class="grid-container">
+    <div class="grid-container" :style="{ '--days': weekDays.length }" :class="{ 'grid-container--short': weekDays.length < 7 }">
       <div class="grid-header">
         <div class="corner"></div>
         <div v-for="d in weekDays" :key="d.date" class="day-head" :class="{ 'day-head--today': d.isToday }">
@@ -101,7 +101,7 @@ const props = defineProps({
 const weekRange = computed(() => {
   if (!props.weekDays.length) return ''
   const s = new Date(props.weekDays[0].date)
-  const e = new Date(props.weekDays[6].date)
+  const e = new Date(props.weekDays[props.weekDays.length - 1].date)
   return `${s.getDate()} ${MONTHS_SHORT[s.getMonth()]} — ${e.getDate()} ${MONTHS_SHORT[e.getMonth()]}`
 })
 const emit = defineEmits(['lesson-select', 'grid-clear', 'nav-prev', 'nav-next', 'nav-today'])
@@ -192,7 +192,7 @@ function lessonStyle(l) {
   display: flex; flex-direction: column; overflow: hidden; flex: 1;
 }
 .grid-header {
-  display: grid; grid-template-columns: 44px repeat(7, 1fr);
+  display: grid; grid-template-columns: 44px repeat(var(--days, 7), 1fr);
   background: var(--color-gray-50); border-bottom: 2px solid var(--color-gray-200); flex-shrink: 0;
 }
 .corner { border-right: 1px solid var(--color-gray-200); }
@@ -205,7 +205,7 @@ function lessonStyle(l) {
 .day-head:last-child { border-right: none; }
 
 .grid-body {
-  display: grid; grid-template-columns: 44px repeat(7, 1fr);
+  display: grid; grid-template-columns: 44px repeat(var(--days, 7), 1fr);
   overflow: hidden;
 }
 .time-col { border-right: 1px solid var(--color-gray-200); }
@@ -290,8 +290,10 @@ function lessonStyle(l) {
 
 .grid-scroll { overflow: auto; max-height: 680px; border: 1px solid var(--line); border-radius: var(--radius-lg); scrollbar-width: thin; scrollbar-color: var(--line-strong) var(--surface); }
 .grid-container { min-width: 560px; border: 0; border-radius: 0; }
+/* 3 дня на телефоне умещаются без горизонтальной прокрутки. */
+.grid-container--short { min-width: 0; }
 .grid-header { position: sticky; top: 0; z-index: 30; border-bottom-width: 1px; }
-.grid-header, .grid-body { grid-template-columns: 48px repeat(7, minmax(0, 1fr)); }
+.grid-header, .grid-body { grid-template-columns: 48px repeat(var(--days, 7), minmax(0, 1fr)); }
 .time-lbl { font-size: 10px; color: var(--muted); }
 .day-head { padding-block: 12px; }
 .day-head--today { color: var(--accent); background: var(--accent-soft); }

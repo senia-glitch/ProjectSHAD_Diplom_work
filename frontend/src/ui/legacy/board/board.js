@@ -883,7 +883,11 @@ export function startBoard(opts) {
   $("zoombar").append(ibtn({ icon: "zoomin", tip: "Увеличить (+)", onclick: () => zoomCenter(1.25) }));
 
   /* Клавиатура */
+  // Страница доски живёт в keep-alive: пока доска не на экране (DOM отсоединён),
+  // её горячие клавиши и щелчки не должны действовать на других страницах.
+  const onScreen = () => opts.root.isConnected;
   listen(document, "keydown", (e) => {
+  if (!onScreen()) return;
   const typing = e.target instanceof Element && e.target.closest("input, textarea, dialog[open]");
   if (typing) return;
   const mod = e.ctrlKey || e.metaKey;
@@ -902,6 +906,7 @@ export function startBoard(opts) {
   else if (e.code === "KeyF") fitToContent();
   });
   listen(document, "keyup", (e) => {
+  if (!onScreen()) return;
   if (e.code === "Space") { spaceDown = false; stage.classList.remove("space"); }
   });
 
@@ -942,6 +947,7 @@ export function startBoard(opts) {
   }
   fileBtn.addEventListener("click", () => setMenu(fileMenu.hidden));
   listen(document, "pointerdown", (e) => {
+  if (!onScreen()) return;
   if (!fileMenu.hidden && !(e.target instanceof Element && e.target.closest(".menu-wrap"))) setMenu(false);
   });
   fileMenu.addEventListener("keydown", (e) => {
@@ -1461,4 +1467,9 @@ export function startBoard(opts) {
 /* Код, по которому участник нашёл доску: отправляется при первом подключении. */
 export function rememberBoardCode(boardId, code) {
   rememberCode(boardId, code);
+}
+
+/* Видимость всплывающих сообщений доски: прячутся, пока доска не на экране (keep-alive). */
+export function setBoardPortalVisible(visible) {
+  if (portalNode) portalNode.hidden = !visible;
 }

@@ -1,0 +1,56 @@
+/* Анимация всех значков при наведении и фокусе с клавиатуры.
+ *
+ * Срабатывает на любом интерактивном родителе (ссылка, кнопка, role=button,
+ * summary, label): значок оживает вместе с элементом, а не только в шапке.
+ * Значки Vue — <svg class="ui-icon" data-name="…">, значки модулей доски и
+ * тестов — <span class="icon" data-icon="…"><svg/></span>. Ключевые кадры
+ * ico-* объявлены в pp.css. Точные правила pp.css для отдельных значков
+ * сильнее этих (здесь :where — нулевая специфичность у контейнера).
+ */
+
+/* Мягкая анимация по умолчанию: любой значок, для которого нет своей. */
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon, [data-icon] > svg) {
+  animation: ico-pop .5s var(--ease);
+}
+
+/* Собственная анимация по смыслу значка. */
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="calendar"], [data-icon="calendar"] > svg) { animation: ico-hop .6s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="user"], [data-icon="user"] > svg) { animation: ico-bob .6s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="users"], [data-icon="users"] > svg) { animation: ico-bob .6s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="clock"], [data-icon="clock"] > svg) { animation: ico-tick .6s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="chart"], [data-icon="chart"] > svg) { animation: ico-grow .6s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="tests"], [data-icon="tests"] > svg) { animation: ico-pop .5s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="board"], [data-icon="board"] > svg) { animation: ico-lift .6s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="bell"], [data-icon="bell"] > svg) { animation: ico-swing .6s var(--ease); transform-origin: 50% 10%; }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="blog"], [data-icon="blog"] > svg) { animation: ico-tilt .6s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="sliders"], [data-icon="sliders"] > svg) { animation: ico-slide .6s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="shield"], [data-icon="shield"] > svg) { animation: ico-pop .5s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="wallet"], [data-icon="wallet"] > svg) { animation: ico-nudge .6s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="info"], [data-icon="info"] > svg) { animation: ico-pop .5s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="key"], [data-icon="key"] > svg) { animation: ico-turn .35s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="login"], [data-icon="login"] > svg) { animation: ico-right .45s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="logout"], [data-icon="logout"] > svg) { animation: ico-out .6s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="plus"], [data-icon="plus"] > svg, [data-icon="add"] > svg) { animation: ico-turn .35s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="arrowLeft"], [data-icon="chevl"] > svg) { animation: ico-left .45s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="arrowRight"], [data-icon="chevr"] > svg) { animation: ico-right .45s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="trash"], [data-icon="trash"] > svg) { animation: ico-shake .5s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="open"], [data-icon="open"] > svg) { animation: ico-ne .5s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="pin"], [data-icon="pin"] > svg) { animation: ico-pin .6s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="edit"], [data-icon="edit"] > svg, [data-icon="pen"] > svg) { animation: ico-write .6s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="check"], [data-icon="check"] > svg) { animation: ico-pop .5s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="chat"], [data-icon="chat"] > svg) { animation: ico-pop .6s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="sun"], [data-icon="sun"] > svg) { animation: ico-spin .5s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is(.ui-icon[data-name="moon"], [data-icon="moon"] > svg) { animation: ico-moon .6s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is([data-icon="download"] > svg, [data-icon="upload"] > svg) { animation: ico-bob .6s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is([data-icon="zoomin"] > svg, [data-icon="zoomout"] > svg, [data-icon="fit"] > svg) { animation: ico-grow .5s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is([data-icon="undo"] > svg) { animation: ico-left .45s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is([data-icon="redo"] > svg) { animation: ico-right .45s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is([data-icon="eraser"] > svg) { animation: ico-slide .6s var(--ease); }
+:where(a, button, [role="button"], summary, label):is(:hover, :focus-visible) :is([data-icon="x"] > svg) { animation: ico-turn .35s var(--ease); }
+
+/* Значок в неактивной кнопке не оживает. */
+:where(button:disabled, [aria-disabled="true"]) :is(.ui-icon, [data-icon] > svg) { animation: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-icon, [data-icon] > svg { animation: none !important; }
+}

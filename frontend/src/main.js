@@ -10,6 +10,7 @@ import './ui/styles/base.css'
 import './ui/styles/icons.css'
 import './ui/styles/pp.css'
 import './ui/styles/pp-fixes.css'
+import './ui/styles/icon-motion.css'
 
 const app = createApp(App)
 app.use(createPinia())
