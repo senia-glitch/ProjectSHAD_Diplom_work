@@ -201,13 +201,16 @@ def test_student_get_lesson_not_participant():
         run(StudentGetLessonScenario(db=db, metrics=DummyMetrics()).execute(student_dto()))
 
 
-def test_student_get_lesson_cancelled_participation_hidden():
+def test_student_get_lesson_cancelled_participation_visible_in_history():
+    """Отменённая запись не скрывается: ученик видит, кто и когда отменил, и не может отменить снова."""
     db = make_db()
     db.participants[0]["participant_settings"] = {
-        "cancelled": {"by": "student", "at": "2030-01-05T09:00:00"},
+        "cancelled": {"by": "tutor", "at": "2030-01-05T09:00:00"},
     }
-    with pytest.raises(NotFoundError):
-        run(StudentGetLessonScenario(db=db, metrics=DummyMetrics()).execute(student_dto()))
+    res = run(StudentGetLessonScenario(db=db, metrics=DummyMetrics()).execute(student_dto()))
+    assert res.status == "CANCELLED"
+    assert res.status_note["by"] == "tutor"
+    assert res.can_cancel is False
 
 
 def test_student_get_lesson_without_student_profile():

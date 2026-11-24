@@ -15,6 +15,18 @@ from app.utils.configurations import (
     sync_allow_self_booking_into_whitelist,
 )
 from app.utils.notifications import notify_user, get_user_name, get_student_user_id
+from app.utils.configurations import initial_link_state, validate_link_receiver
+from app.utils.clock import utc_now
+
+
+async def _notify_link(db, student_user_id: int, tutor_name: str, pending: bool) -> None:
+    if pending:
+        await notify_user(
+            db, student_user_id, "link_requested",
+            f"Репетитор {tutor_name} просит добавить вас в свои ученики — ответьте на странице «Репетиторы»",
+        )
+    else:
+        await notify_user(db, student_user_id, "link_created", f"Репетитор {tutor_name} привязал вас")
 
 from core.dto import BaseDTO
 
@@ -29,6 +41,9 @@ class ConfigurationItem(BaseModel):
     tutor_id: int
     hourly_rate: float
     allow_self_booking: bool
+    status: str = "ACTIVE"
+    requested_by: str | None = None
+    auto_confirm_bookings: bool = True
 
 
 class TutorGetMyConfigurationsResponse(BaseModel):
@@ -56,6 +71,9 @@ class TutorGetConfigurationResponse(BaseModel):
     student_notes: str | None
     link_visibility_enabled: bool
     link_lead_time_minutes: int
+    auto_confirm_bookings: bool = True
+    status: str = "ACTIVE"
+    requested_by: str | None = None
 
 
 class TutorCreateConfigurationDTO(BaseDTO):
@@ -93,6 +111,7 @@ class TutorUpdateConfigurationDTO(BaseDTO):
     student_notes: str | None = Field(default=None, max_length=5000)
     link_visibility_enabled: bool | None = None
     link_lead_time_minutes: int | None = Field(default=None, ge=0, le=15)
+    auto_confirm_bookings: bool | None = None
 
 
 class TutorUpdateConfigurationResponse(BaseModel):
@@ -141,6 +160,9 @@ class TutorGetMyConfigurationsScenario(BaseScenario):
                 tutor_id=r["tutor_id"],
                 hourly_rate=r["hourly_rate"],
                 allow_self_booking=r["allow_self_booking"],
+                status=r.get("status") or "ACTIVE",
+                requested_by=r.get("requested_by"),
+                auto_confirm_bookings=bool(r.get("auto_confirm_bookings", True)),
             )
             for r in rows
         ]
@@ -187,6 +209,9 @@ class TutorGetConfigurationScenario(BaseScenario):
             student_notes=r.get("student_notes"),
             link_visibility_enabled=r["link_visibility_enabled"],
             link_lead_time_minutes=r["link_lead_time_minutes"],
+            auto_confirm_bookings=bool(r.get("auto_confirm_bookings", True)),
+            status=r.get("status") or "ACTIVE",
+            requested_by=r.get("requested_by"),
         )
 
 
@@ -239,6 +264,13 @@ class TutorCreateConfigurationScenario(BaseScenario):
             data["allow_self_booking"] = resolve_allow_self_booking(
                 ts.get("self_booking_mode"), ts.get("self_booking_whitelist"), student_id
             )
+            data["auto_confirm_bookings"] = bool(ts.get("auto_confirm_bookings", True))
+        student_settings_rows = await self._db.query(
+            'SELECT require_link_consent FROM "student_settings" WHERE student_id = :sid',
+            {"sid": student_id},
+        )
+        require_consent = bool(student_settings_rows and student_settings_rows[0].get("require_link_consent", True))
+        data.update(initial_link_state(require_consent, "tutor", utc_now()))
 
         data = serialize_for_db("configurations", data)
         try:
@@ -318,6 +350,13 @@ class TutorCreateConfigurationByCodeScenario(BaseScenario):
             data["allow_self_booking"] = resolve_allow_self_booking(
                 ts.get("self_booking_mode"), ts.get("self_booking_whitelist"), student_id
             )
+            data["auto_confirm_bookings"] = bool(ts.get("auto_confirm_bookings", True))
+        student_settings_rows = await self._db.query(
+            'SELECT require_link_consent FROM "student_settings" WHERE student_id = :sid',
+            {"sid": student_id},
+        )
+        require_consent = bool(student_settings_rows and student_settings_rows[0].get("require_link_consent", True))
+        data.update(initial_link_state(require_consent, "tutor", utc_now()))
 
         data = serialize_for_db("configurations", data)
         try:
@@ -328,10 +367,7 @@ class TutorCreateConfigurationByCodeScenario(BaseScenario):
             raise
 
         tutor_name = await get_user_name(self._db, token.user_id)
-        await notify_user(
-            self._db, target_user_id, "link_created",
-            f"Репетитор {tutor_name} привязал вас",
-        )
+        await _notify_link(self._db, target_user_id, tutor_name, require_consent)
 
         return TutorCreateConfigurationByCodeResponse(
             config_id=config["id"],
@@ -483,7 +519,54 @@ class TutorResetConfigurationScenario(BaseScenario):
         reset_data["slot_step_minutes"] = 60
         reset_data["link_visibility_enabled"] = False
         reset_data["link_lead_time_minutes"] = 0
+        reset_data["auto_confirm_bookings"] = bool(ts.get("auto_confirm_bookings", True))
         reset_data = serialize_for_db("configurations", reset_data)
         await self._db.update("configurations", dto.config_id, reset_data)
 
         return TutorResetConfigurationResponse(config_id=dto.config_id)
+
+
+class TutorAnswerLinkDTO(BaseDTO):
+    config_id: int
+
+
+class TutorAnswerLinkResponse(BaseModel):
+    config_id: int
+    status: str
+
+
+async def _own_link(db, user_id: int, config_id: int) -> dict:
+    tutors = await db.query('SELECT id FROM "tutors" WHERE user_id = :uid', {"uid": user_id})
+    rows = await db.query('SELECT * FROM "configurations" WHERE id = :cid', {"cid": config_id})
+    if not tutors or not rows or rows[0]["tutor_id"] != tutors[0]["id"]:
+        raise NotFoundError("Configuration not found")
+    validate_link_receiver(rows[0], "tutor")
+    return rows[0]
+
+
+@register_scenario("tutor_accept_configuration", dto=TutorAnswerLinkDTO, response=TutorAnswerLinkResponse)
+@tracked_scenario("tutor_accept_configuration")
+class TutorAcceptConfigurationScenario(BaseScenario):
+    async def execute(self, dto: TutorAnswerLinkDTO) -> TutorAnswerLinkResponse:
+        token = extract_token_info(dto.access_token)
+        config = await _own_link(self._db, token.user_id, dto.config_id)
+        await self._db.update("configurations", config["id"], {"status": "ACTIVE"})
+        student_user_id = await get_student_user_id(self._db, config["student_id"])
+        if student_user_id is not None:
+            name = await get_user_name(self._db, token.user_id)
+            await notify_user(self._db, student_user_id, "link_accepted", f"Репетитор {name} принял вашу заявку на связь")
+        return TutorAnswerLinkResponse(config_id=config["id"], status="ACTIVE")
+
+
+@register_scenario("tutor_decline_configuration", dto=TutorAnswerLinkDTO, response=TutorAnswerLinkResponse)
+@tracked_scenario("tutor_decline_configuration")
+class TutorDeclineConfigurationScenario(BaseScenario):
+    async def execute(self, dto: TutorAnswerLinkDTO) -> TutorAnswerLinkResponse:
+        token = extract_token_info(dto.access_token)
+        config = await _own_link(self._db, token.user_id, dto.config_id)
+        await self._db.delete("configurations", config["id"])
+        student_user_id = await get_student_user_id(self._db, config["student_id"])
+        if student_user_id is not None:
+            name = await get_user_name(self._db, token.user_id)
+            await notify_user(self._db, student_user_id, "link_declined", f"Репетитор {name} отклонил заявку на связь")
+        return TutorAnswerLinkResponse(config_id=config["id"], status="DECLINED")

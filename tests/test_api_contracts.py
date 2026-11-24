@@ -21,9 +21,11 @@ def _check(routes, expected):
 
 
 def test_original_api_surface_and_scenario_contracts_are_preserved():
-    """Исходный API SHAD Tutoring неизменен; модули тестов, досок и блога добавлены отдельным контрактом."""
+    """Исходный API SHAD Tutoring неизменен; модули и доработки расписания добавлены отдельными контрактами."""
     original = json.loads((FIXTURES / "api_surface.json").read_text(encoding="utf-8"))
     integration = json.loads((FIXTURES / "integration_api_surface.json").read_text(encoding="utf-8"))
+    # Подтверждение записи и согласие на связь — отдельный контракт поверх исходного API.
+    integration += json.loads((FIXTURES / "scheduling_api_surface.json").read_text(encoding="utf-8"))
     app = make_app()
     routes = {(method, route.path): route for route in iter_route_contexts(app.routes)
               for method in route.methods or ()}

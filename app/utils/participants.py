@@ -1,5 +1,6 @@
 """Чистая бизнес-логика участников уроков. Без IO-зависимостей."""
 
+from app.utils.clock import utc_now, to_utc_naive
 import datetime
 import math
 from core import ValidationError, ConflictError
@@ -13,7 +14,7 @@ def validate_lesson_not_ended(
 ) -> None:
     """Вступить можно пока урок не кончился (ONGOING разрешён)."""
     if now is None:
-        now = datetime.datetime.now()
+        now = utc_now()
     if lesson_end < now:
         raise ValidationError("Cannot join ended lesson")
 
@@ -68,11 +69,23 @@ def is_cancelled_row(row: dict) -> bool:
     return cancellation_of(settings) is not None
 
 
-def build_cancellation(by: str, now: datetime.datetime | None = None) -> dict:
-    """Пометка отмены записи. by: 'student' | 'tutor'."""
+def build_cancellation(
+    by: str,
+    now: datetime.datetime | None = None,
+    *,
+    actor_user_id: int | None = None,
+    reason: str | None = None,
+) -> dict:
+    """Пометка отмены записи: кто (student/tutor/system), когда, почему."""
     if now is None:
-        now = datetime.datetime.now()
-    return {"by": by, "at": now.isoformat()}
+        now = utc_now()
+    mark = {"by": by, "at": now.replace(microsecond=0).isoformat()}
+    if actor_user_id is not None:
+        mark["actor_user_id"] = actor_user_id
+    reason = (reason or "").strip()
+    if reason:
+        mark["reason"] = reason[:500]
+    return mark
 
 
 def validate_not_cancelled(row: dict) -> None:
@@ -103,7 +116,7 @@ def build_price_snapshot(
     выручка считается по замороженной цене.
     """
     if now is None:
-        now = datetime.datetime.now().replace(microsecond=0)
+        now = utc_now().replace(microsecond=0)
     return {
         "price_snapshot": {
             "hourly_rate": hourly_rate,

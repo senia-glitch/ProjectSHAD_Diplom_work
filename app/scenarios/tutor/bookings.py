@@ -27,8 +27,8 @@ async def _validate_access_targets(db, tutor_id: int, access_rule: str, access_t
     if not access_targets:
         raise ValidationError(f"access_targets is required for access_rule '{access_rule}'")
     rows = await db.query(
-        'SELECT student_id FROM "configurations" WHERE tutor_id = :tid',
-        {"tid": tutor_id},
+        'SELECT student_id FROM "configurations" WHERE tutor_id = :tid AND status = :active',
+        {"tid": tutor_id, "active": "ACTIVE"},
     )
     valid_ids = {r["student_id"] for r in rows}
     invalid = [sid for sid in access_targets if sid not in valid_ids]

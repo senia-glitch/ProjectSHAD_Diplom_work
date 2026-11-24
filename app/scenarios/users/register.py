@@ -13,6 +13,9 @@ def _generate_personal_number() -> str:
     return "IND-" + "".join(secrets.choice(alphabet) for _ in range(8))
 
 
+from app.utils.validation import TIMEZONE_OFFSET_MIN, TIMEZONE_OFFSET_MAX
+
+
 class RegisterUserDTO(BaseModel):
     # Открытая регистрация: только student/tutor. Создание admin —
     # только через сид/админ-панель, иначе privilege escalation.
@@ -23,6 +26,8 @@ class RegisterUserDTO(BaseModel):
     # Без EmailStr: email-validator не входит в зависимости проекта.
     # Простая проверка формата вместо полной RFC-валидации.
     email: str = Field(..., min_length=3, max_length=255, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    # Личный пояс из браузера при регистрации (часы от UTC); потом меняется в настройках.
+    timezone_offset: int = Field(default=0, ge=TIMEZONE_OFFSET_MIN, le=TIMEZONE_OFFSET_MAX)
 
 
 class RegisterUserResponse(BaseModel):
@@ -97,12 +102,12 @@ class RegisterUserScenario(BaseScenario):
             if dto.role == "student":
                 profile = await self._db.create("students", {"user_id": user["id"]})
                 created_profile = profile
-                settings = await self._db.create("student_settings", {"student_id": profile["id"]})
+                settings = await self._db.create("student_settings", {"student_id": profile["id"], "timezone_offset": dto.timezone_offset})
                 settings_id = settings["id"]
             else:
                 profile = await self._db.create("tutors", {"user_id": user["id"]})
                 created_profile = profile
-                settings = await self._db.create("tutor_settings", {"tutor_id": profile["id"]})
+                settings = await self._db.create("tutor_settings", {"tutor_id": profile["id"], "timezone_offset": dto.timezone_offset})
                 settings_id = settings["id"]
         except Exception:
             # Компенсация: не оставляем сироты в users. Профиль мог уже

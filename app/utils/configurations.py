@@ -60,3 +60,22 @@ def sync_allow_self_booking_into_whitelist(whitelist, student_id: int, allow: bo
     if not allow and sid in ids:
         ids.remove(sid)
     return ids
+
+
+LINK_ACTIVE = "ACTIVE"
+LINK_PENDING = "PENDING"
+
+
+def initial_link_state(require_consent: bool, requested_by: str, now) -> dict:
+    """Состояние новой связи: при включённом согласии второй стороны — заявка."""
+    if require_consent:
+        return {"status": LINK_PENDING, "requested_by": requested_by, "requested_at": now}
+    return {"status": LINK_ACTIVE, "requested_by": requested_by, "requested_at": now}
+
+
+def validate_link_receiver(config: dict, role: str) -> None:
+    """Принять/отклонить заявку на связь может только вторая сторона."""
+    if (config.get("status") or LINK_ACTIVE) != LINK_PENDING:
+        raise ValidationError("Link is not awaiting confirmation")
+    if config.get("requested_by") == role:
+        raise ValidationError("Only the other side can answer this link request")

@@ -2,7 +2,8 @@ from pydantic import BaseModel, Field
 from core import BaseScenario, NotFoundError, ValidationError, register_scenario, tracked_scenario
 from core.utils.security import extract_token_info
 from app.utils.participants import is_cancelled_row
-from app.utils.safe_parse import parse_iso_date
+from app.utils.safe_parse import parse_range, to_dt
+from app.utils.lessons import NON_BLOCKING_LESSON_STATUSES
 from core.dto import BaseDTO
 
 
@@ -39,9 +40,9 @@ class TutorListStudentsScenario(BaseScenario):
                FROM "configurations" c
                JOIN "students" s ON s.id = c.student_id
                JOIN "users" u ON u.id = s.user_id
-               WHERE c.tutor_id = :tid
+               WHERE c.tutor_id = :tid AND c.status = :active
                ORDER BY u.full_name''',
-            {"tid": tutor_id},
+            {"tid": tutor_id, "active": "ACTIVE"},
         )
 
         return TutorListStudentsResponse(
@@ -78,10 +79,7 @@ class TutorGetStudentBusySlotsScenario(BaseScenario):
     async def execute(self, dto: TutorGetStudentBusySlotsDTO) -> TutorGetStudentBusySlotsResponse:
         token = extract_token_info(dto.access_token)
 
-        date_from = parse_iso_date(dto.date_from, "date_from")
-        date_to = parse_iso_date(dto.date_to, "date_to")
-        if date_from > date_to:
-            raise ValidationError("date_from must be less than or equal to date_to")
+        range_start, range_end = parse_range(dto.date_from, dto.date_to)
 
         tutors = await self._db.query(
             'SELECT id FROM "tutors" WHERE user_id = :uid',
@@ -100,8 +98,8 @@ class TutorGetStudentBusySlotsScenario(BaseScenario):
         student_id = students[0]["id"]
 
         configs = await self._db.query(
-            'SELECT id FROM "configurations" WHERE student_id = :sid AND tutor_id = :tid',
-            {"sid": student_id, "tid": tutor_id},
+            'SELECT id FROM "configurations" WHERE student_id = :sid AND tutor_id = :tid AND status = :active',
+            {"sid": student_id, "tid": tutor_id, "active": "ACTIVE"},
         )
         if not configs:
             raise NotFoundError("No configuration found for this student-tutor pair")
@@ -123,17 +121,13 @@ class TutorGetStudentBusySlotsScenario(BaseScenario):
             if not lesson_rows:
                 continue
             lesson = lesson_rows[0]
-            # Отменённый урок время не занимает.
-            if (lesson.get("status") or "SCHEDULED") == "CANCELLED":
+            # Отменённый/отклонённый урок и заявка время не занимают.
+            if (lesson.get("status") or "SCHEDULED") in NON_BLOCKING_LESSON_STATUSES:
                 continue
             start = lesson["start_time"]
             end = lesson["end_time"]
-
-            start_str = str(start)[:10]
-            end_str = str(end)[:10]
-            # Занятость: урок занимает каждый день диапазона, который он
-            # пересекает (полуоткрытые интервалы — как в create).
-            if end_str >= date_from.isoformat() and start_str <= date_to.isoformat():
+            # Полуоткрытые интервалы: урок пересекает UTC-диапазон периода.
+            if to_dt(start) < range_end and to_dt(end) > range_start:
                 busy_slots.append(BusySlot(
                     start=_to_iso(start),
                     end=_to_iso(end),

@@ -1,5 +1,6 @@
+from app.utils.clock import utc_now, to_utc_naive
 import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from core import BaseScenario, NotFoundError, ValidationError, ConflictError, register_scenario, tracked_scenario
 from core.utils.security import extract_token_info
 from app.utils.json_codec import serialize_for_db, parse_row
@@ -10,7 +11,7 @@ from app.utils.participants import (
     is_cancelled_row,
 )
 from app.utils.db_errors import is_unique_violation
-from app.utils.safe_parse import parse_iso_datetime, parse_iso_date
+from app.utils.safe_parse import parse_iso_datetime, parse_range
 from app.utils.lessons import (
     validate_lesson_times,
     build_lesson_create_data,
@@ -19,10 +20,13 @@ from app.utils.lessons import (
     check_lesson_overlap,
     resolve_effective_interval,
     tutor_schedule_lock,
+    status_event,
+    with_status_event,
     TERMINAL_LESSON_STATUSES,
     MANUAL_LESSON_STATUSES,
 )
-from app.utils.notifications import notify_participants, format_lesson_time
+from app.utils.notifications import notify_participants, format_lesson_time, get_user_name
+from app.utils.lesson_view import absence_note, status_history, status_note
 from app.utils.statistics import amount_for_line
 
 from core.dto import BaseDTO
@@ -41,6 +45,8 @@ class TutorLessonItem(BaseModel):
     is_group: bool
     lesson_links: list[dict] | None = None
     status: str = "SCHEDULED"
+    status_note: dict | None = None
+    absence: dict | None = None
 
 
 class TutorGetMyLessonsResponse(BaseModel):
@@ -60,6 +66,8 @@ class TutorLessonStudent(BaseModel):
     paid: bool = False
     cancelled: bool = False
     cancelled_by: str | None = None
+    cancelled_at: str | None = None
+    cancel_reason: str | None = None
 
 
 class TutorGetLessonResponse(BaseModel):
@@ -74,6 +82,9 @@ class TutorGetLessonResponse(BaseModel):
     metadata: dict | None = None
     students: list[TutorLessonStudent] = []
     total: int = 0
+    status_note: dict | None = None
+    absence: dict | None = None
+    status_history: list[dict] = []
 
 
 class TutorCreateLessonDTO(BaseDTO):
@@ -106,6 +117,8 @@ class TutorUpdateLessonDTO(BaseDTO):
     lesson_links: list[dict] | None = None
     lesson_metadata: dict | None = None
     status: str | None = None
+    # Причина смены статуса (отмена, неявка, завершение) — в историю и ученику.
+    reason: str | None = Field(default=None, max_length=500)
 
 
 class TutorUpdateLessonResponse(BaseModel):
@@ -141,22 +154,18 @@ class TutorGetMyLessonsScenario(BaseScenario):
 
         sql = 'SELECT * FROM "lessons" WHERE tutor_id = :tid'
         params: dict = {"tid": tutor_id}
-        if dto.date_from:
-            sql += ' AND start_time >= :df'
-            params["df"] = datetime.datetime.combine(parse_iso_date(dto.date_from, "date_from"), datetime.time.min)
-        if dto.date_to:
-            sql += ' AND start_time < :dt'
-            params["dt"] = datetime.datetime.combine(
-                parse_iso_date(dto.date_to, "date_to") + datetime.timedelta(days=1),
-                datetime.time.min,
-            )
+        if dto.date_from and dto.date_to:
+            start, end = parse_range(dto.date_from, dto.date_to)
+            sql += ' AND start_time < :dt AND end_time > :df'
+            params.update({"df": start, "dt": end})
         sql += ' ORDER BY start_time LIMIT :lim OFFSET :off'
         params["lim"] = dto.limit
         params["off"] = dto.offset
 
         rows = await self._db.query(sql, params)
+        own_settings = await _own_settings(self._db, tutor_id)
 
-        now = datetime.datetime.now()
+        now = utc_now()
         lessons = []
         for l in rows:
             new_status = resolve_lesson_status(
@@ -172,6 +181,8 @@ class TutorGetMyLessonsScenario(BaseScenario):
                 is_group=l["is_group"],
                 lesson_links=parse_row("lessons", l).get("lesson_links"),
                 status=l.get("status") or "SCHEDULED",
+                status_note=status_note(l),
+                absence=absence_note(l, own_settings),
             ))
 
         return TutorGetMyLessonsResponse(lessons=lessons)
@@ -199,7 +210,7 @@ class TutorGetLessonScenario(BaseScenario):
             raise NotFoundError("Lesson not found or access denied")
         lesson = lessons[0]
         start, end = _to_dt(lesson["start_time"]), _to_dt(lesson["end_time"])
-        now = datetime.datetime.now()
+        now = utc_now()
 
         participations = await self._db.query(
             'SELECT lp.lesson_id, lp.student_id, lp.participant_settings, u.full_name, s.user_id '
@@ -245,7 +256,12 @@ class TutorGetLessonScenario(BaseScenario):
                 paid=bool(settings.get("paid", False)),
                 cancelled=cancelled is not None,
                 cancelled_by=(cancelled or {}).get("by"),
+                cancelled_at=(cancelled or {}).get("at"),
+                cancel_reason=(cancelled or {}).get("reason"),
             ))
+        lesson_now = {**lesson, "status": resolve_lesson_status(lesson.get("status"), start, end, now)
+                      or lesson.get("status") or "SCHEDULED"}
+        own_settings = await _own_settings(self._db, tutor_id)
 
         return TutorGetLessonResponse(
             lesson_id=lesson["id"],
@@ -260,6 +276,9 @@ class TutorGetLessonScenario(BaseScenario):
             metadata=parse_row("lessons", lesson).get("lesson_metadata"),
             students=students,
             total=total,
+            status_note=status_note(lesson_now),
+            absence=absence_note(lesson, own_settings),
+            status_history=status_history(lesson),
         )
 
 
@@ -292,7 +311,7 @@ class TutorCreateLessonScenario(BaseScenario):
             # что у броней (tutor_create_booking).
             overlapping = await self._db.query(
                 'SELECT id FROM "lessons" WHERE tutor_id = :tid AND start_time < :et AND end_time > :st '
-                "AND (status IS NULL OR status != 'CANCELLED')",
+                "AND (status IS NULL OR status NOT IN ('CANCELLED', 'REJECTED', 'PENDING'))",
                 {"tid": tutor_id, "et": end_time, "st": start_time},
             )
             check_lesson_overlap(overlapping)
@@ -319,6 +338,7 @@ class TutorCreateLessonScenario(BaseScenario):
                 lesson_links=lesson_links,
                 lesson_metadata=dto.lesson_metadata,
             )
+            lesson_data["status_history"] = [status_event("SCHEDULED", "tutor", actor_user_id=token.user_id)]
             lesson_data = serialize_for_db("lessons", lesson_data)
 
             try:
@@ -394,10 +414,17 @@ class TutorUpdateLessonScenario(BaseScenario):
                 validate_lesson_times(eff_start, eff_end)
                 overlapping = await self._db.query(
                     'SELECT id FROM "lessons" WHERE tutor_id = :tid AND start_time < :et AND end_time > :st AND id != :lid '
-                    "AND (status IS NULL OR status != 'CANCELLED')",
+                    "AND (status IS NULL OR status NOT IN ('CANCELLED', 'REJECTED', 'PENDING'))",
                     {"tid": tutor_id, "et": eff_end, "st": eff_start, "lid": dto.lesson_id},
                 )
                 check_lesson_overlap(overlapping)
+
+            if dto.status is not None:
+                history = parse_row("lessons", lessons[0]).get("status_history")
+                event = status_event(dto.status, "tutor", actor_user_id=token.user_id, reason=dto.reason)
+                history_update = {"status_history": with_status_event(history, event)}
+            else:
+                history_update = {}
 
             update_data = build_lesson_update_data({
                 "start_time": dto.start_time,
@@ -410,20 +437,25 @@ class TutorUpdateLessonScenario(BaseScenario):
                 "status": dto.status,
             })
 
+            update_data.update(history_update)
             if update_data:
                 update_data = serialize_for_db("lessons", update_data)
                 await self._db.update("lessons", dto.lesson_id, update_data)
 
             if dto.status is not None:
                 labels = {"CANCELLED": "отменён", "NO_SHOW": "неявка", "FINISHED": "завершён"}
+                tutor_name = await get_user_name(self._db, token.user_id)
+                reason = f". Причина: {dto.reason.strip()}" if dto.reason and dto.reason.strip() else ""
                 await notify_participants(
                     self._db, dto.lesson_id, "lesson_status_changed",
-                    f"Репетитор отметил урок {format_lesson_time(eff_start)}: {labels[dto.status]}",
+                    f"Репетитор {tutor_name} отметил урок {format_lesson_time(eff_start)}: {labels[dto.status]}{reason}",
                 )
             elif time_changed:
+                tutor_name = await get_user_name(self._db, token.user_id)
                 await notify_participants(
                     self._db, dto.lesson_id, "lesson_rescheduled",
-                    f"Репетитор перенёс урок на {format_lesson_time(eff_start)}",
+                    f"Репетитор {tutor_name} перенёс урок с {format_lesson_time(lessons[0]['start_time'])} "
+                    f"на {format_lesson_time(eff_start)}",
                 )
 
             # Отмена урока помечает все активные записи репетитором.
@@ -436,7 +468,9 @@ class TutorUpdateLessonScenario(BaseScenario):
                     if is_cancelled_row(p):
                         continue
                     settings = parse_row("lesson_participants", p).get("participant_settings") or {}
-                    settings["cancelled"] = build_cancellation("tutor")
+                    settings["cancelled"] = build_cancellation(
+                        "tutor", actor_user_id=token.user_id, reason=dto.reason,
+                    )
                     await self._db.update(
                         "lesson_participants",
                         p["id"],
@@ -450,7 +484,7 @@ class TutorUpdateLessonScenario(BaseScenario):
             if not updated:
                 raise NotFoundError("Lesson not found")
             u = parse_row("lessons", updated[0])
-            now = datetime.datetime.now()
+            now = utc_now()
             new_status = resolve_lesson_status(
                 u.get("status"), _to_dt(u["start_time"]), _to_dt(u["end_time"]), now
             )
@@ -499,9 +533,14 @@ class TutorDeleteLessonScenario(BaseScenario):
         return TutorDeleteLessonResponse(ok=True)
 
 
+async def _own_settings(db, tutor_id: int) -> dict:
+    rows = await db.query('SELECT * FROM "tutor_settings" WHERE tutor_id = :tid', {"tid": tutor_id})
+    return rows[0] if rows else {}
+
+
 def _to_dt(value) -> datetime.datetime:
     if isinstance(value, datetime.datetime):
-        return value.astimezone().replace(tzinfo=None) if value.tzinfo else value
+        return to_utc_naive(value)
     if isinstance(value, str):
         return parse_iso_datetime(value.replace(" ", "T"), "datetime")
     return value

@@ -12,9 +12,11 @@ from app.core.board_settings import board_settings
 from app.core.config import AppSettings
 from app.realtime.hub import hub
 from app.scenarios.boards.boards import CleanupDTO
+from app.scenarios.system.lesson_upkeep import LessonUpkeepDTO
 
 logger = logging.getLogger(__name__)
 BOARD_CLEANUP_EVERY_SECONDS = 3600
+LESSON_UPKEEP_EVERY_SECONDS = 60
 
 
 async def _board_cleanup_loop():
@@ -27,6 +29,19 @@ async def _board_cleanup_loop():
         except Exception:
             logger.exception("Board cleanup failed")
         await asyncio.sleep(BOARD_CLEANUP_EVERY_SECONDS)
+
+
+async def _lesson_upkeep_loop():
+    """Просроченные заявки и уроки во время отпуска/болезни репетитора (раз в минуту)."""
+    while True:
+        try:
+            done = await run("lesson_upkeep", LessonUpkeepDTO())
+            if done.expired_requests or done.system_finished:
+                logger.info("Lesson upkeep: expired=%s system_finished=%s",
+                            done.expired_requests, done.system_finished)
+        except Exception:
+            logger.exception("Lesson upkeep failed")
+        await asyncio.sleep(LESSON_UPKEEP_EVERY_SECONDS)
 
 
 def build_app():
@@ -55,7 +70,8 @@ def build_app():
             result = await run("init_roles", None)
             logger.info("Roles initialized: created=%s", result.created)
             tasks = [asyncio.create_task(hub.autosave_loop(board_settings.autosave_minutes * 60)),
-                     asyncio.create_task(_board_cleanup_loop())]
+                     asyncio.create_task(_board_cleanup_loop()),
+                     asyncio.create_task(_lesson_upkeep_loop())]
             try:
                 yield
             finally:

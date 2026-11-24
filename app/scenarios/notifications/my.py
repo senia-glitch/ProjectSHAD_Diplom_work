@@ -1,3 +1,4 @@
+from app.utils.clock import utc_now, to_utc_naive
 import datetime
 
 from pydantic import BaseModel
@@ -93,7 +94,7 @@ class NotificationsMarkReadScenario(BaseScenario):
             raise NotFoundError("Notification not found")
 
         if rows[0].get("read_at") is None:
-            await self._db.update("notifications", dto.notification_id, {"read_at": datetime.datetime.now()})
+            await self._db.update("notifications", dto.notification_id, {"read_at": utc_now()})
 
         return NotificationsMarkReadResponse(ok=True)
 
@@ -108,7 +109,7 @@ class NotificationsReadAllScenario(BaseScenario):
             'SELECT id FROM "notifications" WHERE user_id = :uid AND read_at IS NULL ORDER BY id',
             {"uid": token.user_id},
         )
-        now = datetime.datetime.now()
+        now = utc_now()
         for row in rows:
             await self._db.update("notifications", row["id"], {"read_at": now})
 

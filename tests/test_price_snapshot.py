@@ -128,6 +128,13 @@ class StubDB:
                 ]
             return [dict(p) for p in self.participants.values()]
         if '"lessons"' in sql:
+            if "end_time > :ds" in sql:
+                # Строгое пересечение с UTC-диапазоном (расчёт свободных окон).
+                return [
+                    dict(l) for l in self.lessons.values()
+                    if ("tutor_id = :tid" not in sql or l["tutor_id"] == params.get("tid"))
+                    and l["start_time"] < params.get("de") and l["end_time"] > params.get("ds")
+                ]
             if "start_time >=" in sql:
                 return [
                     dict(l) for l in self.lessons.values()

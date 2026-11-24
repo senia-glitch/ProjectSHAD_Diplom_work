@@ -5,6 +5,7 @@
 # Запуск: pytest tests/test_security_fixes.py -q
 import asyncio
 import datetime
+from app.utils.clock import utc_now
 import sys
 from pathlib import Path
 
@@ -230,7 +231,7 @@ def test_join_denied_when_self_booking_off():
 def test_leave_after_deadline_forbidden():
     db = StubDB()
     seed_pair(db, cancel_lead=24)
-    start = datetime.datetime.now() + datetime.timedelta(hours=1)
+    start = utc_now() + datetime.timedelta(hours=1)
     db.lessons[1] = {
         "id": 1, "tutor_id": 42, "start_time": start,
         "end_time": start + datetime.timedelta(hours=1), "is_group": True,
@@ -248,7 +249,7 @@ def test_leave_after_deadline_forbidden():
 def test_leave_before_deadline_ok():
     db = StubDB()
     seed_pair(db, cancel_lead=24)
-    start = datetime.datetime.now() + datetime.timedelta(hours=48)
+    start = utc_now() + datetime.timedelta(hours=48)
     db.lessons[1] = {
         "id": 1, "tutor_id": 42, "start_time": start,
         "end_time": start + datetime.timedelta(hours=1), "is_group": True,
@@ -266,31 +267,25 @@ def test_leave_before_deadline_ok():
 def test_update_single_bound_to_past_rejected():
     db = StubDB()
     db.tutors[7] = 42
-    start = datetime.datetime.now() + datetime.timedelta(days=2)
+    start = utc_now() + datetime.timedelta(days=2)
     db.lessons[1] = {
         "id": 1, "tutor_id": 42, "start_time": start,
         "end_time": start + datetime.timedelta(hours=1), "is_group": False,
         "status": "SCHEDULED",
     }
     sc = TutorUpdateLessonScenario(db=db, metrics=DummyMetrics())
-    past = (datetime.datetime.now() - datetime.timedelta(hours=1)).isoformat()
+    past = (utc_now() - datetime.timedelta(hours=1)).isoformat()
     with pytest.raises(ValidationError):
         run(sc.execute(TutorUpdateLessonDTO(
             access_token=tutor_token(), lesson_id=1, start_time=past)))
 
 
-def test_aware_datetime_converted_to_server_local():
+def test_aware_datetime_converted_to_utc():
+    """Сервер работает только в UTC: aware-вход переводится в наивный UTC."""
     import datetime as dtmod
-    local_offset = dtmod.datetime.now().astimezone().utcoffset()
-    # Вход со смещением, заведомо отличным от локального.
-    other_offset = datetime.timedelta(hours=(local_offset.total_seconds() // 3600) + 7)
-    sign = "+" if other_offset >= datetime.timedelta(0) else "-"
-    total = abs(int(other_offset.total_seconds() // 60))
-    off_str = f"{sign}{total // 60:02d}:{total % 60:02d}"
-    aware = dtmod.datetime.fromisoformat(f"2030-01-01T12:00:00{off_str}")
-    got = parse_iso_datetime(f"2030-01-01T12:00:00{off_str}", "start_time")
+    got = parse_iso_datetime("2030-01-01T12:00:00+05:00", "start_time")
     assert got.tzinfo is None
-    assert got == aware.astimezone().replace(tzinfo=None)
+    assert got == dtmod.datetime(2030, 1, 1, 7, 0)
     # И это не наивное отбрасывание смещения.
     assert got != dtmod.datetime(2030, 1, 1, 12, 0)
 

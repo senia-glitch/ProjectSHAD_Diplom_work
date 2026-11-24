@@ -1,4 +1,5 @@
 from core import run
+from app.scenarios.tutor.configurations import TutorAnswerLinkDTO, TutorAnswerLinkResponse
 from fastapi import APIRouter, Depends, Header, Query
 from app.api.access import external_scenario
 from app.api.v1.dependencies import get_current_user
@@ -28,6 +29,7 @@ from app.scenarios.tutor.configurations import (
     TutorUpdateConfigurationDTO,
     TutorUpdateConfigurationResponse,
 )
+from app.scenarios.tutor.requests import TutorDecideLessonDTO, TutorDecideLessonResponse
 from app.scenarios.tutor.lesson_details import TutorLessonDetailsDTO, TutorLessonDetailsResponse
 from app.scenarios.tutor.lessons import (
     TutorCreateLessonDTO,
@@ -163,6 +165,32 @@ async def update_lesson(
     dto.access_token = authorization.split(" ")[1]
     dto.lesson_id = lesson_id
     return await run("tutor_update_lesson", dto)
+
+
+@router.post("/lessons/{lesson_id}/confirm", response_model=TutorDecideLessonResponse)
+@external_scenario("tutor.confirm_lesson", core="tutor_confirm_lesson")
+async def confirm_lesson(
+    lesson_id: int,
+    dto: TutorDecideLessonDTO,
+    authorization: str = Header(...),
+    current_user: dict = Depends(get_current_user),
+):
+    dto.access_token = authorization.split(" ")[1]
+    dto.lesson_id = lesson_id
+    return await run("tutor_confirm_lesson", dto)
+
+
+@router.post("/lessons/{lesson_id}/reject", response_model=TutorDecideLessonResponse)
+@external_scenario("tutor.reject_lesson", core="tutor_reject_lesson")
+async def reject_lesson(
+    lesson_id: int,
+    dto: TutorDecideLessonDTO,
+    authorization: str = Header(...),
+    current_user: dict = Depends(get_current_user),
+):
+    dto.access_token = authorization.split(" ")[1]
+    dto.lesson_id = lesson_id
+    return await run("tutor_reject_lesson", dto)
 
 
 @router.delete("/lessons/{lesson_id}", response_model=TutorDeleteLessonResponse)
@@ -373,6 +401,28 @@ async def reset_configuration(
         config_id=config_id,
     )
     return await run("tutor_reset_configuration", dto)
+
+
+@router.post("/configurations/{config_id}/accept", response_model=TutorAnswerLinkResponse)
+@external_scenario("tutor.accept_configuration", core="tutor_accept_configuration")
+async def accept_configuration(
+    config_id: int,
+    authorization: str = Header(...),
+    current_user: dict = Depends(get_current_user),
+):
+    dto = TutorAnswerLinkDTO(access_token=authorization.split(" ")[1], config_id=config_id)
+    return await run("tutor_accept_configuration", dto)
+
+
+@router.post("/configurations/{config_id}/decline", response_model=TutorAnswerLinkResponse)
+@external_scenario("tutor.decline_configuration", core="tutor_decline_configuration")
+async def decline_configuration(
+    config_id: int,
+    authorization: str = Header(...),
+    current_user: dict = Depends(get_current_user),
+):
+    dto = TutorAnswerLinkDTO(access_token=authorization.split(" ")[1], config_id=config_id)
+    return await run("tutor_decline_configuration", dto)
 
 
 @router.delete("/configurations/{config_id}", response_model=TutorDeleteConfigurationResponse)

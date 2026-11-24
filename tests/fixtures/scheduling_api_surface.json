@@ -1,0 +1,8 @@
+[
+  {"method": "POST", "path": "/api/v1/tutor/lessons/{lesson_id}/confirm", "action": "tutor.confirm_lesson", "response": "TutorDecideLessonResponse", "scenario": "tutor_confirm_lesson"},
+  {"method": "POST", "path": "/api/v1/tutor/lessons/{lesson_id}/reject", "action": "tutor.reject_lesson", "response": "TutorDecideLessonResponse", "scenario": "tutor_reject_lesson"},
+  {"method": "POST", "path": "/api/v1/tutor/configurations/{config_id}/accept", "action": "tutor.accept_configuration", "response": "TutorAnswerLinkResponse", "scenario": "tutor_accept_configuration"},
+  {"method": "POST", "path": "/api/v1/tutor/configurations/{config_id}/decline", "action": "tutor.decline_configuration", "response": "TutorAnswerLinkResponse", "scenario": "tutor_decline_configuration"},
+  {"method": "POST", "path": "/api/v1/student/configurations/{config_id}/accept", "action": "student.accept_configuration", "response": "StudentAnswerLinkResponse", "scenario": "student_accept_configuration"},
+  {"method": "POST", "path": "/api/v1/student/configurations/{config_id}/decline", "action": "student.decline_configuration", "response": "StudentAnswerLinkResponse", "scenario": "student_decline_configuration"}
+]

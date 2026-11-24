@@ -12,7 +12,10 @@ x-backend-env: &backend-env
   FAT_PORT: "8000"
   FAT_WORKERS: "1"
   FAT_RELOAD: "false"
-  TZ: ${SHAD_TIMEZONE:-Asia/Irkutsk}
+  # Сервер хранит и считает время только в UTC; личный пояс — настройка пользователя.
+  TZ: UTC
+  # Пояс, в котором были записаны данные до перехода на UTC (нужен один раз миграции).
+  SHAD_LEGACY_TIMEZONE: ${SHAD_TIMEZONE:-Asia/Irkutsk}
 
 x-backend: &backend
   image: ${COMPOSE_PROJECT_NAME:-shad-tutoring}-api:local
@@ -36,8 +39,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run dev.ps1 init}
       POSTGRES_DB: ${POSTGRES_DB:-shad_tutoring}
       POSTGRES_TEST_DB: ${POSTGRES_TEST_DB:-shad_tutoring_test}
-      TZ: ${SHAD_TIMEZONE:-Asia/Irkutsk}
-    command: ["postgres", "-c", "timezone=${SHAD_TIMEZONE:-Asia/Irkutsk}"]
+      TZ: UTC
+    command: ["postgres", "-c", "timezone=UTC"]
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro

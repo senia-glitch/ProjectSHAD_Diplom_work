@@ -10,6 +10,19 @@ export const useScheduleStore = defineStore('schedule', {
     backgroundBookings: [],
     studentWindows: [],
   }),
+  getters: {
+    // Окна хранятся по диапазонам (видимая неделя и диапазон формы лежат
+    // рядом), поэтому одно окно может прийти дважды. Читателям — без дублей.
+    uniqueStudentWindows(state) {
+      const seen = new Set()
+      return state.studentWindows.filter((w) => {
+        const key = `${w.tutorUserId}|${w.start}|${w.end}`
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+    },
+  },
   actions: {
     setLessons(lessons) {
       this.lessons = lessons || []

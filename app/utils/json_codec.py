@@ -40,6 +40,7 @@ JSON_FIELDS: dict[str, dict[str, str]] = {
         "lesson_settings": "dict",
         "lesson_links": "list",
         "lesson_metadata": "dict",
+        "status_history": "list",
     },
     "lesson_participants": {
         "participant_settings": "dict",

@@ -43,7 +43,7 @@ export function useSchedulePage() {
   const tutors = computed(() => useRosterStore().tutors)
   const participantsMap = computed(() => scheduleStore.participantsByLesson)
   const dimBookings = computed(() => scheduleStore.backgroundBookings)
-  const freeWindows = computed(() => scheduleStore.studentWindows)
+  const freeWindows = computed(() => scheduleStore.uniqueStudentWindows)
   const scheduleSettings = computed(() => {
     if (authStore.role === 'student') {
       return (
@@ -162,7 +162,7 @@ export function useSchedulePage() {
       if (slot.tutor_user_id) {
         const t = tutors.value.find((x) => x.tutor_user_id === slot.tutor_user_id)
         const step = t?.slot_step_minutes > 0 ? t.slot_step_minutes : SLOT_STEP_DEFAULT
-        const wins = scheduleStore.studentWindows.filter((w) => w.tutorUserId === slot.tutor_user_id)
+        const wins = scheduleStore.uniqueStudentWindows.filter((w) => w.tutorUserId === slot.tutor_user_id)
         for (const it of buildStudentPreview(slot, wins, step).items) {
           if (!it.ok) continue
           out.push({ lesson_id: `pv-${slot.key}-${it.key}`, start_time: it.start, end_time: it.end })

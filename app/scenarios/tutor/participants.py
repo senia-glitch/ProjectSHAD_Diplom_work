@@ -151,8 +151,8 @@ class TutorAddParticipantScenario(BaseScenario):
         # Снапшот цены: фиксируем ставку/скидку связи на день урока.
         # Связь обязательна: репетитор может добавлять только своих учеников.
         configs = await self._db.query(
-            'SELECT * FROM "configurations" WHERE student_id = :sid AND tutor_id = :tid',
-            {"sid": student_id, "tid": tutor_id},
+            'SELECT * FROM "configurations" WHERE student_id = :sid AND tutor_id = :tid AND status = :active',
+            {"sid": student_id, "tid": tutor_id, "active": "ACTIVE"},
         )
         if not configs:
             raise ForbiddenError("Student has no configuration with you")

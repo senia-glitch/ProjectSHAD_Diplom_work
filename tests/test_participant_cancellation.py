@@ -8,6 +8,7 @@
 # Запуск: pytest tests/test_participant_cancellation.py -q
 import asyncio
 import datetime
+from app.utils.clock import utc_now
 import sys
 from pathlib import Path
 
@@ -40,7 +41,7 @@ from app.scenarios.tutor.students import (
 
 
 def dt_future(days=3, h=10):
-    d = datetime.datetime.now() + datetime.timedelta(days=days)
+    d = utc_now() + datetime.timedelta(days=days)
     return d.replace(hour=h, minute=0, second=0, microsecond=0)
 
 
@@ -341,16 +342,22 @@ def test_tutor_cancel_marks_all_keep_first():
     assert by[6] == "tutor"
 
 
-def test_my_lessons_hides_cancelled():
+def test_my_lessons_keep_cancelled_in_history():
+    """История отмен: отменённая запись остаётся у ученика со статусом и пометкой, кто отменил."""
     db = make_db()
     start, end = dt_future(3, 10), dt_future(3, 11)
-    db.seed_lesson(1, start, end)
+    db.seed_lesson(1, start, end, is_group=True)
     db.seed_lesson(2, dt_future(4, 10), dt_future(4, 11))
-    db.seed_participant(1, 5, {"cancelled": {"by": "student", "at": "x"}})
+    db.seed_participant(1, 5, {"cancelled": {"by": "student", "at": "x", "reason": "болею"}})
     db.seed_participant(2, 5, {})
     sc = StudentGetMyLessonsScenario(db=db, metrics=DummyMetrics())
     res = run(sc.execute(StudentGetMyLessonsDTO(access_token=student_token())))
-    assert [l.lesson_id for l in res.lessons] == [2]
+    by_id = {l.lesson_id: l for l in res.lessons}
+    assert sorted(by_id) == [1, 2]
+    assert by_id[1].status == "CANCELLED"
+    assert by_id[1].status_note["by"] == "student"
+    assert by_id[1].status_note["reason"] == "болею"
+    assert by_id[2].status == "SCHEDULED" and by_id[2].status_note is None
 
 
 def test_overlap_ignores_cancelled_lesson():
@@ -379,7 +386,7 @@ def test_payment_forbidden_on_cancelled():
 
 def test_statistics_initiators_and_revenue_exclusion():
     db = make_db()
-    base = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    base = utc_now().replace(hour=0, minute=0, second=0, microsecond=0)
     year = base.year
     start = base.replace(hour=10) + datetime.timedelta(days=2)
     end = start + datetime.timedelta(hours=1)
@@ -402,7 +409,7 @@ def test_statistics_initiators_and_revenue_exclusion():
 
 def test_details_hides_cancelled_with_counts():
     db = make_db()
-    base = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    base = utc_now().replace(hour=0, minute=0, second=0, microsecond=0)
     start = base.replace(hour=10) + datetime.timedelta(days=2)
     end = start + datetime.timedelta(hours=1)
     db.seed_lesson(1, start, end, status="FINISHED")
@@ -422,7 +429,7 @@ def test_details_hides_cancelled_with_counts():
 
 def test_join_ongoing_allowed():
     db = make_db()
-    now = datetime.datetime.now()
+    now = utc_now()
     db.seed_lesson(1, now - datetime.timedelta(minutes=30), now + datetime.timedelta(minutes=30), is_group=True)
     sc = StudentJoinLessonScenario(db=db, metrics=DummyMetrics())
     res = run(sc.execute(StudentJoinLessonDTO(access_token=student_token(), lesson_id=1)))
@@ -434,7 +441,7 @@ def test_leave_finished_forbidden():
     from core import ValidationError
     import pytest
     db = make_db()
-    now = datetime.datetime.now()
+    now = utc_now()
     db.seed_lesson(1, now - datetime.timedelta(hours=2), now - datetime.timedelta(hours=1), status="FINISHED")
     db.seed_participant(1, 5, {})
     sc = StudentLeaveLessonScenario(db=db, metrics=DummyMetrics())
@@ -448,7 +455,7 @@ def test_tutor_remove_finished_forbidden():
     from core import ValidationError
     import pytest
     db = make_db()
-    now = datetime.datetime.now()
+    now = utc_now()
     db.seed_lesson(1, now - datetime.timedelta(hours=2), now - datetime.timedelta(hours=1), status="FINISHED")
     db.seed_participant(1, 5, {})
     sc = TutorRemoveParticipantScenario(db=db, metrics=DummyMetrics())

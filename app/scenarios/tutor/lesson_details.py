@@ -1,3 +1,4 @@
+from app.utils.clock import utc_now, to_utc_naive, to_local, from_local
 import datetime
 from pydantic import BaseModel
 from core import BaseScenario, NotFoundError, ValidationError, register_scenario, tracked_scenario
@@ -81,10 +82,15 @@ class TutorLessonDetailsScenario(BaseScenario):
             raise ValidationError("Date range must not exceed 366 days")
         wanted_students = set(_parse_student_ids(dto.student_ids))
 
-        range_start = datetime.datetime.combine(date_from, datetime.time.min)
-        range_end = datetime.datetime.combine(
-            date_to + datetime.timedelta(days=1), datetime.time.min
+        # Отчёт в личном поясе репетитора: местные даты → UTC-границы, время уроков → местное.
+        offset_rows = await self._db.query(
+            'SELECT timezone_offset FROM "tutor_settings" WHERE tutor_id = :tid', {"tid": tutor_id}
         )
+        offset = (offset_rows[0].get("timezone_offset") or 0) if offset_rows else 0
+        range_start = from_local(datetime.datetime.combine(date_from, datetime.time.min), offset)
+        range_end = from_local(datetime.datetime.combine(
+            date_to + datetime.timedelta(days=1), datetime.time.min
+        ), offset)
 
         lessons = await self._db.query(
             'SELECT * FROM "lessons" WHERE tutor_id = :tid '
@@ -114,12 +120,12 @@ class TutorLessonDetailsScenario(BaseScenario):
             c["student_id"]: (c["hourly_rate"], c["discount"]) for c in configs
         }
 
-        now = datetime.datetime.now()
+        now = to_local(utc_now(), offset)
         result = []
         cancelled_by_student = 0
         cancelled_by_tutor = 0
         for lesson in lessons:
-            start, end = to_dt(lesson["start_time"]), to_dt(lesson["end_time"])
+            start, end = to_local(to_dt(lesson["start_time"]), offset), to_local(to_dt(lesson["end_time"]), offset)
             current = lesson.get("status") or "SCHEDULED"
             status = resolve_lesson_status(current, start, end, now) or current
             parsed = parse_row("lessons", lesson)

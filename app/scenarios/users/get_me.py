@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from core import BaseScenario, NotFoundError, register_scenario, tracked_scenario
 from core.utils.security import extract_token_info
 from core.dto import BaseDTO
+from app.utils.notifications import user_offset
 
 
 class GetMeDTO(BaseDTO):
@@ -17,6 +18,8 @@ class GetMeResponse(BaseModel):
     personal_number: str
     gender: str | None
     additional_info: str | None
+    # Личный пояс (часы от UTC): клиент показывает время в нём.
+    timezone_offset: int = 0
 
 
 @register_scenario("get_me", dto=GetMeDTO, response=GetMeResponse)
@@ -43,4 +46,5 @@ class GetMeScenario(BaseScenario):
             personal_number=user["personal_number"],
             gender=user.get("gender"),
             additional_info=user.get("additional_info"),
+            timezone_offset=await user_offset(self._db, user["id"]),
         )

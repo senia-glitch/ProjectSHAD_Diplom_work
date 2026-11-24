@@ -1,4 +1,5 @@
 from core import run
+from app.scenarios.student.configurations import StudentAnswerLinkDTO, StudentAnswerLinkResponse
 from fastapi import APIRouter, Depends, Header, Query
 from app.api.access import external_scenario
 from app.api.v1.dependencies import get_current_user
@@ -145,12 +146,14 @@ async def join_lesson(
 @external_scenario("student.leave_lesson", core="student_leave_lesson")
 async def leave_lesson(
     lesson_id: int,
+    reason: str | None = Query(default=None, max_length=500),
     authorization: str = Header(...),
     current_user: dict = Depends(get_current_user),
 ):
     dto = StudentLeaveLessonDTO(
         access_token=authorization.split(" ")[1],
         lesson_id=lesson_id,
+        reason=reason,
     )
     return await run("student_leave_lesson", dto)
 
@@ -225,6 +228,28 @@ async def create_configuration_by_code(
 ):
     dto.access_token = authorization.split(" ")[1]
     return await run("student_create_configuration_by_code", dto)
+
+
+@router.post("/configurations/{config_id}/accept", response_model=StudentAnswerLinkResponse)
+@external_scenario("student.accept_configuration", core="student_accept_configuration")
+async def accept_configuration(
+    config_id: int,
+    authorization: str = Header(...),
+    current_user: dict = Depends(get_current_user),
+):
+    dto = StudentAnswerLinkDTO(access_token=authorization.split(" ")[1], config_id=config_id)
+    return await run("student_accept_configuration", dto)
+
+
+@router.post("/configurations/{config_id}/decline", response_model=StudentAnswerLinkResponse)
+@external_scenario("student.decline_configuration", core="student_decline_configuration")
+async def decline_configuration(
+    config_id: int,
+    authorization: str = Header(...),
+    current_user: dict = Depends(get_current_user),
+):
+    dto = StudentAnswerLinkDTO(access_token=authorization.split(" ")[1], config_id=config_id)
+    return await run("student_decline_configuration", dto)
 
 
 @router.delete("/configurations/{config_id}", response_model=StudentDeleteConfigurationResponse)

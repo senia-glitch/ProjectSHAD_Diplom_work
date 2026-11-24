@@ -143,8 +143,13 @@ class CaptureStub(SnapshotStub):
 
 
 def test_format_lesson_time():
-    assert format_lesson_time(datetime.datetime(2030, 6, 1, 10, 0)) == "01.06.2030 10:00"
-    assert format_lesson_time("2030-06-01T10:00:00") == "01.06.2030 10:00"
+    """Метка момента в UTC; конкретное время подставляется в поясе получателя."""
+    from app.utils.notifications import render_times
+    mark = format_lesson_time(datetime.datetime(2030, 6, 1, 10, 0))
+    assert mark == format_lesson_time("2030-06-01T10:00:00")
+    assert render_times(f"Урок {mark}", 0) == "Урок 01.06.2030 10:00"
+    assert render_times(f"Урок {mark}", 8) == "Урок 01.06.2030 18:00"
+    assert render_times(f"Урок {mark}", -12) == "Урок 31.05.2030 22:00"
 
 
 def test_notify_user_creates_row():

@@ -1,3 +1,4 @@
+from app.utils.clock import utc_now, to_utc_naive, to_local, from_local
 import datetime
 from pydantic import BaseModel
 from core import BaseScenario, NotFoundError, ValidationError, register_scenario, tracked_scenario
@@ -181,7 +182,17 @@ class TutorGetStatisticsScenario(BaseScenario):
             raise NotFoundError("Tutor not found")
         tutor_id = tutors[0]["id"]
 
-        now = datetime.datetime.now()
+        # Отчёт строится в личном поясе репетитора: его дни, недели и месяцы.
+        # Хранение — UTC; границы периода переводятся в UTC, время уроков — в местное.
+        offset_rows = await self._db.query(
+            'SELECT timezone_offset FROM "tutor_settings" WHERE tutor_id = :tid', {"tid": tutor_id}
+        )
+        offset = (offset_rows[0].get("timezone_offset") or 0) if offset_rows else 0
+
+        def local(value):
+            return to_local(to_dt(value), offset)
+
+        now = to_local(utc_now(), offset)
         year = dto.year if dto.year is not None else now.year
         if not 2000 <= year <= 2100:
             raise ValidationError("Invalid year")
@@ -198,10 +209,10 @@ class TutorGetStatisticsScenario(BaseScenario):
             raise ValidationError(f"Invalid granularity: {granularity}")
         wanted_students = set(_parse_student_ids(dto.student_ids))
 
-        range_start = datetime.datetime.combine(date_from, datetime.time.min)
-        range_end = datetime.datetime.combine(
+        range_start = from_local(datetime.datetime.combine(date_from, datetime.time.min), offset)
+        range_end = from_local(datetime.datetime.combine(
             date_to + datetime.timedelta(days=1), datetime.time.min
-        )
+        ), offset)
 
         lessons = await self._db.query(
             'SELECT id, start_time, end_time, status FROM "lessons" '
@@ -248,7 +259,7 @@ class TutorGetStatisticsScenario(BaseScenario):
             )["participant_settings"] or {}
             if cancellation_of(settings) is not None:
                 continue
-            st = to_dt(row["start_time"])
+            st = local(row["start_time"])
             cur = bounds.get(row["student_id"])
             if cur is None:
                 bounds[row["student_id"]] = [st, st]
@@ -292,7 +303,7 @@ class TutorGetStatisticsScenario(BaseScenario):
                 else:
                     cancelled_by_tutor += 1
                 continue
-            start, end = to_dt(row["start_time"]), to_dt(row["end_time"])
+            start, end = local(row["start_time"]), local(row["end_time"])
             current = row.get("status") or "SCHEDULED"
             effective = resolve_lesson_status(current, start, end, now) or current
             snapshot = settings.get("price_snapshot") or {}
@@ -321,7 +332,7 @@ class TutorGetStatisticsScenario(BaseScenario):
         # Будущие занятия на 4 недели вперёд — для секции прогноза.
         # Отдельный запрос от сегодня, не зависит от выбранного периода.
         upcoming: list[UpcomingRow] = []
-        future_from = datetime.datetime.combine(now.date(), datetime.time.min)
+        future_from = from_local(datetime.datetime.combine(now.date(), datetime.time.min), offset)
         future_to = future_from + datetime.timedelta(days=28)
         future_rows = await self._db.query(
             'SELECT lp.lesson_id, lp.student_id, lp.participant_settings, '
@@ -346,7 +357,7 @@ class TutorGetStatisticsScenario(BaseScenario):
             # Отменённые записи в прогнозе не показываем.
             if cancellation_of(settings) is not None:
                 continue
-            start, end = to_dt(row["start_time"]), to_dt(row["end_time"])
+            start, end = local(row["start_time"]), local(row["end_time"])
             snapshot = settings.get("price_snapshot") or {}
             if snapshot.get("final_per_hour") is not None:
                 price, estimated = int(snapshot["final_per_hour"]), False

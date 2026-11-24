@@ -1,5 +1,6 @@
 """Чистая бизнес-логика уроков. Без IO-зависимостей."""
 
+from app.utils.clock import utc_now, to_utc_naive
 import asyncio
 import datetime
 from core import ConflictError, ValidationError
@@ -27,25 +28,44 @@ async def tutor_schedule_lock(tutor_id: int) -> asyncio.Lock:
 
 # Статусы урока. SCHEDULED/ONGOING/FINISHED двигает только время
 # (resolve_lesson_status), CANCELLED/NO_SHOW ставит репетитор вручную.
-# FINISHED/CANCELLED/NO_SHOW терминальны: время их не меняет.
+# PENDING — заявка ученика ждёт подтверждения репетитора (время не занимает);
+# REJECTED — заявка отклонена (репетитором или системой);
+# SYSTEM_FINISHED — урок пришёлся на отпуск/болезнь и закрыт системой
+# (в оплатах и статистике как проведённый не учитывается).
+# FINISHED/CANCELLED/NO_SHOW/REJECTED/SYSTEM_FINISHED терминальны.
+LESSON_STATUS_PENDING = "PENDING"
 LESSON_STATUS_SCHEDULED = "SCHEDULED"
 LESSON_STATUS_ONGOING = "ONGOING"
 LESSON_STATUS_FINISHED = "FINISHED"
 LESSON_STATUS_CANCELLED = "CANCELLED"
 LESSON_STATUS_NO_SHOW = "NO_SHOW"
+LESSON_STATUS_REJECTED = "REJECTED"
+LESSON_STATUS_SYSTEM_FINISHED = "SYSTEM_FINISHED"
 
 LESSON_STATUSES = frozenset({
+    LESSON_STATUS_PENDING,
     LESSON_STATUS_SCHEDULED,
     LESSON_STATUS_ONGOING,
     LESSON_STATUS_FINISHED,
     LESSON_STATUS_CANCELLED,
     LESSON_STATUS_NO_SHOW,
+    LESSON_STATUS_REJECTED,
+    LESSON_STATUS_SYSTEM_FINISHED,
 })
 
 TERMINAL_LESSON_STATUSES = frozenset({
     LESSON_STATUS_FINISHED,
     LESSON_STATUS_CANCELLED,
     LESSON_STATUS_NO_SHOW,
+    LESSON_STATUS_REJECTED,
+    LESSON_STATUS_SYSTEM_FINISHED,
+})
+
+# Не занимают время репетитора и ученика.
+NON_BLOCKING_LESSON_STATUSES = frozenset({
+    LESSON_STATUS_PENDING,
+    LESSON_STATUS_CANCELLED,
+    LESSON_STATUS_REJECTED,
 })
 
 MANUAL_LESSON_STATUSES = frozenset({
@@ -86,6 +106,10 @@ def resolve_lesson_status(
     current = current or LESSON_STATUS_SCHEDULED
     if current in TERMINAL_LESSON_STATUSES:
         return None
+    if current == LESSON_STATUS_PENDING:
+        # Заявку без ответа к началу урока отклоняет система
+        # (фоновая задача записывает это в историю статусов).
+        return LESSON_STATUS_REJECTED if now >= start_time else None
     if now >= end_time:
         return LESSON_STATUS_FINISHED
     if now >= start_time:
@@ -105,7 +129,7 @@ def validate_lesson_times(
     if duration.total_seconds() / 60 > MAX_LESSON_DURATION_MINUTES:
         raise ValidationError(f"Lesson duration cannot exceed {MAX_LESSON_DURATION_MINUTES} minutes (168 hours)")
     if now is None:
-        now = datetime.datetime.now()
+        now = utc_now()
     if start_time < now:
         raise ValidationError("Cannot create lesson in the past")
 
@@ -126,33 +150,28 @@ def check_slot_availability(
     free_slots: list[dict],
     step_minutes: int | None = None,
 ) -> bool:
+    """Урок целиком внутри одного непрерывного свободного окна и стоит по шагу
+    от начала этого окна. Смежные окна (например, разрезанные полуночью
+    в поясе репетитора) склеиваются: полночь UTC окно не режет."""
     from app.utils.safe_parse import parse_iso_datetime
 
-    current = requested_start
-    while current < requested_end:
-        next_day = current.date() + datetime.timedelta(days=1)
-        day_end = datetime.datetime.combine(next_day, datetime.time.min)
-        piece_end = min(requested_end, day_end)
-
-        piece_slot = None
-        for s in free_slots:
-            slot_start = parse_iso_datetime(s["start"], "slot.start")
-            slot_end = parse_iso_datetime(s["end"], "slot.end")
-            if slot_start <= current and slot_end >= piece_end:
-                piece_slot = (slot_start, slot_end)
-                break
-
-        if piece_slot is None:
-            return False
-
-        if step_minutes and step_minutes > 0:
-            offset = int((current - piece_slot[0]).total_seconds() // 60)
-            if offset % step_minutes != 0:
-                return False
-
-        current = day_end
-
-    return True
+    intervals = sorted(
+        (parse_iso_datetime(s["start"], "slot.start"), parse_iso_datetime(s["end"], "slot.end"))
+        for s in free_slots
+    )
+    merged: list[list[datetime.datetime]] = []
+    for start, end in intervals:
+        if merged and start <= merged[-1][1]:
+            merged[-1][1] = max(merged[-1][1], end)
+        else:
+            merged.append([start, end])
+    for start, end in merged:
+        if start <= requested_start and requested_end <= end:
+            if step_minutes and step_minutes > 0:
+                offset = int((requested_start - start).total_seconds() // 60)
+                return offset % step_minutes == 0
+            return True
+    return False
 
 
 def build_lesson_create_data(
@@ -197,3 +216,46 @@ def build_lesson_update_data(dto_fields: dict) -> dict:
             else:
                 result[k] = v
     return result
+
+
+STATUS_ACTORS = frozenset({"system", "tutor", "student"})
+MAX_REASON_LENGTH = 500
+
+
+def status_event(
+    status: str,
+    by: str,
+    *,
+    actor_user_id: int | None = None,
+    reason: str | None = None,
+    meta: dict | None = None,
+    at: datetime.datetime | None = None,
+) -> dict:
+    """Запись истории статуса урока: кто (система/репетитор/ученик), когда, почему."""
+    if by not in STATUS_ACTORS:
+        raise ValueError(f"Unknown status actor: {by}")
+    event = {
+        "status": status,
+        "by": by,
+        "actor_user_id": actor_user_id,
+        "at": (at or utc_now()).replace(microsecond=0).isoformat(),
+    }
+    reason = (reason or "").strip()
+    if reason:
+        event["reason"] = reason[:MAX_REASON_LENGTH]
+    if meta:
+        event["meta"] = meta
+    return event
+
+
+def with_status_event(history, event: dict) -> list:
+    """Новая история с добавленным событием (исходный список не меняется)."""
+    return [*(history if isinstance(history, list) else []), event]
+
+
+def last_status_event(history, statuses=None) -> dict | None:
+    """Последнее событие (опционально — только среди указанных статусов)."""
+    for event in reversed(history if isinstance(history, list) else []):
+        if isinstance(event, dict) and (statuses is None or event.get("status") in statuses):
+            return event
+    return None

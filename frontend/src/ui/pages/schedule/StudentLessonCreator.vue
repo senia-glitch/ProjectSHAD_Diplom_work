@@ -128,7 +128,7 @@ const emit = defineEmits(['clear', 'update:saving', 'ensure-color', 'set-color']
 const createGeneralErr = ref('')
 const weekErr = ref('')
 const weekOpen = ref(false)
-const windows = computed(() => useScheduleStore().studentWindows)
+const windows = computed(() => useScheduleStore().uniqueStudentWindows)
 
 const pickedIds = computed(() => [
   ...new Set(props.slots.map((s) => s.tutor_user_id).filter(Boolean)),

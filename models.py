@@ -2,6 +2,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, time
 
 from pydantic import NaiveDatetime
+from app.utils.clock import utc_now
 from sqlmodel import SQLModel, Field
 import sqlalchemy as sa
 from sqlalchemy import JSON, UniqueConstraint
@@ -31,7 +32,7 @@ class User(SQLModel, table=True):
     """Пользователи системы."""
     __tablename__ = "users"
     id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: Optional[NaiveDatetime] = Field(default_factory=datetime.now)
+    created_at: Optional[NaiveDatetime] = Field(default_factory=utc_now)
     refresh_token: Optional[str] = Field(default=None, max_length=500)
 
     role_id: int = Field(foreign_key="roles.id")
@@ -85,6 +86,8 @@ class StudentSettings(SQLModel, table=True):
     schedule_view: str = Field(default="INFORMATIVE", max_length=20)
     display_time_from: str = Field(default="00:00", max_length=5)
     display_time_to: str = Field(default="23:59", max_length=5)
+    # Связь с этим учеником создаётся только после его явного согласия.
+    require_link_consent: bool = Field(default=True)
 
 
 class TutorSettings(SQLModel, table=True):
@@ -105,6 +108,15 @@ class TutorSettings(SQLModel, table=True):
     booking_lead_time_hours: int = Field(default=24)
     cancellation_lead_time_hours: int = Field(default=24)
     default_links: Optional[List[Dict[str, str]] | str] = Field(default=None, sa_type=JSON)
+    # Значение по умолчанию для новых связей: запись ученика без подтверждения.
+    auto_confirm_bookings: bool = Field(default=True)
+    # Связь с этим репетитором создаётся только после его явного согласия.
+    require_link_consent: bool = Field(default=True)
+    # Отпуск/болезнь с границами (наивный UTC). Пока период идёт, запись закрыта,
+    # уроки периода помечаются, начавшиеся закрывает система.
+    absence_status: Optional[str] = Field(default=None, max_length=20)
+    absence_from: Optional[NaiveDatetime] = None
+    absence_to: Optional[NaiveDatetime] = None
 
 
 # ============================================
@@ -131,6 +143,12 @@ class Configuration(SQLModel, table=True):
     student_notes: Optional[str] = None
     link_visibility_enabled: bool = Field(default=False)
     link_lead_time_minutes: int = Field(default=0)
+    # Запись ученика сразу подтверждена (False — заявка ждёт решения репетитора).
+    auto_confirm_bookings: bool = Field(default=True)
+    # ACTIVE — связь действует; PENDING — ждёт согласия второй стороны.
+    status: str = Field(default="ACTIVE", max_length=20)
+    requested_by: Optional[str] = Field(default=None, max_length=20)
+    requested_at: Optional[NaiveDatetime] = None
 
     __table_args__ = (
         UniqueConstraint("student_id", "tutor_id", name="uq_student_tutor"),
@@ -145,8 +163,8 @@ class Booking(SQLModel, table=True):
     """Бронь — повторяющаяся блокировка времени репетитора."""
     __tablename__ = "bookings"
     id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: Optional[NaiveDatetime] = Field(default_factory=datetime.now)
-    updated_at: Optional[NaiveDatetime] = Field(default_factory=datetime.now)
+    created_at: Optional[NaiveDatetime] = Field(default_factory=utc_now)
+    updated_at: Optional[NaiveDatetime] = Field(default_factory=utc_now)
 
     tutor_id: int = Field(foreign_key="tutors.id")
     weekday: str = Field(max_length=20)
@@ -166,8 +184,8 @@ class Lesson(SQLModel, table=True):
     """Уроки."""
     __tablename__ = "lessons"
     id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: Optional[NaiveDatetime] = Field(default_factory=datetime.now)
-    updated_at: Optional[NaiveDatetime] = Field(default_factory=datetime.now)
+    created_at: Optional[NaiveDatetime] = Field(default_factory=utc_now)
+    updated_at: Optional[NaiveDatetime] = Field(default_factory=utc_now)
 
     tutor_id: int = Field(foreign_key="tutors.id")
     start_time: NaiveDatetime
@@ -180,14 +198,18 @@ class Lesson(SQLModel, table=True):
     lesson_links: Optional[List[Dict[str, str]] | str] = Field(default=None, sa_type=JSON)
     lesson_metadata: Optional[Dict[str, Any] | str] = Field(default=None, sa_type=JSON)
     lesson_descriptions: Optional[str] = None
+    # История смены статуса: [{status, by: system|tutor|student, actor_user_id, at, reason, meta}].
+    # Отмена, отклонение заявки и закрытие системой фиксируются здесь, а не в lesson_metadata
+    # (её репетитор может перезаписать правкой урока).
+    status_history: Optional[List[Dict[str, Any]] | str] = Field(default=None, sa_type=JSON)
 
 
 class LessonParticipant(SQLModel, table=True):
     """Участники урока."""
     __tablename__ = "lesson_participants"
     id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: Optional[NaiveDatetime] = Field(default_factory=datetime.now)
-    updated_at: Optional[NaiveDatetime] = Field(default_factory=datetime.now)
+    created_at: Optional[NaiveDatetime] = Field(default_factory=utc_now)
+    updated_at: Optional[NaiveDatetime] = Field(default_factory=utc_now)
 
     lesson_id: int = Field(foreign_key="lessons.id")
     student_id: int = Field(foreign_key="students.id")
@@ -208,7 +230,7 @@ class Notification(SQLModel, table=True):
     """Уведомления пользователей."""
     __tablename__ = "notifications"
     id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: Optional[NaiveDatetime] = Field(default_factory=datetime.now)
+    created_at: Optional[NaiveDatetime] = Field(default_factory=utc_now)
 
     user_id: int = Field(foreign_key="users.id", index=True)
     type: str = Field(max_length=50)

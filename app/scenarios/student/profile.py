@@ -33,6 +33,7 @@ class StudentGetMyProfileResponse(BaseModel):
     schedule_view: str
     display_time_from: str
     display_time_to: str
+    require_link_consent: bool = True
 
 
 @register_scenario("student_get_my_profile", dto=StudentGetMyProfileDTO, response=StudentGetMyProfileResponse)
@@ -64,6 +65,7 @@ class StudentGetMyProfileScenario(BaseScenario):
             schedule_view=s["schedule_view"],
             display_time_from=s["display_time_from"],
             display_time_to=s["display_time_to"],
+            require_link_consent=bool(s.get("require_link_consent", True)),
         )
 
 
@@ -75,6 +77,7 @@ class StudentUpdateMySettingsDTO(BaseDTO):
     schedule_view: Literal["INFORMATIVE", "MINIMALISTIC"] | None = Field(default=None)
     display_time_from: str | None = Field(default=None, pattern=TIME_OF_DAY_START_PATTERN)
     display_time_to: str | None = Field(default=None, pattern=TIME_OF_DAY_PATTERN)
+    require_link_consent: bool | None = None
 
 
 class StudentUpdateMySettingsResponse(BaseModel):
@@ -84,6 +87,7 @@ class StudentUpdateMySettingsResponse(BaseModel):
     schedule_view: str
     display_time_from: str
     display_time_to: str
+    require_link_consent: bool = True
 
 
 @register_scenario("student_update_my_settings", dto=StudentUpdateMySettingsDTO, response=StudentUpdateMySettingsResponse)
@@ -119,6 +123,8 @@ class StudentUpdateMySettingsScenario(BaseScenario):
             update_data["display_time_from"] = dto.display_time_from
         if dto.display_time_to is not None:
             update_data["display_time_to"] = dto.display_time_to
+        if dto.require_link_consent is not None:
+            update_data["require_link_consent"] = dto.require_link_consent
         if "display_time_from" in update_data or "display_time_to" in update_data:
             _validate_display_window(settings[0], dto.display_time_from, dto.display_time_to)
 
@@ -138,4 +144,5 @@ class StudentUpdateMySettingsScenario(BaseScenario):
             schedule_view=u["schedule_view"],
             display_time_from=u["display_time_from"],
             display_time_to=u["display_time_to"],
+            require_link_consent=bool(u.get("require_link_consent", True)),
         )

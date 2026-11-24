@@ -7,6 +7,7 @@
 import datetime
 
 from core import ValidationError
+from app.utils.clock import to_utc_naive
 
 
 def parse_iso_datetime(value: str, field: str = "datetime") -> datetime.datetime:
@@ -15,10 +16,10 @@ def parse_iso_datetime(value: str, field: str = "datetime") -> datetime.datetime
     except (ValueError, TypeError):
         raise ValidationError(f"Invalid {field}: expected ISO datetime, got {value!r}")
     if dt.tzinfo is not None:
-        # Правило проекта: сервер работает только в своём локальном времени.
-        # Aware-вход конвертируем в локальную зону сервера и убираем tzinfo,
+        # Правило проекта: сервер работает только в UTC (наивное хранение).
+        # Aware-вход переводим в UTC и убираем tzinfo,
         # а не отбрасываем смещение (иначе сдвигаем момент времени).
-        dt = dt.astimezone().replace(tzinfo=None)
+        dt = to_utc_naive(dt)
     return dt
 
 
@@ -41,7 +42,29 @@ def parse_iso_time(value: str, field: str = "time") -> datetime.time:
 def to_dt(value) -> datetime.datetime:
     """Универсальное приведение значения из БД/DTO к datetime. Не для валидации ввода."""
     if isinstance(value, datetime.datetime):
-        return value.astimezone().replace(tzinfo=None) if value.tzinfo else value
+        return to_utc_naive(value)
     if isinstance(value, str):
         return parse_iso_datetime(value.replace(" ", "T"))
     return value
+
+
+def parse_range(date_from: str, date_to: str) -> tuple[datetime.datetime, datetime.datetime]:
+    """Полуоткрытый UTC-диапазон [start, end) из параметров периода.
+
+    Клиент передаёт границы своего периода уже в UTC как дату-время
+    (местная неделя пользователя не совпадает с сутками UTC). Голая дата
+    по-прежнему допустима: это сутки UTC целиком, конец — включительно.
+    """
+    def bound(value, field, end):
+        text = str(value or "")
+        if "T" in text or " " in text:
+            return parse_iso_datetime(text.replace(" ", "T"), field)
+        day = parse_iso_date(text, field)
+        moment = datetime.datetime.combine(day, datetime.time.min)
+        return moment + datetime.timedelta(days=1) if end else moment
+
+    start = bound(date_from, "date_from", False)
+    end = bound(date_to, "date_to", True)
+    if start > end:
+        raise ValidationError("date_from must be less than or equal to date_to")
+    return start, end
