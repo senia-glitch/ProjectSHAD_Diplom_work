@@ -1,0 +1,11 @@
+# HTTPS перед сайтом SHAD: сертификат Let's Encrypt выпускается и продлевается автоматически.
+# Домен берётся из SHAD_DOMAIN (.env.production); порты 80 и 443 сервера должны быть открыты.
+{$SHAD_DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+	# WebSocket досок проксируется так же, как обычные запросы.
+	reverse_proxy web:8080
+}

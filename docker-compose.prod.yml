@@ -1,0 +1,63 @@
+# Сервер: надстройка над docker-compose.yml.
+#   docker compose --env-file .env.production -f docker-compose.yml -f docker-compose.prod.yml up -d --build --wait
+# Подробно — docs/deploy.md.
+#
+# Отличия от локального запуска:
+# - наружу открыт только сайт (web); API и PostgreSQL доступны лишь внутри сети Compose;
+# - с профилем https перед сайтом встаёт Caddy с автоматическим сертификатом для SHAD_DOMAIN;
+# - API доверяет X-Forwarded-For от nginx: лимиты входа на доски считаются по адресу посетителя;
+# - логи контейнеров ограничены по размеру.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  db:
+    ports: !reset []
+    logging: *logging
+
+  migrate:
+    logging: *logging
+
+  app:
+    ports: !reset []
+    environment:
+      FORWARDED_ALLOW_IPS: "*"
+      FAT_LOG_LEVEL: info
+      BOARD_ALLOWED_ORIGINS: ${BOARD_ALLOWED_ORIGINS:-}
+      BOARD_RETENTION_DAYS: ${BOARD_RETENTION_DAYS:-365}
+      BOARD_AUTOSAVE_MINUTES: ${BOARD_AUTOSAVE_MINUTES:-2}
+    logging: *logging
+
+  web:
+    # Без профиля https сайт слушает SHAD_BIND:SHAD_HTTP_PORT (по умолчанию только localhost:8080):
+    # перед ним ставится уже имеющийся на сервере обратный прокси с HTTPS.
+    ports: !override
+      - "${SHAD_BIND:-127.0.0.1}:${SHAD_HTTP_PORT:-8080}:8080"
+    logging: *logging
+
+  caddy:
+    profiles: ["https"]
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      SHAD_DOMAIN: ${SHAD_DOMAIN:-}  # обязателен для профиля https
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    logging: *logging
+
+volumes:
+  caddy-data:
+  caddy-config:

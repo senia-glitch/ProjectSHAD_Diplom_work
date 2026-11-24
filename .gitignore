@@ -22,3 +22,7 @@ debug_*.py
 .pytest_cache/
 scripts/debug/
 files_content_*.txt
+
+# Сервер: секреты и резервные копии БД.
+.env.production
+backups/
