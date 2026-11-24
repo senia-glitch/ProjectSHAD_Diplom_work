@@ -10,7 +10,7 @@ from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, Path, Request, WebSocket, WebSocketDisconnect
 from fastbase import BaseHTTPError
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator
 from core import CoreError, NotFoundError, run
 
 from app.api.access import authenticate, external_scenario
@@ -21,7 +21,7 @@ from app.realtime.hub import KeyedRateLimiter, LimitError, Peer, RateLimiter, Sl
 from app.scenarios.boards.boards import (BOARD_ID_PATTERN, CHAT_MAX_CHARS, KEY_PATTERN, AdmitDTO, BanDTO, BoardCreated,
                                   BoardFile, BoardList, ChatTextDTO, CodeDTO, CreateBoardDTO, Done, JoinedBoardList,
                                          MemberBoardDTO, OwnedBoardDTO, OwnerDTO, SetCodeDTO, StrokeDTO,
-                                         UserRefDTO, author_tag, user_key)
+                                         UserRefDTO, checked_code, author_tag, user_key)
 
 router = APIRouter(tags=['boards'])
 log = logging.getLogger('app.board')
@@ -92,6 +92,12 @@ def clean_name(value: str) -> str:
 class CreateBody(BaseModel):
     title: str = Field(default='', max_length=120)
     code: str | None = Field(default=None, max_length=64)
+
+    # Проверка кода — при разборе запроса: неверный код даёт 422 с понятной причиной, а не 500.
+    @field_validator('code')
+    @classmethod
+    def _code(cls, value):
+        return checked_code(value)
 
 
 @router.post('/boards', status_code=201, response_model=BoardCreated)

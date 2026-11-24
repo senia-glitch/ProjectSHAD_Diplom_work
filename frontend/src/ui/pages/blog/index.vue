@@ -16,7 +16,10 @@
 
           <div v-if="error" class="notice error" role="alert">{{ error }}</div>
           <div v-else-if="loading && !posts.length" class="sk-stack" aria-hidden="true"><div class="skeleton"></div><div class="skeleton"></div></div>
-          <div v-else-if="!posts.length" class="empty"><p class="muted">Записей пока нет.</p></div>
+          <div v-else-if="!posts.length" class="empty">
+            <p class="muted">{{ tag ? `Записей с тегом #${tag} нет.` : 'Записей пока нет.' }}</p>
+            <button v-if="tag" type="button" class="btn ghost" @click="setTag(null)">Показать все записи</button>
+          </div>
           <div v-else class="feed">
             <article v-for="post in posts" :key="post.id" class="feed-card">
               <div class="feed-head">
@@ -123,13 +126,11 @@ const loadMore = () => load(false)
 
 async function loadSide() {
   author.value = null
-  try {
-    const [list, one] = await Promise.all([loadAuthors(), authorId.value ? loadAuthor(authorId.value) : Promise.resolve(null)])
-    authors.value = list.items
-    author.value = one
-  } catch (e) {
-    if (authorId.value) error.value = e.message || 'Блог не найден'
-  }
+  // Список авторов и шапка блога загружаются независимо: ошибка одного не скрывает другое.
+  const [list, one] = await Promise.allSettled([loadAuthors(), authorId.value ? loadAuthor(authorId.value) : Promise.resolve(null)])
+  if (list.status === 'fulfilled') authors.value = list.value.items
+  if (one.status === 'fulfilled') author.value = one.value
+  else if (authorId.value) error.value = one.reason?.message || 'Блог не найден'
   document.title = `${author.value ? `Блог: ${author.value.full_name}` : 'Блог репетиторов'} · SHAD`
 }
 

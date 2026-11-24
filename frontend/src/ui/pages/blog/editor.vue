@@ -79,6 +79,7 @@ async function save(status) {
     snapshot = state()
     toast(status === 'published' ? 'Запись опубликована' : 'Черновик сохранён', 'ok')
     if (!postId.value) router.replace(`/blog/manage/${saved.id}`)
+    document.title = 'Редактирование · Блог · SHAD'
   } catch (e) {
     error.value = e.message || 'Не удалось сохранить'
   } finally {

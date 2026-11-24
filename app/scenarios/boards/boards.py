@@ -136,7 +136,7 @@ class ChatTextDTO(BaseModel):
 
 # ---------------------------------------------------------------- хранение
 
-def _checked_code(value: str | None) -> str | None:
+def checked_code(value: str | None) -> str | None:
     if value is None or not value.strip():
         return None
     value = normalize_code(value)
@@ -177,7 +177,7 @@ class CreateBoardDTO(BaseModel):
     @field_validator('code')
     @classmethod
     def check_code(cls, value):
-        return _checked_code(value)
+        return checked_code(value)
 
 
 class BoardCreated(BaseModel):
@@ -225,7 +225,7 @@ class SetCodeDTO(BaseModel):
     @field_validator('code')
     @classmethod
     def check_code(cls, value):
-        return _checked_code(value)
+        return checked_code(value)
 
 
 class NewCode(BaseModel):

@@ -107,6 +107,8 @@ def test_testing_boards_and_blog_on_postgresql(monkeypatch, tmp_path):
             # ---------- доски ----------
             board = request("POST", "/boards", tutor, {"title": "Урок 1"}, status=201)
             request("POST", "/boards", student, {"title": "нельзя"}, status=403)
+            short = request("POST", "/boards", tutor, {"title": "x", "code": "abc"}, status=422)
+            assert "Код: от 6" in str(short["error"]["details"])
             assert request("POST", "/boards/resolve", student, {"code": board["code"].lower()})["id"] == board["id"]
             with client.websocket_connect(f"/api/v1/boards/{board['id']}/ws") as ws:
                 ws.send_json({"t": "hello", "token": student["access_token"], "code": board["code"]})

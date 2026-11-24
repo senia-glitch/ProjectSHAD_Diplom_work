@@ -1620,8 +1620,10 @@ async function pageTeacherResult(id) {
 /* ---------- ученик ---------- */
 async function pageAvailable() {
   const { items } = await api('/student/tests');
-  if (!items.length) return el('div', {}, head('Тесты', 'Здесь появятся тесты, к которым репетитор откроет доступ'), empty('Доступных тестов пока нет.'));
-  return el('div', {}, head('Тесты', 'Тесты, к которым у вас есть доступ'),
+  // В общем меню платформы один пункт «Тесты»: путь к результатам — со страницы тестов.
+  const results = () => el('a', { class: 'btn ghost', href: '/testing/results' }, icon('chart'), 'Мои результаты');
+  if (!items.length) return el('div', {}, head('Тесты', 'Здесь появятся тесты, к которым репетитор откроет доступ', results()), empty('Доступных тестов пока нет.'));
+  return el('div', {}, head('Тесты', 'Тесты, к которым у вас есть доступ', results()),
     el('div', { class: 'cards' }, items.map(t => el('article', { class: 'tcard' },
       el('h2', {}, el('a', { class: 'card-link', href: `/testing/take/${t.id}`, text: t.title })),
       t.description ? el('p', { class: 'muted clamp2', text: markdownPlain(t.description) }) : null,
@@ -1668,7 +1670,7 @@ function filled(v) {
 
 async function pageMyResults() {
   const { items } = await api('/student/results');
-  return el('div', {}, head('Мои результаты', 'Результаты по действующим версиям тестов'), resultsTable(items, false));
+  return el('div', {}, head('Мои результаты', 'Результаты по действующим версиям тестов', el('a', { class: 'btn ghost', href: '/testing', text: 'К тестам' })), resultsTable(items, false));
 }
 
 async function pageMyResult(id) {
