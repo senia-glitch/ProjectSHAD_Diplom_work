@@ -1,7 +1,7 @@
 """Типы заданий: проверка структуры, выдача ученику без ответов и автопроверка.
 
 Задание: {id, kind, variant, prompt, points, data, answer}.
-`data` видит ученик, `answer` (необязательный) — только преподаватель.
+`data` видит ученик, `answer` (необязательный) — только репетитор.
 Чистые функции без БД и HTTP; не являются сценариями core.
 """
 import random
@@ -26,7 +26,7 @@ MAX_PROMPT = 20000  # Markdown-описание задания; медиа то�
 
 
 class TaskError(ValueError):
-    """Ошибка структуры задания; текст безопасен для показа преподавателю."""
+    """Ошибка структуры задания; текст безопасен для показа репетитору."""
 
 
 # ---------- общие помощники ----------
@@ -131,7 +131,7 @@ def parse_number(value):
     return number if number == number else None
 
 
-# ---------- проверка структуры (преподаватель) ----------
+# ---------- проверка структуры (репетитор) ----------
 
 def validate_tasks(raw_tasks):
     tasks = _list(raw_tasks, 'Задания', min_len=1, max_len=MAX_TASKS)
@@ -270,13 +270,13 @@ def _v_open(variant, data, answer):
             value = answer.get('value')
             answer = None if value in (None, '') else {'value': _number(value, 'Ответ'), 'tolerance': abs(_number(answer.get('tolerance') or 0, 'Допуск'))}
         else:
-            answer = None  # развёрнутые ответы проверяет преподаватель
+            answer = None  # развёрнутые ответы проверяет репетитор
     return result, answer
 
 
 def _v_ordering(variant, data, answer):
     items = _items(data.get('items'), 'Элементы', min_len=2, max_len=40)
-    # Правильный порядок — порядок, заданный преподавателем; ученик получает перемешанный.
+    # Правильный порядок — порядок, заданный репетитором; ученик получает перемешанный.
     if answer is not None:
         answer = {'order': [i['id'] for i in items]} if answer.get('enabled', True) else None
     return {'items': items}, answer

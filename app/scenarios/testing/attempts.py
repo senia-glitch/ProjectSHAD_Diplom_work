@@ -99,7 +99,7 @@ class SubmitAttempt(BaseScenario):
         if test is None or not await has_access(self._db, dto.actor_id, dto.test_id):
             raise NotFoundError('Тест недоступен')
         if test['version'] != dto.version:
-            raise ConflictError('Тест был изменён преподавателем. Откройте его заново')
+            raise ConflictError('Тест был изменён репетитором. Откройте его заново')
         tasks = loads(test['tasks'], [])
         answers = _clean_answers(tasks, dto.answers)
         results, score, max_score = grade_attempt(tasks, answers)
