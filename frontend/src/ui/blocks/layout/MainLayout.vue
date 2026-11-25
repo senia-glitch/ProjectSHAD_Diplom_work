@@ -215,7 +215,7 @@ const NAV = {
       key: 'schedule', label: 'Расписание', icon: 'calendar',
       items: [
         { to: '/schedule', label: 'Расписание', icon: 'calendar' },
-        { to: '/bookings', label: 'Окна записи', icon: 'clock' },
+        { to: '/bookings', label: 'Брони', icon: 'clock' },
         { to: '/upcoming', label: 'Ближайшие уроки', icon: 'clock' },
       ],
     },
