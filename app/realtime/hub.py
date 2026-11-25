@@ -104,6 +104,7 @@ class Room:
                  saved_at: datetime | None):
         self.board_id = board_id
         self.title = title
+        self.lesson = False  # доска урока: без кода, приглашать некого
         self.creator_key = creator_key
         self.peers: dict[str, Peer] = {}
         self.save_lock = asyncio.Lock()
@@ -196,7 +197,7 @@ class Room:
 
     def init_message(self, peer: Peer, limits: dict) -> str:
         head = _dumps({'t': 'init', 'you': {**peer.public(), 'tag': peer.tag},
-                       'board': {'id': self.board_id, 'title': self.title},
+                       'board': {'id': self.board_id, 'title': self.title, 'lesson': self.lesson},
                        'peers': [p.public() for p in self.peers.values() if p is not peer],
                        'chat': [m.public() for m in self.chat],
                        'savedAt': self.saved_at.isoformat() if self.saved_at else None,
@@ -248,6 +249,7 @@ class Hub:
             try:
                 snap = await run('boards.load', BoardIdDTO(board_id=board_id))
                 room = Room(board_id, snap.title, snap.creator_key, chat_keep=self.chat_keep, saved_at=snap.saved_at)
+                room.lesson = snap.lesson_id is not None
                 for s in snap.strokes:
                     room.strokes[s.key] = StrokeRec(
                         key=s.key, author=s.author, tag=author_tag(s.author), tool=s.tool, color=s.color,

@@ -236,5 +236,19 @@
     "action": "blog.like",
     "response": "LikeResult",
     "scenario": "blog.like"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/boards/lesson/{lesson_id}",
+    "action": "boards.lesson_board",
+    "response": "LessonBoardRef",
+    "scenario": "boards.lesson_board"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/testing/tutor/students/{student_id}/results",
+    "action": "testing.results_for_student",
+    "response": "AttemptList",
+    "scenario": "testing.attempts_list_for_student"
   }
 ]

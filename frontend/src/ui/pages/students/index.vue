@@ -59,13 +59,19 @@
         <div class="detail-panel" v-else-if="selected">
           <div class="detail-header">
             <h2>{{ selectedDetail?.student_name || studentName(selected.student_id) }}</h2>
-            <div class="detail-buttons" v-if="selectedDetail && !editing">
+            <div class="detail-buttons" v-if="selectedDetail && !editing && detailTab === 'terms'">
               <button class="btn btn--pri btn--sm" @click="startEdit">Редактировать</button>
               <button class="btn btn--gry btn--sm" @click="resetToDefaults">Сбросить</button>
               <button class="btn btn--dan btn--sm" @click="deleteConfig">Удалить</button>
             </div>
           </div>
 
+          <!-- Карточка ученика: персональные условия и всё, что с ним связано -->
+          <div class="detail-tabs" role="tablist" aria-label="Карточка ученика">
+            <button v-for="t in DETAIL_TABS" :key="t.key" type="button" role="tab" class="detail-tab" :class="{ active: detailTab === t.key }" :aria-selected="detailTab === t.key" :disabled="editing && t.key !== 'terms'" @click="detailTab = t.key">{{ t.label }}</button>
+          </div>
+          <StudentActivity v-if="detailTab !== 'terms'" :student-id="selected.student_id" :tab="detailTab" />
+          <template v-else>
           <div v-if="detailLoading" class="detail-loading">Загрузка данных...</div>
           <div v-if="detailError" class="detail-loading detail-loading--err">{{ detailError }}</div>
           <div v-if="deleteError" class="fmsg fmsg--err">{{ deleteError }}</div>
@@ -232,6 +238,7 @@
               <button type="button" class="btn btn--gry btn--sm" @click="cancelEdit">Отмена</button>
             </div>
           </form>
+          </template>
         </div>
 
         <div class="detail-panel detail-panel--empty" v-else>
@@ -276,6 +283,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import MainLayout from '../../blocks/layout/MainLayout.vue'
 import StudentsTour from './StudentsTour.vue'
+import StudentActivity from './StudentActivity.vue'
 import { useUser, useLogout, useEscapeKey } from '../../composables/index.js'
 import {
   loadTutorStudents,
@@ -398,8 +406,17 @@ async function fetchRoster() {
 // данными другого ученика.
 let detailSeq = 0
 
+const DETAIL_TABS = [
+  { key: 'terms', label: 'Условия' },
+  { key: 'lessons', label: 'Уроки' },
+  { key: 'payments', label: 'Оплаты' },
+  { key: 'tests', label: 'Тесты' },
+]
+const detailTab = ref('terms')
+
 async function selectConfig(c) {
   selected.value = c
+  detailTab.value = 'terms'
   selectedDetail.value = null
   editing.value = false
   updateMsg.value = ''
@@ -648,6 +665,11 @@ onMounted(fetchRoster)
 .item-sub { font-size: 12px; color: var(--color-gray-600); }
 
 .detail-panel { background: var(--color-white); border-radius: var(--radius-lg); border: 1px solid var(--color-gray-200); padding: 24px; }
+.detail-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin: 4px 0 16px; }
+.detail-tab { border: 0; background: none; color: var(--muted); font: inherit; font-size: 14px; padding: 8px 12px; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; }
+.detail-tab:hover:not(:disabled) { color: var(--text); }
+.detail-tab.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 500; }
+.detail-tab:disabled { opacity: .5; cursor: not-allowed; }
 .detail-panel--empty { display: flex; align-items: center; justify-content: center; color: var(--color-gray-500); }
 /* .detail-header/.detail-label/.detail-value — из base.css (single source). */
 .detail-buttons { display: flex; gap: 6px; }

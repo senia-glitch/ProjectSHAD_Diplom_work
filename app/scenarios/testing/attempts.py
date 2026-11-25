@@ -159,6 +159,21 @@ class ListTestAttempts(BaseScenario):
         return AttemptList(items=[_summary(r) for r in rows])
 
 
+class StudentResultsDTO(BaseModel):
+    actor_id: int = Field(gt=0)
+    student_id: int = Field(gt=0)  # id профиля ученика (students.id), как в связях репетитора
+
+
+@register_scenario('testing.attempts_list_for_student', dto=StudentResultsDTO, response=AttemptList)
+class ListStudentAttempts(BaseScenario):
+    """Результаты одного ученика по тестам этого репетитора (карточка ученика)."""
+    async def execute(self, dto):
+        rows = await self._db.query(
+            SELECT + 'WHERE t.owner_id = :o AND p.student_id = (SELECT user_id FROM students WHERE id = :s) '
+            'ORDER BY p.submitted_at DESC', {'o': dto.actor_id, 's': dto.student_id})
+        return AttemptList(items=[_summary(r) for r in rows])
+
+
 @register_scenario('testing.attempts_get_for_teacher', dto=AttemptRefDTO, response=AttemptDetail)
 class GetAttemptForTeacher(BaseScenario):
     async def execute(self, dto):

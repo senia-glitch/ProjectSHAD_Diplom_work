@@ -2,7 +2,7 @@
 import {
   createBoard, createPost, deleteBoard, fetchBlogAuthor, fetchBlogAuthors, fetchBlogComments, fetchBlogFeed,
   fetchBlogPost, fetchJoinedBoards, fetchMyBoards, fetchMyPosts, importBoard, postBlogComment, removeBlogComment,
-  removePost, resolveBoard, testingRequest, toggleBlogLike, updatePost, ApiError,
+  openLessonBoardRequest, removePost, resolveBoard, testingRequest, toggleBlogLike, updatePost, ApiError,
 } from '../api/index.js'
 import { useAuthStore } from '../store/index.js'
 import { refreshSession } from './auth.js'
@@ -44,6 +44,8 @@ export async function loadBoards(role) {
 }
 export const openNewBoard = explained((title, code) => createBoard({ title, code: code || null }))
 export const findBoardByCode = (code) => resolveBoard(code)
+// Доска урока: создаётся при первом открытии, без кода.
+export const openLessonBoard = (lessonId) => openLessonBoardRequest(lessonId)
 export const removeBoard = (id) => deleteBoard(id)
 export const uploadBoardFile = explained((id, body) => importBoard(id, body))
 
@@ -67,3 +69,7 @@ export const deleteComment = (id) => removeBlogComment(id)
 export const loadMyPosts = () => fetchMyPosts()
 export const savePost = explained((id, body) => (id ? updatePost(id, body) : createPost(body)))
 export const deletePost = (id) => removePost(id)
+
+// Результаты одного ученика по тестам репетитора (карточка ученика).
+export const loadStudentTestResults = async (studentId) =>
+  (await testingRequest(`/api/v1/testing/tutor/students/${studentId}/results`)).items || []

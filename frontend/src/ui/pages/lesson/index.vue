@@ -30,6 +30,10 @@
           </div>
 
           <div v-if="showLinks" class="join-actions">
+            <!-- Доска урока: у каждого урока своя, без кода; необязательна, но всегда под рукой -->
+            <button type="button" class="btn board-btn" :class="joinable && !links.length ? 'primary big' : 'ghost'" :disabled="boardOpening" @click="openBoard">
+              <UiIcon name="board" /> {{ boardOpening ? 'Открываем доску…' : 'Доска урока' }}
+            </button>
             <template v-if="linksVisible">
               <template v-for="(l, i) in links" :key="l.safe + i">
                 <router-link v-if="l.to" :to="l.to" class="btn" :class="i === 0 && joinable ? 'primary big' : 'ghost'">
@@ -40,7 +44,7 @@
                 </a>
               </template>
               <p v-if="!links.length" class="join-hint">
-                {{ isTutor ? 'Ссылок пока нет: прикрепите доску в «Материалах урока» или добавьте ссылку на звонок в расписании.' : 'Репетитор ещё не добавил ссылку на занятие.' }}
+                {{ isTutor ? 'Ссылки на звонок нет — добавьте её в расписании или проводите урок на доске.' : 'Ссылки на звонок нет — урок может проходить на доске.' }}
               </p>
             </template>
             <p v-else class="join-hint">Ссылки на занятие появятся за {{ durationText(linksInMinutes) }} до начала.</p>
@@ -135,17 +139,10 @@
                     <button type="button" class="ibtn danger" :aria-label="`Убрать ссылку ${l.alias}`" data-tip="Убрать" :disabled="busy" @click="removeLink(l)"><UiIcon name="trash" /></button>
                   </li>
                 </ul>
-                <label v-if="boardChoices.length" class="attach">
-                  Прикрепить доску
-                  <select :disabled="busy" @change="onAttach($event)">
-                    <option value="">Выберите доску…</option>
-                    <option v-for="b in boardChoices" :key="b.id" :value="b.id">{{ b.title || 'Без названия' }}</option>
-                  </select>
-                </label>
-                <p v-else-if="!boards.length" class="muted small">Своих досок пока нет — создайте её в разделе «Доски» и прикрепите к уроку.</p>
-                <p class="muted small">Во время урока ученики открывают доску из урока сразу, без кода.</p>
+                <p v-if="!links.length" class="muted small">Ссылок нет.</p>
               </template>
-              <router-link class="btn ghost" to="/boards"><UiIcon name="board" /> {{ isTutor ? 'Мои доски' : 'Доски' }}</router-link>
+              <p class="muted small">У урока своя доска: репетитор и записанные ученики входят в неё без кода.</p>
+              <router-link class="btn ghost" to="/boards"><UiIcon name="board" /> Свободные доски</router-link>
               <router-link class="btn ghost" :to="isTutor ? '/testing' : '/testing'"><UiIcon name="tests" /> {{ isTutor ? 'Тесты для учеников' : 'Мои тесты' }}</router-link>
               <router-link v-if="isTutor" class="btn ghost" to="/testing/new"><UiIcon name="plus" /> Новый тест</router-link>
             </section>
@@ -207,9 +204,9 @@ const { role, isLoggedIn } = useUser()
 const { handleLogout } = useLogout()
 const rosterStore = useRosterStore()
 const {
-  lesson, loading, error, busy, isTutor, roster, newParticipant, boards,
+  lesson, loading, error, busy, isTutor, roster, newParticipant, boardOpening,
   phase, links, linksVisible, linksInMinutes,
-  togglePaid, addParticipant, removeParticipant, handleDelete, attachBoard, removeLink,
+  togglePaid, addParticipant, removeParticipant, handleDelete, openBoard, removeLink,
   decisionError, cancelAsStudent, confirmRequest, rejectRequest, markStatus,
 } = useLessonPage()
 
@@ -229,7 +226,6 @@ const canEditPeople = computed(() => ['upcoming', 'soon', 'live'].includes(phase
 // Вход имеет смысл до урока и во время него; у прошедшего и отменённого ссылки — справочно.
 const joinable = computed(() => ['soon', 'live'].includes(phase.value.kind))
 const showLinks = computed(() => phase.value.kind !== 'closed')
-const boardChoices = computed(() => boards.value.filter((b) => !links.value.some((l) => l.boardId === b.id)))
 
 const statusPill = computed(() => ({
   SCHEDULED: 'pill-blue', PENDING: 'pill-amber', ONGOING: 'pill-green', FINISHED: 'pill-gray', SYSTEM_FINISHED: 'pill-gray',
@@ -274,11 +270,6 @@ async function onCancel(reason) {
 }
 async function onReject(reason) {
   if (await rejectRequest(reason)) rejectDialog.value?.close()
-}
-function onAttach(event) {
-  const board = boards.value.find((b) => String(b.id) === event.target.value)
-  event.target.value = ''
-  if (board) attachBoard(board)
 }
 </script>
 

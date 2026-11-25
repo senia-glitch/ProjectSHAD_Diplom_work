@@ -302,7 +302,7 @@ class QuizAttempt(SQLModel, table=True):
 # ============================================
 
 class Board(SQLModel, table=True):
-    """Доска репетитора. Вход по коду; сервер хранит только HMAC кода."""
+    """Доска: свободная (вход по коду, сервер хранит только HMAC кода) или доска урока (lesson_id)."""
     __tablename__ = "boards"
     id: str = Field(sa_column=sa.Column(sa.String(40), primary_key=True))
     owner_id: int = Field(sa_column=sa.Column(sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True))
@@ -314,6 +314,9 @@ class Board(SQLModel, table=True):
     last_active_at: Optional[datetime] = Field(default=None, sa_column=sa.Column(
         sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()"), index=True))
     saved_at: Optional[datetime] = Field(default=None, sa_column=sa.Column(sa.DateTime(timezone=True), nullable=True))
+    # Доска урока: своя у каждого урока, без кода; входят репетитор урока и записанные ученики.
+    lesson_id: Optional[int] = Field(default=None, sa_column=sa.Column(
+        sa.Integer, sa.ForeignKey("lessons.id", ondelete="CASCADE"), nullable=True, unique=True))
 
 
 class BoardStroke(SQLModel, table=True):

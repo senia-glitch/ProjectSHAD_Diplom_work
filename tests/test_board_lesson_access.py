@@ -54,3 +54,58 @@ def test_query_limits_to_owner_lessons_in_time_window():
     sql, params = stub.calls[0]
     assert 'b.owner_id = t.user_id' in sql
     assert params['latest_start'] > params['earliest_end']
+
+
+# ---------- доска урока (без кода) ----------
+from app.scenarios.boards.boards import AdmitDTO, AdmitToBoard, LessonBoard, LessonBoardDTO, _lesson_member, user_key
+
+
+class LessonStub:
+    """Урок 3 репетитора user 5; записан user 6, user 7 отменил; доска урока создаётся при первом открытии."""
+
+    def __init__(self):
+        self.boards = {}
+
+    async def query(self, sql, params, **kw):
+        if 'FROM lessons l JOIN tutors t' in sql:
+            if params['lid'] != 3:
+                return []
+            row = {'tutor_user_id': 5, 'id': 3}
+            if 'l.start_time' in sql:
+                import datetime
+                row['start_time'] = datetime.datetime(2030, 1, 10, 10, 0)
+            return [row]
+        if 'FROM lesson_participants' in sql:
+            return {6: [{'participant_settings': '{}'}],
+                    7: [{'participant_settings': '{"cancelled": {"by": "student"}}'}]}.get(params['uid'], [])
+        if sql.startswith('SELECT id, title FROM boards WHERE lesson_id'):
+            b = self.boards.get(params['lid'])
+            return [b] if b else []
+        if sql.startswith('INSERT INTO boards'):
+            self.boards.setdefault(params['lid'], {'id': params['id'], 'title': params['title'], 'creator': params['creator']})
+            return []
+        if 'FROM boards b' in sql and 'LEFT JOIN board_members' in sql:
+            return [{'title': 'Урок', 'code_lookup': None, 'creator_key': user_key(5), 'lesson_id': 3, 'banned': None}]
+        return []
+
+
+def test_lesson_member_rules():
+    db = LessonStub()
+    assert run(_lesson_member(db, 3, 5)) and run(_lesson_member(db, 3, 6))
+    assert not run(_lesson_member(db, 3, 7)) and not run(_lesson_member(db, 3, 99))
+
+
+def test_lesson_board_created_once_with_tutor_as_creator():
+    db = LessonStub()
+    first = run(LessonBoard(db=db).execute(LessonBoardDTO(lesson_id=3, user_id=6)))
+    again = run(LessonBoard(db=db).execute(LessonBoardDTO(lesson_id=3, user_id=5)))
+    assert first.id == again.id and first.title.startswith('Урок 10.01.2030')
+    assert db.boards[3]['creator'] == user_key(5)
+
+
+def test_lesson_board_admit_without_code():
+    db = LessonStub()
+    ok = run(AdmitToBoard(db=db).execute(AdmitDTO(board_id=BOARD, author=user_key(6), user_id=6)))
+    assert ok.granted and ok.via == 'lesson'
+    denied = run(AdmitToBoard(db=db).execute(AdmitDTO(board_id=BOARD, author=user_key(99), user_id=99, code='ANYCODE1')))
+    assert not denied.granted and denied.lesson_only

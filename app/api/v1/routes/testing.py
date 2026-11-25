@@ -9,7 +9,8 @@ from app.api.access import external_scenario
 from app.api.v1.dependencies import get_current_user
 from app.scenarios.testing.access import AccessItem, AccessList, AccessListDTO, SetAccessDTO, StudentList
 from app.scenarios.testing.attempts import (ActorDTO as AttemptActorDTO, AttemptDetail, AttemptList, AttemptRefDTO,
-                                            AttemptSummary, ReviewDTO, SubmitDTO, TestRefDTO)
+                                            AttemptSummary, ReviewDTO, StudentResultsDTO, SubmitDTO,
+                                            TestRefDTO)
 from app.scenarios.testing.quizzes import (ActorDTO, CreateQuizDTO, OwnedQuizDTO, QuizDetail, QuizInput, QuizList,
                                            UpdateQuizDTO)
 
@@ -87,6 +88,12 @@ async def set_access(body: AccessBody, test_id: int = Path(gt=0), student_id: in
 @external_scenario('testing.results_for_test', core='testing.attempts_list_for_test')
 async def list_results(test_id: int = Path(gt=0), user: dict = Depends(get_current_user)):
     return await run('testing.attempts_list_for_test', TestRefDTO(actor_id=user['user_id'], test_id=test_id))
+
+
+@router.get('/tutor/students/{student_id}/results', response_model=AttemptList)
+@external_scenario('testing.results_for_student', core='testing.attempts_list_for_student')
+async def student_results(student_id: int = Path(gt=0), user: dict = Depends(get_current_user)):
+    return await run('testing.attempts_list_for_student', StudentResultsDTO(actor_id=user['user_id'], student_id=student_id))
 
 
 @router.get('/tutor/results/{attempt_id}', response_model=AttemptDetail)

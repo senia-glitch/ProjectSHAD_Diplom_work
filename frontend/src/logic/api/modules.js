@@ -24,6 +24,7 @@ export const fetchBlogComments = (id) => apiFetch(`${V1}/blog/posts/${id}/commen
 export const fetchBlogAuthors = () => apiFetch(`${V1}/blog/authors`)
 export const fetchBlogAuthor = (id) => apiFetch(`${V1}/blog/authors/${id}`)
 export const postBlogComment = (id, text, parentId = null) => apiFetch(`${V1}/blog/posts/${id}/comments`, { method: 'POST', body: { text, parent_id: parentId } })
+export const openLessonBoardRequest = (lessonId) => apiFetch(`${V1}/boards/lesson/${lessonId}`, { method: 'POST' })
 export const toggleBlogLike = (id) => apiFetch(`${V1}/blog/posts/${id}/like`, { method: 'POST' })
 export const removeBlogComment = (id) => apiFetch(`${V1}/blog/comments/${id}`, { method: 'DELETE' })
 export const fetchMyPosts = () => apiFetch(`${V1}/blog/my/posts`)

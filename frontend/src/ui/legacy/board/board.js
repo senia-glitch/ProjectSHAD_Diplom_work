@@ -1288,6 +1288,9 @@ export function startBoard(opts) {
       tokenRefreshed = true;           // сессия могла истечь: один повтор с обновлённым токеном
       return connect();
     }
+    if (e.code === 4403 && e.reason === "lesson only") {
+      return showMessage("Доска урока", "В эту доску входят только репетитор урока и записанные на урок ученики.");
+    }
     if (e.code === 4403) return showMessage("Доступ запрещён", "Войдите в учётную запись заново и откройте доску ещё раз.");
     const delay = e.code === 4429 ? 10000 : Math.min(10000, 500 * 2 ** attempt) + Math.random() * 400;
     if (e.code === 4429) toast("На доске слишком много участников, повторим позже", "error");
@@ -1406,7 +1409,9 @@ export function startBoard(opts) {
   state.unsaved = false;
   rememberCode(BOARD_ID, state.code);
   if ($("name-dialog").open) $("name-dialog").close();
-  $("invite-btn").hidden = !state.me.creator;   // приглашает только создатель
+  state.lessonBoard = Boolean(msg.board.lesson);
+  // Приглашает только создатель; у доски урока кода нет — участники входят из урока.
+  $("invite-btn").hidden = !state.me.creator || state.lessonBoard;
 
   renderChat(msg.chat || []);
 
@@ -1420,7 +1425,7 @@ export function startBoard(opts) {
   renderMeters();
   renderSaved();
   if (firstLoad) fitToContent(); else invalidate();
-  if (firstLoad && sessionStorage.getItem("doska.created") === BOARD_ID) {
+  if (firstLoad && !state.lessonBoard && sessionStorage.getItem("doska.created") === BOARD_ID) {
     sessionStorage.removeItem("doska.created");   // создатель сразу видит ссылку и код для приглашения
     $("invite-btn").click();
   }

@@ -15,7 +15,7 @@ import {
   rejectLessonRequest,
   saveLessonLinks,
   saveLessonStatus,
-  loadBoards,
+  openLessonBoard,
 } from '../../../logic/actions/index.js'
 import { useRosterStore, useAuthStore } from '../../../logic/store/index.js'
 import { logError } from '../../../logic/logger/index.js'
@@ -38,7 +38,7 @@ export function useLessonPage() {
   const error = ref('')
   const busy = ref(false)
   const newParticipant = ref('')
-  const boards = ref([])
+  const boardOpening = ref(false)
   const nowMs = ref(userNowMs())
 
   const isTutor = computed(() => authStore.role === 'tutor')
@@ -116,17 +116,21 @@ export function useLessonPage() {
     }
   }
 
-  // ----- ссылки и доска (репетитор) -----
+  // ----- доска урока и ссылки -----
   const rawLinks = () => (lesson.value?.links || []).map((l) => ({ alias: l.alias || '', url: l.url || '' }))
 
-  async function attachBoard(board) {
-    const url = `${origin}/boards/${board.id}`
-    if (rawLinks().some((l) => boardIdFromLink(l.url, origin) === board.id)) {
-      toast('Эта доска уже прикреплена', 'ok')
-      return
+  // Своя доска у каждого урока: создаётся при первом открытии, входят без кода.
+  async function openBoard() {
+    boardOpening.value = true
+    try {
+      const board = await openLessonBoard(lessonId.value)
+      router.push(`/boards/${board.id}`)
+    } catch (e) {
+      toast(e.message || 'Не удалось открыть доску урока', 'error')
+      logError('lesson', 'board:error', { error: e.message })
+    } finally {
+      boardOpening.value = false
     }
-    const alias = `Доска: ${board.title || 'без названия'}`.slice(0, 100)
-    await run(() => saveLessonLinks(lessonId.value, [...rawLinks(), { alias, url }]), 'Доска прикреплена к уроку', 'attach-board')
   }
 
   async function removeLink(link) {
@@ -170,20 +174,13 @@ export function useLessonPage() {
       logError('lesson', 'roster:error', { error: e.message })
     }
     await reload()
-    if (isTutor.value) {
-      try {
-        boards.value = (await loadBoards('tutor')).mine || []
-      } catch (e) {
-        logError('lesson', 'boards:error', { error: e.message })
-      }
-    }
   })
   onBeforeUnmount(() => clearInterval(timer))
 
   return {
-    lessonId, lesson, loading, error, busy, isTutor, roster, newParticipant, boards,
+    lessonId, lesson, loading, error, busy, isTutor, roster, newParticipant, boardOpening,
     phase, links, linksVisible, linksInMinutes,
-    togglePaid, addParticipant, removeParticipant, handleDelete, attachBoard, removeLink,
+    togglePaid, addParticipant, removeParticipant, handleDelete, openBoard, removeLink,
     decisionError, cancelAsStudent, confirmRequest, rejectRequest, markStatus,
   }
 }

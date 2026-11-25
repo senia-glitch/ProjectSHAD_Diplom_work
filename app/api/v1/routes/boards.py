@@ -21,7 +21,8 @@ from app.realtime.hub import KeyedRateLimiter, LimitError, Peer, RateLimiter, Sl
 from app.scenarios.boards.boards import (BOARD_ID_PATTERN, CHAT_MAX_CHARS, KEY_PATTERN, AdmitDTO, BanDTO, BoardCreated,
                                   BoardFile, BoardList, ChatTextDTO, CodeDTO, CreateBoardDTO, Done, JoinedBoardList,
                                          MemberBoardDTO, OwnedBoardDTO, OwnerDTO, SetCodeDTO, StrokeDTO,
-                                         UserRefDTO, checked_code, author_tag, user_key)
+                                         UserRefDTO, LessonBoardDTO, LessonBoardRef, checked_code, author_tag,
+                                         user_key)
 
 router = APIRouter(tags=['boards'])
 log = logging.getLogger('app.board')
@@ -122,6 +123,8 @@ async def admit(ip: str, board_id: str, author: str, code: str, user_id: int | N
         return 'not_found', result
     if result.banned:
         return 'banned', result
+    if result.lesson_only and not result.granted:
+        return 'lesson_only', result
     if result.granted:
         guard.success(ip, board_id)
         return None, result
@@ -188,6 +191,8 @@ async def import_board(request: Request, board_id: str = Path(pattern=BOARD_ID_P
         raise NotFoundError('Доска не найдена')
     if denied == 'banned':
         raise Banned('Вы исключены из этой доски')
+    if denied == 'lesson_only':
+        raise NotFoundError('Доска не найдена')
     if denied == 'bad_code':
         raise WrongCode('Неверный код доски')
     if denied:
@@ -261,6 +266,8 @@ async def _deny(ws: WebSocket, reason: str):
         await ws.close(code=CLOSE_NOT_FOUND, reason='board not found')
     elif reason == 'banned':
         await ws.close(code=CLOSE_KICKED, reason='banned')
+    elif reason == 'lesson_only':
+        await ws.close(code=CLOSE_FORBIDDEN, reason='lesson only')
     else:
         await ws.close(code=CLOSE_BAD_CODE, reason='bad code')
 
@@ -450,3 +457,10 @@ async def delete_board(board_id: str = Path(pattern=BOARD_ID_PATTERN), user: dic
         for peer in list(room.peers.values()):
             await hub.kick(room, peer)
     return result
+
+
+@router.post('/boards/lesson/{lesson_id}', response_model=LessonBoardRef)
+@external_scenario('boards.lesson_board', core='boards.lesson_board')
+async def lesson_board(lesson_id: int = Path(gt=0), user: dict = Depends(get_current_user)):
+    """Доска урока: создаётся при первом открытии; входят репетитор урока и записанные ученики."""
+    return await run('boards.lesson_board', LessonBoardDTO(lesson_id=lesson_id, user_id=user['user_id']))

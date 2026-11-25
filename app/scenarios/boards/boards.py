@@ -16,7 +16,8 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 from core import BaseScenario, ConflictError, NotFoundError, register_scenario
 
-from app.utils.clock import utc_now
+from app.utils.clock import to_local, utc_now
+from app.utils.notifications import user_offset
 from app.utils.participants import is_cancelled_row
 
 BOARD_ID_PATTERN = r'^[A-Za-z0-9_-]{16,40}$'
@@ -206,6 +207,8 @@ class BoardAdmit(BaseModel):
     """Решение о входе: по коду, как участник, уже входивший раньше, как создатель или по уроку."""
     found: bool
     granted: bool = False
+    # Доска урока: кода нет, вход только репетитору урока и записанным ученикам.
+    lesson_only: bool = False
     via: Literal['code', 'member', 'creator', 'lesson', ''] = ''
     banned: bool = False
     code_tried: bool = False
@@ -246,6 +249,7 @@ class BoardSnapshot(BaseModel):
     id: str
     title: str
     creator_key: str | None
+    lesson_id: int | None = None
     saved_at: datetime | None
     strokes: list[StoredStroke]
     chat: list[StoredChat]
@@ -327,6 +331,60 @@ class ResolveBoard(BaseScenario):
         return ResolvedBoard(found=True, **rows[0]) if rows else ResolvedBoard(found=False)
 
 
+async def _lesson_member(db, lesson_id: int, user_id: int) -> bool:
+    """Репетитор урока или записанный на него ученик (запись не отменена)."""
+    rows = await db.query(
+        'SELECT t.user_id AS tutor_user_id FROM lessons l JOIN tutors t ON t.id = l.tutor_id WHERE l.id = :lid',
+        {'lid': lesson_id})
+    if not rows:
+        return False
+    if rows[0]['tutor_user_id'] == user_id:
+        return True
+    participants = await db.query(
+        'SELECT lp.participant_settings FROM lesson_participants lp JOIN students s ON s.id = lp.student_id '
+        'WHERE lp.lesson_id = :lid AND s.user_id = :uid', {'lid': lesson_id, 'uid': user_id})
+    return any(not is_cancelled_row(p) for p in participants)
+
+
+class LessonBoardDTO(BaseModel):
+    lesson_id: int = Field(gt=0)
+    user_id: int = Field(gt=0)
+
+
+class LessonBoardRef(BaseModel):
+    id: str
+    title: str
+
+
+@register_scenario('boards.lesson_board', dto=LessonBoardDTO, response=LessonBoardRef)
+class LessonBoard(BaseScenario):
+    """Доска урока: создаётся при первом открытии, дальше — та же. Создатель — репетитор урока."""
+    async def execute(self, dto):
+        lessons = await self._db.query(
+            'SELECT l.id, l.start_time, t.user_id AS tutor_user_id FROM lessons l '
+            'JOIN tutors t ON t.id = l.tutor_id WHERE l.id = :lid', {'lid': dto.lesson_id})
+        if not lessons or not await _lesson_member(self._db, dto.lesson_id, dto.user_id):
+            raise NotFoundError('Урок не найден')
+        existing = await self._db.query('SELECT id, title FROM boards WHERE lesson_id = :lid', {'lid': dto.lesson_id})
+        if existing:
+            return LessonBoardRef(**existing[0])
+        lesson = lessons[0]
+        start = lesson['start_time']
+        if hasattr(start, 'strftime'):
+            # Время урока хранится в UTC; в названии — дата и время в поясе репетитора.
+            local = to_local(start, await user_offset(self._db, lesson['tutor_user_id']))
+            title = f'Урок {local:%d.%m.%Y %H:%M}'
+        else:
+            title = 'Доска урока'
+        await self._db.query(
+            'INSERT INTO boards (id, owner_id, title, creator_key, lesson_id) '
+            'VALUES (:id, :owner, :title, :creator, :lid) ON CONFLICT (lesson_id) DO NOTHING',
+            {'id': secrets.token_urlsafe(16), 'owner': lesson['tutor_user_id'], 'title': title,
+             'creator': user_key(lesson['tutor_user_id']), 'lid': dto.lesson_id}, channel='write')
+        rows = await self._db.query('SELECT id, title FROM boards WHERE lesson_id = :lid', {'lid': dto.lesson_id})
+        return LessonBoardRef(**rows[0])
+
+
 # Доска урока открывается без кода с этого запаса до начала и до этого времени после конца.
 LESSON_ACCESS_BEFORE = timedelta(minutes=30)
 LESSON_ACCESS_AFTER = timedelta(minutes=60)
@@ -359,11 +417,11 @@ async def _lesson_access(db, board_id: str, user_id: int) -> bool:
 class AdmitToBoard(BaseScenario):
     async def execute(self, dto):
         rows = await self._db.query(
-            'SELECT b.title, b.code_lookup, b.creator_key, m.banned FROM boards b '
+            'SELECT b.title, b.code_lookup, b.creator_key, b.lesson_id, m.banned FROM boards b '
             'LEFT JOIN board_members m ON m.board_id = b.id AND m.author_key = :author WHERE b.id = :id',
             {'id': dto.board_id, 'author': dto.author})
-        # Доска без кода — из версии до кодов: войти на неё нельзя, для клиента её нет.
-        if not rows or rows[0]['code_lookup'] is None:
+        # Доска без кода и без урока — из версии до кодов: войти на неё нельзя, для клиента её нет.
+        if not rows or (rows[0]['code_lookup'] is None and rows[0]['lesson_id'] is None):
             return BoardAdmit(found=False)
         row = rows[0]
         info = {'found': True, 'title': row['title'], 'creator_key': row['creator_key']}
@@ -371,6 +429,11 @@ class AdmitToBoard(BaseScenario):
             return BoardAdmit(banned=True, **info)
         if row['creator_key'] == dto.author:
             return BoardAdmit(granted=True, via='creator', **info)
+        if row['lesson_id'] is not None:
+            # Доска урока: право входа проверяется по уроку каждый раз (запись могли отменить).
+            if dto.user_id and await _lesson_member(self._db, row['lesson_id'], dto.user_id):
+                return BoardAdmit(granted=True, via='lesson', **info)
+            return BoardAdmit(lesson_only=True, **info)
         if row['banned'] is False:  # запись участника есть и он не исключён
             return BoardAdmit(granted=True, via='member', **info)
         if dto.user_id and await _lesson_access(self._db, dto.board_id, dto.user_id):
@@ -395,7 +458,7 @@ class SetBoardCode(BaseScenario):
     async def execute(self, dto):
         async def attempt(code, lookup):
             return await self._db.query(
-                'UPDATE boards SET code_lookup = :lookup WHERE id = :id '
+                'UPDATE boards SET code_lookup = :lookup WHERE id = :id AND lesson_id IS NULL '
                 'AND NOT EXISTS (SELECT 1 FROM boards WHERE code_lookup = :lookup) RETURNING id',
                 {'id': dto.board_id, 'lookup': lookup}, channel='write')
         code, _ = await _with_unique_code(dto.code, attempt)
@@ -418,7 +481,7 @@ class LoadBoard(BaseScenario):
     async def execute(self, dto):
         boards = await self._db.query(
             'UPDATE boards SET last_active_at = now() WHERE id = :id '
-            'RETURNING id, title, creator_key, saved_at', {'id': dto.board_id}, channel='write')
+            'RETURNING id, title, creator_key, saved_at, lesson_id', {'id': dto.board_id}, channel='write')
         if not boards:
             raise NotFoundError('Доска не найдена')
         strokes = await self._db.query(
@@ -529,7 +592,8 @@ class ListOwnBoards(BaseScenario):
         rows = await self._db.query(
             'SELECT b.id, b.title, b.created_at, b.last_active_at, b.saved_at, '
             '(SELECT count(*) FROM board_strokes s WHERE s.board_id = b.id) AS stroke_count '
-            'FROM boards b WHERE b.owner_id = :owner ORDER BY b.last_active_at DESC', {'owner': dto.owner_id})
+            'FROM boards b WHERE b.owner_id = :owner AND b.lesson_id IS NULL ORDER BY b.last_active_at DESC',
+            {'owner': dto.owner_id})
         return BoardList(items=[BoardItem(**r) for r in rows])
 
 
