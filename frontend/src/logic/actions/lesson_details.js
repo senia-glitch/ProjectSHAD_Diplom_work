@@ -7,6 +7,7 @@ import {
   getStudentLesson,
   addLessonParticipant,
   removeLessonParticipant,
+  patchTutorLesson,
 } from '../api/index.js'
 import { useAuthStore } from '../store/index.js'
 
@@ -50,4 +51,14 @@ export async function addParticipantToLesson(lessonId, studentUserId) {
 
 export async function removeParticipantFromLesson(lessonId, studentUserId) {
   return removeLessonParticipant(lessonId, studentUserId)
+}
+
+// Ссылки урока (видео-звонок, материалы, доска): репетитор сохраняет весь список целиком.
+export async function saveLessonLinks(lessonId, links) {
+  return patchTutorLesson(lessonId, { lesson_links: links })
+}
+
+// Отметка урока репетитором: FINISHED (проведён), NO_SHOW (неявка), CANCELLED (отмена) — с причиной.
+export async function saveLessonStatus(lessonId, status, reason) {
+  return patchTutorLesson(lessonId, { status, reason: reason || null })
 }

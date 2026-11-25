@@ -86,3 +86,55 @@ export function statusHistoryLines(history) {
     }))
     .reverse()
 }
+
+// ----- Блок «Войти на урок» -----
+const CLOSED_STATUSES = new Set(['CANCELLED', 'REJECTED', 'NO_SHOW'])
+const OVER_STATUSES = new Set(['FINISHED', 'SYSTEM_FINISHED'])
+export const SOON_MINUTES = 60
+
+// Фаза урока для пользователя: request — заявка ждёт ответа, upcoming / soon — до начала
+// (minutes — сколько осталось), live — идёт сейчас (minutes — до конца), over — прошёл, closed — отменён.
+// Время урока и nowMs — в поясе пользователя (как у остальных функций страницы).
+export function lessonPhase(lesson, nowMs) {
+  if (!lesson) return { kind: 'closed', minutes: 0 }
+  const status = lesson.status || 'SCHEDULED'
+  if (CLOSED_STATUSES.has(status)) return { kind: 'closed', minutes: 0 }
+  if (OVER_STATUSES.has(status)) return { kind: 'over', minutes: 0 }
+  const start = new Date(String(lesson.start_time || '').replace(' ', 'T')).getTime()
+  const end = new Date(String(lesson.end_time || '').replace(' ', 'T')).getTime()
+  if (Number.isNaN(start)) return { kind: status === 'PENDING' ? 'request' : 'upcoming', minutes: 0 }
+  if (nowMs < start) {
+    const minutes = Math.ceil((start - nowMs) / 60000)
+    if (status === 'PENDING') return { kind: 'request', minutes }
+    return { kind: minutes <= SOON_MINUTES ? 'soon' : 'upcoming', minutes }
+  }
+  if (!Number.isNaN(end) && nowMs < end) {
+    if (status === 'PENDING') return { kind: 'request', minutes: 0 }
+    return { kind: 'live', minutes: Math.ceil((end - nowMs) / 60000) }
+  }
+  return { kind: 'over', minutes: 0 }
+}
+
+// «25 мин», «3 ч 10 мин», «2 дн.»
+export function durationText(minutes) {
+  const m = Math.max(0, Math.round(minutes))
+  if (m < 60) return `${m} мин`
+  if (m < 24 * 60) {
+    const h = Math.floor(m / 60)
+    const rest = m % 60
+    return rest ? `${h} ч ${rest} мин` : `${h} ч`
+  }
+  return `${Math.floor(m / (24 * 60))} дн.`
+}
+
+// Ссылка на доску этого же сайта (/boards/<id>) — открывается внутри приложения.
+export function boardIdFromLink(url, origin) {
+  try {
+    const u = new URL(String(url || ''), origin)
+    if (u.origin !== origin) return null
+    const m = /^\/boards\/([A-Za-z0-9_-]{16,40})\/?$/.exec(u.pathname)
+    return m ? m[1] : null
+  } catch {
+    return null
+  }
+}
