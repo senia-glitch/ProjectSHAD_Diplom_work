@@ -57,9 +57,10 @@ const MENU = [
     ],
   },
   {
-    title: 'Контент',
+    title: 'Сайт',
     items: [
-      { to: '/blog/manage', label: 'Мой блог' },
+      { to: '/admin/site', label: 'Гостевая страница' },
+      { to: '/blog/manage', label: 'Блог владельца' },
     ],
   },
   {

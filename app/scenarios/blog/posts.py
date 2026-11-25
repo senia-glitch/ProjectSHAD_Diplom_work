@@ -8,7 +8,7 @@ import re
 from datetime import datetime, timezone
 from typing import Literal
 
-from core import BaseScenario, NotFoundError, register_scenario
+from core import BaseScenario, ConflictError, NotFoundError, register_scenario
 from pydantic import BaseModel, Field, field_validator
 
 from app.core.exceptions import ForbiddenError
@@ -407,15 +407,30 @@ class Comments(BaseScenario):
 class CreateComment(BaseScenario):
     async def execute(self, dto):
         post = await _published(self._db, dto.post_id)
+        is_author = post['author_id'] == dto.actor_id
         parent = None
+        # Правила: читатель пишет один комментарий к записи (изменить нельзя — только удалить и
+        # написать заново); отвечает только автор записи, один раз на каждый комментарий.
         if dto.parent_id:
+            if not is_author:
+                raise ForbiddenError('Отвечать на комментарии может только автор записи')
             found = await self._db.query(
                 'SELECT id, post_id, parent_id, author_id FROM blog_comments WHERE id = :id', {'id': dto.parent_id})
-            if not found or found[0]['post_id'] != dto.post_id:
+            if not found or found[0]['post_id'] != dto.post_id or found[0]['parent_id']:
                 raise NotFoundError('Комментарий не найден')
             parent = found[0]
-        # Ветка одного уровня: ответ на ответ крепится к исходному комментарию.
-        parent_id = (parent['parent_id'] or parent['id']) if parent else None
+            if parent['author_id'] == dto.actor_id:
+                raise ConflictError('Нельзя ответить на свой комментарий')
+            if await self._db.query('SELECT 1 FROM blog_comments WHERE parent_id = :p', {'p': parent['id']}):
+                raise ConflictError('Вы уже ответили на этот комментарий')
+        else:
+            if is_author:
+                raise ConflictError('Автор записи отвечает на комментарии читателей')
+            if await self._db.query(
+                    'SELECT 1 FROM blog_comments WHERE post_id = :p AND author_id = :a AND parent_id IS NULL',
+                    {'p': dto.post_id, 'a': dto.actor_id}):
+                raise ConflictError('Вы уже оставили комментарий к этой записи. Удалите его, чтобы написать новый')
+        parent_id = parent['id'] if parent else None
         row = await self._db.create('blog_comments', {
             'post_id': dto.post_id, 'author_id': dto.actor_id, 'text': dto.text, 'created_at': _now(),
             'parent_id': parent_id})

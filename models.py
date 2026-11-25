@@ -400,6 +400,20 @@ class BlogPostLike(SQLModel, table=True):
     created_at: datetime = Field(sa_column=_tz())
 
 
+class SiteBlock(SQLModel, table=True):
+    """Блок гостевой страницы: вид, заголовок, текст в Markdown и пункты (для преимуществ, шагов, вопросов)."""
+    __tablename__ = "site_blocks"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    position: int = Field(default=0)
+    kind: str = Field(max_length=16)
+    title: str = Field(default="", max_length=200)
+    body: str = Field(default="", sa_column=sa.Column(sa.Text, nullable=False, server_default=""))
+    # JSON-список пунктов [{"title": ..., "body": ...}] — тексты пунктов тоже в Markdown.
+    items: str = Field(default="[]", sa_column=sa.Column(sa.Text, nullable=False, server_default="[]"))
+    visible: bool = Field(default=True, sa_column=sa.Column(sa.Boolean, nullable=False, server_default=sa.true()))
+    updated_at: datetime = Field(sa_column=_tz())
+
+
 class AdminAudit(SQLModel, table=True):
     """Журнал действий администратора: кто, что, над чем, когда, откуда."""
     __tablename__ = "admin_audit"

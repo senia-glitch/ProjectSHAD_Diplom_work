@@ -43,7 +43,7 @@
                   </span>
                 </div>
                 <p class="comment-text">{{ c.text }}</p>
-                <button v-if="isLoggedIn" type="button" class="more reply-btn" @click="startReply(c)">Ответить</button>
+                <button v-if="canReply(c, thread)" type="button" class="more reply-btn" @click="startReply(c)">Ответить</button>
               </div>
             </div>
             <form v-if="replyTo && replyRoot === thread.root.id" class="comment-form reply-form stack-sm" @submit.prevent="sendReply">
@@ -58,14 +58,15 @@
             </form>
           </div>
 
-          <form v-if="isLoggedIn" class="comment-form stack-sm" @submit.prevent="handleComment">
+          <p v-if="isAuthor" class="muted small comment-rule">Вы автор записи: можно ответить на каждый комментарий один раз.</p>
+          <p v-else-if="myComment" class="muted small comment-rule">Вы уже оставили комментарий. Изменить его нельзя — удалите и напишите заново.</p>
+          <form v-else class="comment-form stack-sm" @submit.prevent="handleComment">
             <label>Ваш комментарий
               <textarea v-model="text" rows="3" maxlength="3000" required></textarea>
             </label>
             <p v-if="commentError" class="error-text" role="alert">{{ commentError }}</p>
             <div class="row"><button class="btn primary" type="submit" :disabled="sending || !text.trim()">Отправить</button></div>
           </form>
-          <p v-else class="notice">Чтобы оставить комментарий, <router-link :to="{ path: '/login', query: { redirect: route.fullPath } }">войдите</router-link>.</p>
         </section>
       </article>
     </div>
@@ -108,6 +109,13 @@ const authorLink = computed(() => (post.value?.owner ? '/' : `/blog/authors/${po
 const isAuthor = computed(() => post.value && post.value.author_id === userId.value)
 const threads = computed(() => commentThreads(comments.value))
 const replyRoot = computed(() => (replyTo.value ? replyTo.value.parent_id || replyTo.value.id : null))
+
+// Свой комментарий верхнего уровня у читателя (один на запись).
+const myComment = computed(() => comments.value.find((c) => !c.parent_id && c.author_id === userId.value) || null)
+// Отвечает только автор записи — один раз на каждый чужой комментарий.
+function canReply(c, thread) {
+  return isAuthor.value && !c.parent_id && c.author_id !== userId.value && !thread.replies.length
+}
 
 function canDelete(c) {
   return role.value === 'admin' || c.author_id === userId.value || isAuthor.value
@@ -158,7 +166,7 @@ async function handleComment() {
 async function startReply(c) {
   replyTo.value = c
   replyError.value = ''
-  replyText.value = c.author_id === userId.value ? '' : `${c.author_name.split(' ')[0]}, `
+  replyText.value = `${c.author_name.split(' ')[0]}, `
   await nextTick()
   const el = Array.isArray(replyInput.value) ? replyInput.value[0] : replyInput.value
   el?.focus()
@@ -213,6 +221,7 @@ watch(() => route.params.id, (id) => { if (id) load() }, { immediate: true })
 .reply-btn { font-size: 13px; }
 .reply-form { margin: 4px 0 10px 44px; }
 .comment-form { margin-top: 20px; }
+.comment-rule { margin-top: 16px; }
 .btn-ico { width: 15px; height: 15px; }
 .pp .ibtn :deep(.ui-icon) { width: 16px; height: 16px; }
 @media (max-width: 600px) { .comment.reply, .reply-form { margin-left: 20px; } }

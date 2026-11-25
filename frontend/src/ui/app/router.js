@@ -9,7 +9,8 @@ const TestingHost = () => import('../pages/testing/index.vue')
 export const routes = [
   { path: '/login', name: 'login', component: () => import('../pages/login/index.vue'), meta: { public: true } },
   { path: '/register', name: 'register', component: () => import('../pages/register/index.vue'), meta: { public: true } },
-  { path: '/', name: 'home', component: () => import('../pages/home/index.vue'), meta: { public: true } },
+  // Главная: гостю — страница о продукте, вошедшему — блог владельца (сессию восстанавливаем, если она есть).
+  { path: '/', name: 'home', component: () => import('../pages/home/index.vue'), meta: { public: true, optionalAuth: true } },
   { path: '/how-it-works', name: 'how-it-works', component: () => import('../pages/how-it-works/index.vue'), meta: { public: true } },
   { path: '/for-tutors', name: 'for-tutors', component: () => import('../pages/for-tutors/index.vue'), meta: { public: true } },
   { path: '/faq', name: 'faq', component: () => import('../pages/faq/index.vue'), meta: { public: true } },
@@ -47,10 +48,10 @@ export const routes = [
   // Доски: список и вход по коду, сама доска — во весь экран.
   { path: '/boards', name: 'boards', component: () => import('../pages/boards/index.vue'), meta: { roles: ['tutor', 'student'] } },
   { path: '/boards/:id([A-Za-z0-9_-]{16,40})', name: 'board', component: () => import('../pages/board/index.vue'), meta: { roles: ['tutor', 'student'] } },
-  // Блог репетиторов: чтение открыто всем, управление записями — репетитору.
-  { path: '/blog', name: 'blog', component: () => import('../pages/blog/index.vue'), meta: { public: true, optionalAuth: true } },
-  { path: '/blog/authors/:authorId(\\d+)', name: 'blog-author', component: () => import('../pages/blog/index.vue'), meta: { public: true, optionalAuth: true } },
-  { path: '/blog/posts/:id(\\d+)', name: 'blog-post', component: () => import('../pages/blog/post.vue'), meta: { public: true, optionalAuth: true } },
+  // Блоги — только для вошедших; управление записями — репетитору и владельцу.
+  { path: '/blog', name: 'blog', component: () => import('../pages/blog/index.vue') },
+  { path: '/blog/authors/:authorId(\\d+)', name: 'blog-author', component: () => import('../pages/blog/index.vue') },
+  { path: '/blog/posts/:id(\\d+)', name: 'blog-post', component: () => import('../pages/blog/post.vue') },
   { path: '/blog/manage', name: 'blog-manage', component: () => import('../pages/blog/manage.vue'), meta: { roles: ['tutor', 'admin'] } },
   { path: '/blog/manage/new', name: 'blog-new', component: () => import('../pages/blog/editor.vue'), meta: { roles: ['tutor', 'admin'] } },
   { path: '/blog/manage/:id(\\d+)', name: 'blog-edit', component: () => import('../pages/blog/editor.vue'), meta: { roles: ['tutor', 'admin'] } },
@@ -60,6 +61,7 @@ export const routes = [
   { path: '/admin/users', name: 'admin-users', component: () => import('../pages/admin/users.vue'), meta: { roles: ['admin'], adminArea: true } },
   { path: '/admin/db', name: 'admin-db', component: () => import('../pages/admin/database.vue'), meta: { roles: ['admin'], adminArea: true } },
   { path: '/admin/audit', name: 'admin-audit', component: () => import('../pages/admin/audit.vue'), meta: { roles: ['admin'], adminArea: true } },
+  { path: '/admin/site', name: 'admin-site', component: () => import('../pages/admin/site.vue'), meta: { roles: ['admin'], adminArea: true } },
   { path: '/admin/key', name: 'admin-key', component: () => import('../pages/admin/key.vue'), meta: { roles: ['admin'], adminArea: true } },
   { path: '/admin/system', name: 'admin-system', component: () => import('../pages/admin/system/index.vue'), meta: { roles: ['admin'], adminArea: true } },
   { path: '/admin/logs', name: 'admin-logs', component: () => import('../pages/admin/logs/index.vue'), meta: { roles: ['admin'], adminArea: true } },

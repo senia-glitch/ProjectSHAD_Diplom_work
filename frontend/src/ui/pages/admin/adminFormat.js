@@ -14,6 +14,10 @@ export const ACTION_LABELS = {
   db_sql_read_failed: 'SQL: ошибка чтения',
   db_sql_write: 'SQL: изменение',
   db_sql_write_failed: 'SQL: ошибка изменения',
+  site_block_create: 'Сайт: новый блок',
+  site_block_update: 'Сайт: блок изменён',
+  site_block_delete: 'Сайт: блок удалён',
+  site_blocks_order: 'Сайт: порядок блоков',
 }
 
 // Сервер хранит время в UTC без пояса: показываем в часовом поясе браузера владельца.

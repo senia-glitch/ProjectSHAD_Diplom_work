@@ -98,9 +98,25 @@
             <button type="button" class="btn icon" :aria-label="theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'" :data-tip="theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'" :aria-pressed="theme === 'light'" @click="toggleTheme">
               <span class="icon" :data-icon="theme === 'dark' ? 'sun' : 'moon'"><UiIcon :name="theme === 'dark' ? 'sun' : 'moon'" /></span>
             </button>
-            <button v-if="isLoggedIn" type="button" class="btn icon" aria-label="Выйти" data-tip="Выйти" @click="emit('logout')">
-              <span class="icon" data-icon="logout"><UiIcon name="logout" /></span>
-            </button>
+            <details v-if="isLoggedIn" ref="accountRef" class="usermenu account">
+              <summary class="account-btn" aria-label="Меню аккаунта">
+                <UserAvatar :src="userAvatar" :name="userName" :size="30" />
+              </summary>
+              <div class="menu-panel account-panel" role="menu" aria-label="Аккаунт">
+                <div class="account-who">
+                  <strong>{{ userName || 'Аккаунт' }}</strong>
+                  <small class="muted">{{ ROLE_NAMES[role] || '' }}</small>
+                </div>
+                <hr />
+                <router-link v-for="link in accountLinks" :key="link.to" :to="link.to" role="menuitem" @click="closeAccount">
+                  <span class="icon" :data-icon="link.icon"><UiIcon :name="link.icon" /></span> {{ link.label }}
+                </router-link>
+                <hr />
+                <button type="button" role="menuitem" @click="closeAccount(); emit('logout')">
+                  <span class="icon" data-icon="logout"><UiIcon name="logout" /></span> Выйти
+                </button>
+              </div>
+            </details>
             <template v-else>
               <router-link to="/login" class="btn ghost">Войти</router-link>
               <router-link to="/register" class="btn primary nav-register">Регистрация</router-link>
@@ -136,7 +152,7 @@
         <div class="wrap footer-inner">
           <span>© SHAD — расписание, тесты, доски и блог репетиторов</span>
           <nav class="footer-nav" aria-label="Ссылки">
-            <router-link to="/blog">Блог</router-link>
+            <router-link v-if="isLoggedIn" to="/blog">Блог</router-link>
             <router-link to="/how-it-works">Как это работает</router-link>
             <router-link to="/faq">Вопросы</router-link>
           </nav>
@@ -154,8 +170,8 @@
 import { computed, ref, reactive, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import NotificationPanel from './NotificationPanel.vue'
-import { UiIcon } from '../../components/index.js'
-import { useNavMode, useNotifications, useTheme } from '../../composables/index.js'
+import { UiIcon, UserAvatar } from '../../components/index.js'
+import { useNavMode, useNotifications, useTheme, useUser } from '../../composables/index.js'
 
 const props = defineProps({
   isLoggedIn: { type: Boolean, default: false },
@@ -166,34 +182,31 @@ const props = defineProps({
 const emit = defineEmits(['logout'])
 const route = useRoute()
 const { theme, toggleTheme } = useTheme()
+const { userName, userAvatar } = useUser()
 
-// Группы объединяют страницы одной темы: значок группы раскрывает список.
-const LESSONS_GROUP = {
-  key: 'lessons', label: 'Занятия', icon: 'board',
-  items: [
-    { to: '/upcoming', label: 'Ближайшие уроки', icon: 'clock' },
-    { to: '/boards', label: 'Доски', icon: 'board' },
-    { to: '/testing', label: 'Тесты', icon: 'tests' },
-  ],
-}
-
+// Разделы по ролям: в шапке — разделы, внутри — их страницы (левое меню или выпадающий список).
+// Профиль и настройки — в меню аккаунта справа, не разделом.
 const NAV = {
   guest: [
     { key: 'how', to: '/how-it-works', label: 'Как это работает', icon: 'info' },
     { key: 'for-tutors', to: '/for-tutors', label: 'Репетиторам', icon: 'users' },
-    { key: 'blog', to: '/blog', label: 'Блог', icon: 'blog' },
     { key: 'faq', to: '/faq', label: 'Вопросы', icon: 'chat' },
   ],
   student: [
-    { key: 'schedule', to: '/schedule', label: 'Расписание', icon: 'calendar' },
-    { key: 'tutors', to: '/tutors', label: 'Репетиторы', icon: 'users' },
-    LESSONS_GROUP,
-    { key: 'blog', to: '/blog', label: 'Блог', icon: 'blog' },
     {
-      key: 'profile', label: 'Профиль', icon: 'user',
+      key: 'schedule', label: 'Расписание', icon: 'calendar',
       items: [
-        { to: '/profile', label: 'Профиль', icon: 'user' },
-        { to: '/student-settings', label: 'Настройки', icon: 'sliders' },
+        { to: '/schedule', label: 'Расписание', icon: 'calendar' },
+        { to: '/upcoming', label: 'Ближайшие уроки', icon: 'clock' },
+      ],
+    },
+    { key: 'tutors', to: '/tutors', label: 'Репетиторы', icon: 'users' },
+    {
+      key: 'tools', label: 'Инструменты', icon: 'board',
+      items: [
+        { to: '/boards', label: 'Доски', icon: 'board' },
+        { to: '/testing', label: 'Тесты', icon: 'tests' },
+        { to: '/blog', label: 'Блог', icon: 'blog', exclude: ['/blog/manage'] },
       ],
     },
   ],
@@ -202,24 +215,25 @@ const NAV = {
       key: 'schedule', label: 'Расписание', icon: 'calendar',
       items: [
         { to: '/schedule', label: 'Расписание', icon: 'calendar' },
-        { to: '/bookings', label: 'Брони', icon: 'clock' },
+        { to: '/bookings', label: 'Окна записи', icon: 'clock' },
+        { to: '/upcoming', label: 'Ближайшие уроки', icon: 'clock' },
       ],
     },
-    LESSONS_GROUP,
+    { key: 'students', to: '/students', label: 'Ученики', icon: 'users' },
     {
-      key: 'students', label: 'Ученики', icon: 'users',
+      key: 'tools', label: 'Инструменты', icon: 'board',
       items: [
-        { to: '/students', label: 'Ученики', icon: 'users' },
-        { to: '/statistics', label: 'Статистика', icon: 'chart' },
+        { to: '/boards', label: 'Доски', icon: 'board' },
+        { to: '/testing', label: 'Тесты', icon: 'tests' },
+        { to: '/blog', label: 'Блог', icon: 'blog', exclude: ['/blog/manage'] },
+        { to: '/blog/manage', label: 'Мой блог', icon: 'edit' },
+      ],
+    },
+    {
+      key: 'finance', label: 'Финансы', icon: 'wallet',
+      items: [
         { to: '/payments', label: 'Оплаты', icon: 'wallet' },
-      ],
-    },
-    { key: 'blog', to: '/blog/manage', label: 'Блог', icon: 'blog', section: '/blog' },
-    {
-      key: 'profile', label: 'Профиль', icon: 'user',
-      items: [
-        { to: '/profile', label: 'Профиль', icon: 'user' },
-        { to: '/settings', label: 'Настройки', icon: 'sliders' },
+        { to: '/statistics', label: 'Статистика', icon: 'chart' },
       ],
     },
   ],
@@ -234,6 +248,14 @@ const NAV = {
       ],
     },
     {
+      key: 'site', label: 'Сайт', icon: 'blog',
+      items: [
+        { to: '/admin/site', label: 'Гостевая страница', icon: 'info' },
+        { to: '/blog/manage', label: 'Блог владельца', icon: 'edit' },
+        { to: '/blog', label: 'Блоги репетиторов', icon: 'blog', exclude: ['/blog/manage'] },
+      ],
+    },
+    {
       key: 'system', label: 'Система', icon: 'sliders',
       items: [
         { to: '/admin/system', label: 'Состояние', icon: 'chart' },
@@ -241,17 +263,27 @@ const NAV = {
         { to: '/admin/key', label: 'Ключ входа', icon: 'key' },
       ],
     },
-    { key: 'blog', to: '/blog/manage', label: 'Мой блог', icon: 'blog', section: '/blog/manage' },
-    { key: 'profile', to: '/profile', label: 'Профиль', icon: 'user' },
   ],
 }
+// Страницы аккаунта: меню справа по нажатию на аватар.
+const ACCOUNT = {
+  tutor: [{ to: '/profile', label: 'Профиль', icon: 'user' }, { to: '/settings', label: 'Настройки', icon: 'sliders' }],
+  student: [{ to: '/profile', label: 'Профиль', icon: 'user' }, { to: '/student-settings', label: 'Настройки', icon: 'sliders' }],
+  admin: [{ to: '/profile', label: 'Профиль', icon: 'user' }],
+}
+const accountLinks = computed(() => ACCOUNT[props.role] || [{ to: '/profile', label: 'Профиль', icon: 'user' }])
+const ROLE_NAMES = { tutor: 'Репетитор', student: 'Ученик', admin: 'Владелец' }
+const accountRef = ref(null)
+const closeAccount = () => { if (accountRef.value) accountRef.value.open = false }
+watch(() => route.fullPath, closeAccount)
+
 const navItems = computed(() => (props.isLoggedIn ? NAV[props.role] || [] : NAV.guest))
 
 // --- Левое меню (информативный вид, широкий экран): страницы текущего раздела ---
 const { sidebarAllowed } = useNavMode()
 const sidebarOn = computed(() => props.isLoggedIn && !props.fill && sidebarAllowed.value && navItems.value.length > 0)
 // Страницы вне меню относятся к ближайшему разделу: урок — к расписанию, доска — к занятиям.
-const EXTRA_SECTIONS = { '/lessons': '/schedule', '/boards': '/boards', '/testing': '/testing', '/statistics': '/statistics', '/blog/posts': '/blog' }
+const EXTRA_SECTIONS = { '/lessons': '/schedule' }
 const sideSection = computed(() => {
   const own = navItems.value.find((item) => (item.items ? isGroupActive(item) : isSection(item)))
   if (own) return own
@@ -269,6 +301,7 @@ const sideLinks = computed(() => {
 // Раздел подсвечивается и на вложенных страницах (тест, доска, запись блога).
 function isSection(item) {
   const base = item.section || item.to
+  if (item.exclude?.some((prefix) => route.path === prefix || route.path.startsWith(prefix + '/'))) return false
   if (item.exact) return route.path === base
   return route.path === base || route.path.startsWith(base + '/')
 }
@@ -394,6 +427,11 @@ function handleBellClick() {
 .pp .site-header { position: static; }
 .pp .brand-name { letter-spacing: .04em; }
 .notif-area { position: relative; }
+.account-btn { display: inline-flex; align-items: center; height: var(--ctl); padding: 0 4px; border-radius: 999px; }
+.pp .usermenu.account summary::after { display: none; }
+.account-btn:hover :deep(.user-avatar) { box-shadow: 0 0 0 2px var(--accent-soft); }
+.account-panel { min-width: 220px; }
+.account-who { display: grid; gap: 2px; padding: 8px 12px 4px; }
 .notif-badge { position: absolute; top: 1px; right: 1px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--danger); color: var(--accent-ink); font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }
 .pp .header-actions .btn.icon { width: var(--ctl); padding: 0; border: 1px solid var(--line); }
 .body { flex: 1; display: flex; min-width: 0; }

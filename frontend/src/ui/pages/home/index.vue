@@ -1,6 +1,13 @@
 <template>
   <MainLayout :is-logged-in="isLoggedIn" :role="role" @logout="handleLogout">
-    <div class="pp home-page">
+    <!-- Гость: страница о продукте из блоков владельца -->
+    <div v-if="!isLoggedIn" class="pp home-page">
+      <div v-if="siteError" class="notice error" role="alert">{{ siteError }}</div>
+      <div v-else-if="!siteBlocks" class="sk-stack" aria-hidden="true"><div class="skeleton tall"></div></div>
+      <SiteBlocks v-else :blocks="siteBlocks" />
+    </div>
+    <!-- Вошедший: новости и обновления системы — блог владельца -->
+    <div v-else class="pp home-page">
       <div class="page-grid">
         <div class="page-main">
           <div class="page-head">
@@ -49,15 +56,9 @@
         </div>
 
         <aside class="page-side">
-          <section v-if="!isLoggedIn" class="side-card">
-            <h2>Расписание и занятия</h2>
-            <p>Запись на уроки, тесты, доски и связь с репетитором — в одном кабинете.</p>
-            <router-link class="btn primary" to="/login">Войти</router-link>
-            <router-link class="btn ghost" to="/register">Создать аккаунт</router-link>
-          </section>
-          <section v-else-if="role === 'admin'" class="side-card">
+          <section v-if="role === 'admin'" class="side-card">
             <h2>Блог владельца</h2>
-            <p>Записи из раздела «Мой блог» публикуются здесь для всех посетителей.</p>
+            <p>Записи блога владельца видят здесь все пользователи системы после входа.</p>
             <router-link class="btn primary" to="/blog/manage/new">Новая запись</router-link>
             <router-link class="btn ghost" to="/blog/manage">Мои записи</router-link>
           </section>
@@ -87,7 +88,8 @@ import { UiIcon, UserAvatar } from '../../components/index.js'
 import LikeButton from '../blog/LikeButton.vue'
 import MarkdownView from '../../components/MarkdownView.vue'
 import { useLogout, useUser } from '../../composables/index.js'
-import { likePost, loadFeed } from '../../../logic/actions/index.js'
+import { likePost, loadFeed, loadSiteBlocks } from '../../../logic/actions/index.js'
+import SiteBlocks from '../../blocks/site/SiteBlocks.vue'
 import { toast } from '../../legacy/testing/kit.js'
 import { commentsWord, formatDate } from '../blog/blogFormat.js'
 
@@ -149,8 +151,24 @@ async function load(reset = true) {
   }
 }
 
-watch(() => route.fullPath, () => {
+const siteBlocks = ref(null)
+const siteError = ref('')
+async function loadSite() {
+  siteError.value = ''
+  try {
+    siteBlocks.value = await loadSiteBlocks()
+  } catch (e) {
+    siteError.value = e.message || 'Не удалось загрузить страницу'
+  }
+}
+
+// Гостю — страница о продукте, вошедшему — лента новостей; при входе/выходе страница переключается.
+watch([() => route.fullPath, isLoggedIn], () => {
   if (route.name !== 'home') return
+  if (!isLoggedIn.value) {
+    if (!siteBlocks.value) loadSite()
+    return
+  }
   expanded.clear()
   cutPosts.clear()
   load()

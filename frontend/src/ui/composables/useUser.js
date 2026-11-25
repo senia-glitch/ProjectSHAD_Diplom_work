@@ -11,6 +11,7 @@ export function useUser() {
     isLoggedIn: computed(() => store.isLoggedIn),
     userName: computed(() => store.userName),
     userId: computed(() => store.user?.user_id ?? null),
+    userAvatar: computed(() => store.user?.avatar_url || ''),
     fetchUser: () => restoreSession(),
   }
 }
