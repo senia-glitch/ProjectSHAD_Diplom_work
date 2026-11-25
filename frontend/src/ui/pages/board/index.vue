@@ -50,19 +50,23 @@
 
         <aside id="chat" class="chat" aria-labelledby="chat-title" hidden>
           <div class="chat-head">
-            <h2 id="chat-title">Чат</h2>
-            <span id="chat-meter" class="chat-meter" data-tip-pos="bottom" hidden></span>
+            <h2 id="chat-title">Сообщения</h2>
+            <span id="chat-meter" class="chat-meter" style="display: none" aria-hidden="true"></span>
             <span class="grow"></span>
             <span id="chat-close-slot"></span>
           </div>
-          <div id="chat-list" class="chat-list" role="log" aria-live="polite" aria-relevant="additions" tabindex="0"></div>
-          <p id="chat-empty" class="chat-empty muted">Сообщений пока нет. Напишите первым.</p>
-          <form id="chat-form" class="chat-form" novalidate>
-            <span id="chat-count" class="chat-count" aria-live="polite" hidden></span>
-            <textarea id="chat-input" rows="1" maxlength="1000" placeholder="Сообщение… (Enter — отправить)"
-                      aria-label="Сообщение" autocomplete="off"></textarea>
-            <span id="chat-send-slot"></span>
-          </form>
+          <!-- Чат доски — личные диалоги участников, у которых есть связь (общая с разделом «Сообщения» история) -->
+          <BoardChat :board-id="String(route.params.id)" />
+          <!-- Прежний общий чат доски отключён; элементы нужны только старому коду доски -->
+          <div class="legacy-chat" hidden>
+            <div id="chat-list" class="chat-list"></div>
+            <p id="chat-empty" class="chat-empty"></p>
+            <form id="chat-form" class="chat-form" novalidate>
+              <span id="chat-count" class="chat-count" hidden></span>
+              <textarea id="chat-input" rows="1" maxlength="1000" aria-hidden="true" tabindex="-1"></textarea>
+              <span id="chat-send-slot"></span>
+            </form>
+          </div>
         </aside>
       </div>
 
@@ -150,6 +154,7 @@
 import { onActivated, onBeforeUnmount, onDeactivated, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MainLayout from '../../blocks/layout/MainLayout.vue'
+import BoardChat from './BoardChat.vue'
 import { useUser, useLogout } from '../../composables/index.js'
 import { boardSocketToken, uploadBoardFile } from '../../../logic/actions/index.js'
 import { startBoard, setBoardPortalVisible } from '../../legacy/board/board.js'

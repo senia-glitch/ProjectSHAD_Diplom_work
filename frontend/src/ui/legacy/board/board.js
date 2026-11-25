@@ -381,6 +381,8 @@ export function startBoard(opts) {
   function initials(name) { return (name || "?").trim().slice(0, 1).toUpperCase() || "?"; }
 
   function renderPeers() {
+  // Панель сообщений доски обновляет список собеседников при входе и выходе участников.
+  window.dispatchEvent(new CustomEvent("board-peers"));
   if (state.limits.maxPeers) setTimeout(renderMeters);
   const box = $("peers");
   const list = [];

@@ -25,6 +25,7 @@ import {
 import { clearScheduleCaches } from './schedule.js'
 import { invalidateStatisticsLoads, clearStatisticsFilters } from './statistics.js'
 import { invalidateAllLoads } from './loading.js'
+import { resetChat } from './chat.js'
 
 const ACCESS_KEY = 'access_token'
 const REFRESH_KEY = 'refresh_token'
@@ -60,6 +61,7 @@ function resetDomainState() {
   useStatisticsStore().$reset()
   useAdminStore().$reset()
   useNotificationsStore().$reset()
+  resetChat()
   clearScheduleCaches()
   invalidateStatisticsLoads()
   clearStatisticsFilters()

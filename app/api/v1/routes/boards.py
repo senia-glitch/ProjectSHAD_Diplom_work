@@ -317,7 +317,7 @@ async def board_socket(ws: WebSocket, board_id: str):
             return
         peer = Peer(ws=ws, author=author, tag=author_tag(author), name=clean_name(who.name),
                     color=room.next_color(), queue=asyncio.Queue(maxsize=cfg.send_queue),
-                    creator=room.creator_key == author)
+                    creator=room.creator_key == author, user_id=principal['user_id'])
         hub.join(room, peer)
         peer.send(room.init_message(peer, limits()))
     finally:

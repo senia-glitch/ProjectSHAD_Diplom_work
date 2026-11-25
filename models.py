@@ -403,6 +403,22 @@ class BlogPostLike(SQLModel, table=True):
     created_at: datetime = Field(sa_column=_tz())
 
 
+class ChatMessage(SQLModel, table=True):
+    """Личное сообщение: один диалог на пару «репетитор — ученик» (пока есть связь, можно писать)."""
+    __tablename__ = "chat_messages"
+    __table_args__ = (sa.Index("ix_chat_messages_pair_id", "tutor_user_id", "student_user_id", "id"),)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tutor_user_id: int = Field(sa_column=sa.Column(
+        sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False))
+    student_user_id: int = Field(sa_column=sa.Column(
+        sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False))
+    sender_id: int = Field(sa_column=sa.Column(
+        sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False))
+    text: str = Field(sa_column=sa.Column(sa.Text, nullable=False))
+    created_at: datetime = Field(sa_column=_tz())
+    read_at: Optional[datetime] = Field(default=None, sa_column=_tz(nullable=True))
+
+
 class SiteBlock(SQLModel, table=True):
     """Блок гостевой страницы: вид, заголовок, текст в Markdown и пункты (для преимуществ, шагов, вопросов)."""
     __tablename__ = "site_blocks"

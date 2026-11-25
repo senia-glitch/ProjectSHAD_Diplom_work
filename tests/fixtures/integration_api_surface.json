@@ -250,5 +250,47 @@
     "action": "testing.results_for_student",
     "response": "AttemptList",
     "scenario": "testing.attempts_list_for_student"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/chat/dialogs",
+    "action": "chat.dialogs",
+    "response": "DialogList",
+    "scenario": "chat.dialogs"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/chat/unread",
+    "action": "chat.unread",
+    "response": "UnreadCount",
+    "scenario": "chat.unread"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/chat/dialogs/{partner_id}/messages",
+    "action": "chat.messages",
+    "response": "MessageList",
+    "scenario": "chat.messages"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/chat/dialogs/{partner_id}/messages",
+    "action": "chat.send",
+    "response": "SendResult",
+    "scenario": "chat.send"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/chat/dialogs/{partner_id}/read",
+    "action": "chat.read",
+    "response": "ReadResult",
+    "scenario": "chat.read"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/chat/board/{board_id}/dialogs",
+    "action": "chat.board_dialogs",
+    "response": "DialogList",
+    "scenario": "chat.dialogs"
   }
 ]

@@ -73,9 +73,10 @@
               </div>
               <!-- Одиночная страница -->
               <router-link v-else v-slot="{ href, navigate, isActive }" :to="item.to" custom>
-                <a :href="href" :data-tip="item.label" :aria-current="isActive || isSection(item) ? 'page' : null" @click="navigate">
+                <a :href="href" :data-tip="item.label" :aria-current="isActive || isSection(item) ? 'page' : null" class="nav-link" @click="navigate">
                   <span class="icon" :data-icon="item.icon"><UiIcon :name="item.icon" /></span>
                   <span class="nav-label">{{ item.label }}</span>
+                  <span v-if="item.key === 'messages' && chatUnread" class="nav-badge" :aria-label="`Непрочитанных сообщений: ${chatUnread}`">{{ chatUnread }}</span>
                 </a>
               </router-link>
             </template>
@@ -138,7 +139,8 @@
           >
             <a :href="href" class="side-link" :aria-current="isSection(link) ? 'page' : null" @click="navigate">
               <span class="icon" :data-icon="link.icon"><UiIcon :name="link.icon" /></span>
-              <span>{{ link.label }}</span>
+              <span class="grow">{{ link.label }}</span>
+              <span v-if="link.to === '/messages' && chatUnread" class="side-badge" :aria-label="`Непрочитанных сообщений: ${chatUnread}`">{{ chatUnread }}</span>
             </a>
           </router-link>
         </div>
@@ -171,7 +173,7 @@ import { computed, ref, reactive, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import NotificationPanel from './NotificationPanel.vue'
 import { UiIcon, UserAvatar } from '../../components/index.js'
-import { useNavMode, useNotifications, useTheme, useUser } from '../../composables/index.js'
+import { useChat, useNavMode, useNotifications, useTheme, useUser } from '../../composables/index.js'
 
 const props = defineProps({
   isLoggedIn: { type: Boolean, default: false },
@@ -183,6 +185,8 @@ const emit = defineEmits(['logout'])
 const route = useRoute()
 const { theme, toggleTheme } = useTheme()
 const { userName, userAvatar } = useUser()
+// Чат: соединение для репетитора и ученика, число непрочитанных — на пункте «Сообщения».
+const { chatUnread } = useChat()
 
 // Разделы по ролям: в шапке — разделы, внутри — их страницы (левое меню или выпадающий список).
 // Профиль и настройки — в меню аккаунта справа, не разделом.
@@ -201,6 +205,7 @@ const NAV = {
       ],
     },
     { key: 'tutors', to: '/tutors', label: 'Репетиторы', icon: 'users' },
+    { key: 'messages', to: '/messages', label: 'Сообщения', icon: 'chat' },
     {
       key: 'tools', label: 'Инструменты', icon: 'board',
       items: [
@@ -220,6 +225,7 @@ const NAV = {
       ],
     },
     { key: 'students', to: '/students', label: 'Ученики', icon: 'users' },
+    { key: 'messages', to: '/messages', label: 'Сообщения', icon: 'chat' },
     {
       key: 'tools', label: 'Инструменты', icon: 'board',
       items: [
@@ -427,6 +433,8 @@ function handleBellClick() {
 .pp .site-header { position: static; }
 .pp .brand-name { letter-spacing: .04em; }
 .notif-area { position: relative; }
+.pp .nav-main a.nav-link { position: relative; }
+.nav-badge { position: absolute; top: 6px; right: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }
 .account-btn { display: inline-flex; align-items: center; height: var(--ctl); padding: 0 4px; border-radius: 999px; }
 .pp .usermenu.account summary::after { display: none; }
 .account-btn:hover :deep(.user-avatar) { box-shadow: 0 0 0 2px var(--accent-soft); }
@@ -447,6 +455,8 @@ function handleBellClick() {
 .pp .side-link .icon { display: inline-flex; color: inherit; }
 .pp .side-link[aria-current="page"] .icon { color: var(--accent); }
 .pp .side-link .icon svg { width: 19px; height: 19px; }
+.side-link .grow { flex: 1; }
+.side-badge { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 700; display: inline-grid; place-items: center; }
 .main:focus { outline: none; }
 .layout--fill .main { padding: 0; max-width: none; display: flex; flex-direction: column; }
 

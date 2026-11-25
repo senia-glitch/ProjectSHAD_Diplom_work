@@ -104,6 +104,7 @@
                     :disabled="busy"
                     @click="togglePaid(s)"
                   >{{ s.paid ? 'Оплачено' : 'Не оплачено' }}</button>
+                  <router-link v-if="s.student_user_id" class="ibtn" :to="`/messages/${s.student_user_id}`" data-tip="Написать" :aria-label="`Написать ${s.student_name}`"><UiIcon name="chat" /></router-link>
                   <button v-if="!s.cancelled" type="button" class="ibtn danger" data-tip="Убрать с урока" :aria-label="`Убрать ${s.student_name} с урока`" :disabled="busy" @click="removeParticipant(s)"><UiIcon name="trash" /></button>
                 </li>
               </ul>
@@ -142,6 +143,7 @@
                 <p v-if="!links.length" class="muted small">Ссылок нет.</p>
               </template>
               <p class="muted small">У урока своя доска: репетитор и записанные ученики входят в неё без кода.</p>
+              <router-link v-if="!isTutor && tutorUserId" class="btn ghost" :to="`/messages/${tutorUserId}`"><UiIcon name="chat" /> Написать репетитору</router-link>
               <router-link class="btn ghost" to="/boards"><UiIcon name="board" /> Свободные доски</router-link>
               <router-link class="btn ghost" :to="isTutor ? '/testing' : '/testing'"><UiIcon name="tests" /> {{ isTutor ? 'Тесты для учеников' : 'Мои тесты' }}</router-link>
               <router-link v-if="isTutor" class="btn ghost" to="/testing/new"><UiIcon name="plus" /> Новый тест</router-link>
@@ -217,6 +219,7 @@ const markStatusValue = ref('FINISHED')
 
 const statusLabel = lessonStatusLabel
 const tutorName = computed(() => tutorNameOf(lesson.value, rosterStore.tutors))
+const tutorUserId = computed(() => rosterStore.tutors.find((t) => t.tutor_id === lesson.value?.tutor_id)?.tutor_user_id || null)
 const initials = (name) => (name || '?').trim().slice(0, 1).toUpperCase() || '?'
 const isActiveStatus = (status) => status === 'SCHEDULED' || status === 'PENDING'
 const activeStudents = computed(() => (lesson.value?.students || []).filter((s) => !s.cancelled).length)

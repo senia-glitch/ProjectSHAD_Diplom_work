@@ -46,6 +46,9 @@ export const routes = [
   { path: '/testing/results', name: 'testing-results', component: TestingHost, meta: { roles: ['student'] } },
   { path: '/testing/results/:id(\\d+)', name: 'testing-result', component: TestingHost, meta: { roles: ['tutor', 'student'] } },
   // Доски: список и вход по коду, сама доска — во весь экран.
+  // Личный чат «репетитор — ученик».
+  { path: '/messages', name: 'messages', component: () => import('../pages/messages/index.vue'), meta: { roles: ['tutor', 'student'] } },
+  { path: '/messages/:partnerId(\\d+)', name: 'messages-dialog', component: () => import('../pages/messages/index.vue'), meta: { roles: ['tutor', 'student'] } },
   { path: '/boards', name: 'boards', component: () => import('../pages/boards/index.vue'), meta: { roles: ['tutor', 'student'] } },
   { path: '/boards/:id([A-Za-z0-9_-]{16,40})', name: 'board', component: () => import('../pages/board/index.vue'), meta: { roles: ['tutor', 'student'] } },
   // Блоги — только для вошедших; управление записями — репетитору и владельцу.

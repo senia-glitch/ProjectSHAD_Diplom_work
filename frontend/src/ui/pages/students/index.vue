@@ -70,7 +70,11 @@
           <div class="detail-tabs" role="tablist" aria-label="Карточка ученика">
             <button v-for="t in DETAIL_TABS" :key="t.key" type="button" role="tab" class="detail-tab" :class="{ active: detailTab === t.key }" :aria-selected="detailTab === t.key" :disabled="editing && t.key !== 'terms'" @click="detailTab = t.key">{{ t.label }}</button>
           </div>
-          <StudentActivity v-if="detailTab !== 'terms'" :student-id="selected.student_id" :tab="detailTab" />
+          <div v-if="detailTab === 'chat'" class="student-chat">
+            <ChatThread v-if="studentUserId" compact :partner-id="studentUserId" :partner-name="selectedDetail?.student_name || studentName(selected.student_id)" />
+            <p v-else class="muted">Не удалось определить ученика для переписки.</p>
+          </div>
+          <StudentActivity v-else-if="detailTab !== 'terms'" :student-id="selected.student_id" :tab="detailTab" />
           <template v-else>
           <div v-if="detailLoading" class="detail-loading">Загрузка данных...</div>
           <div v-if="detailError" class="detail-loading detail-loading--err">{{ detailError }}</div>
@@ -284,6 +288,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import MainLayout from '../../blocks/layout/MainLayout.vue'
 import StudentsTour from './StudentsTour.vue'
 import StudentActivity from './StudentActivity.vue'
+import ChatThread from '../messages/ChatThread.vue'
 import { useUser, useLogout, useEscapeKey } from '../../composables/index.js'
 import {
   loadTutorStudents,
@@ -411,7 +416,10 @@ const DETAIL_TABS = [
   { key: 'lessons', label: 'Уроки' },
   { key: 'payments', label: 'Оплаты' },
   { key: 'tests', label: 'Тесты' },
+  { key: 'chat', label: 'Чат' },
 ]
+// Переписка ведётся с пользователем ученика (не с профилем).
+const studentUserId = computed(() => students.value.find((x) => x.student_id === selected.value?.student_id)?.user_id || null)
 const detailTab = ref('terms')
 
 async function selectConfig(c) {
@@ -665,6 +673,7 @@ onMounted(fetchRoster)
 .item-sub { font-size: 12px; color: var(--color-gray-600); }
 
 .detail-panel { background: var(--color-white); border-radius: var(--radius-lg); border: 1px solid var(--color-gray-200); padding: 24px; }
+.student-chat { height: 440px; display: flex; flex-direction: column; }
 .detail-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin: 4px 0 16px; }
 .detail-tab { border: 0; background: none; color: var(--muted); font: inherit; font-size: 14px; padding: 8px 12px; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; }
 .detail-tab:hover:not(:disabled) { color: var(--text); }

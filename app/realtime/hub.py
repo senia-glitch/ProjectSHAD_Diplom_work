@@ -46,6 +46,8 @@ class Peer:
     color: str
     queue: asyncio.Queue
     creator: bool = False
+    # Пользователь платформы: только на сервере (панель чата доски), участникам не отправляется.
+    user_id: int = 0
     id: str = field(default_factory=lambda: secrets.token_hex(4))
     closed: bool = False
 
