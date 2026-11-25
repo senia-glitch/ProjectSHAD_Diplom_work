@@ -4,10 +4,10 @@
       <div class="toolbar">
         <div>
           <h1>Мой блог</h1>
-          <p class="lead">Записи для учеников и гостей сайта. Черновики видите только вы.</p>
+          <p class="lead">{{ role === 'admin' ? 'Записи владельца публикуются на главной странице сайта. Черновики видите только вы.' : 'Записи для учеников и гостей сайта. Черновики видите только вы.' }}</p>
         </div>
         <div class="row">
-          <router-link v-if="userId" class="btn ghost" :to="`/blog/authors/${userId}`">Открыть блог</router-link>
+          <router-link v-if="userId" class="btn ghost" :to="role === 'admin' ? '/' : `/blog/authors/${userId}`">{{ role === 'admin' ? 'Открыть главную' : 'Открыть блог' }}</router-link>
           <router-link class="btn primary" to="/blog/manage/new"><UiIcon name="plus" class="btn-ico" /> Новая запись</router-link>
         </div>
       </div>

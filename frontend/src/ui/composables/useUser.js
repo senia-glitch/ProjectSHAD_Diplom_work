@@ -10,6 +10,7 @@ export function useUser() {
     role: computed(() => store.role),
     isLoggedIn: computed(() => store.isLoggedIn),
     userName: computed(() => store.userName),
+    userId: computed(() => store.user?.user_id ?? null),
     fetchUser: () => restoreSession(),
   }
 }

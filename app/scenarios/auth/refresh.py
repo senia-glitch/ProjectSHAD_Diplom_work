@@ -38,6 +38,8 @@ class RefreshScenario(BaseScenario):
             user = await self._db.read("users", user_id)
             if not user:
                 raise ValidationError("User not found")
+            if user.get("blocked_at"):
+                raise ValidationError("Account is blocked")
 
             stored_token = user.get("refresh_token")
             old_hash = hash_refresh_token(dto.refresh_token)

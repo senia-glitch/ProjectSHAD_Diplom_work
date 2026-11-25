@@ -71,6 +71,19 @@ const EXACT = {
   'Validation failed': 'Проверьте правильность заполнения полей',
   'Not found': 'Не найдено',
   'Internal server error': 'Внутренняя ошибка сервера. Попробуйте позже',
+  'Invalid admin key': 'Неверный ключ администратора',
+  'Account is blocked': 'Аккаунт заблокирован. Обратитесь к администратору',
+  'Too many attempts, try later': 'Слишком много неудачных попыток. Повторите через 15 минут',
+  'You cannot apply this action to yourself': 'Это действие нельзя применить к собственному аккаунту',
+  'Administrators sign in with a key, not a password': 'Администратор входит только по ключу',
+  'Write queries require explicit confirmation': 'Изменяющий запрос нужно подтвердить',
+  'Table has no primary key: use the SQL console': 'У таблицы нет первичного ключа — используйте SQL-консоль',
+  'Table not found': 'Таблица не найдена',
+  'Row not found': 'Строка не найдена (возможно, уже удалена)',
+  'Empty query': 'Введите запрос',
+  'Nothing to update': 'Нет изменений для сохранения',
+  'Primary key values required': 'Не указан первичный ключ строки',
+  'Unknown column': 'Неизвестный столбец',
 }
 
 const PATTERNS = [
@@ -84,6 +97,10 @@ const PATTERNS = [
   [/^password must be at most \d+ bytes$/, () => 'Пароль слишком длинный'],
   [/^Cancellation deadline passed for student \d+ \((\d+)h before lesson\)$/, (m) => `Срок отмены прошёл: отменить можно не позже чем за ${m[1]} ч до начала. Обратитесь к репетитору`],
   [/^Cannot leave lesson in status \w+$/, () => 'Этот урок уже нельзя отменить'],
+  [/^Query failed: ([\s\S]*)$/, (m) => `Ошибка запроса: ${m[1]}`],
+  [/^Database rejected the change: ([\s\S]*)$/, (m) => `База данных отклонила изменение: ${m[1]}`],
+  [/^Column (\S+) cannot be edited here$/, (m) => `Столбец ${m[1]} здесь не редактируется`],
+  [/^Unknown column (\S+)$/, (m) => `Неизвестный столбец ${m[1]}`],
 ]
 
 function byStatus(status) {

@@ -89,6 +89,8 @@ class ActorDTO(BaseModel):
 
 class FeedDTO(BaseModel):
     author_id: int | None = Field(default=None, gt=0)
+    # Только записи владельца платформы (администраторов) — лента главной страницы.
+    owner: bool = False
     tag: str | None = Field(default=None, max_length=32)
     limit: int = Field(default=20, ge=1, le=PAGE_LIMIT)
     offset: int = Field(default=0, ge=0)
@@ -142,6 +144,8 @@ class PostItem(BaseModel):
     updated_at: datetime
     published_at: datetime | None
     comment_count: int = 0
+    # Запись владельца платформы (администратора): ссылки ведут на главную, а не в блог репетитора.
+    owner: bool = False
 
 
 class PostList(BaseModel):
@@ -193,13 +197,15 @@ class Done(BaseModel):
 
 SELECT_POST = (
     'SELECT p.*, u.full_name AS author_name, '
-    '(SELECT count(*) FROM blog_comments c WHERE c.post_id = p.id) AS comment_count '
+    '(SELECT count(*) FROM blog_comments c WHERE c.post_id = p.id) AS comment_count, '
+    'EXISTS (SELECT 1 FROM admins a WHERE a.user_id = p.author_id) AS owner '
     'FROM blog_posts p JOIN users u ON u.id = p.author_id ')
 
 
 def _item(row) -> PostItem:
     return PostItem(**{k: row[k] for k in ('id', 'author_id', 'author_name', 'title', 'body', 'status', 'pinned',
                                            'created_at', 'updated_at', 'published_at', 'comment_count')},
+                    owner=bool(row.get('owner')),
                     tags=_tags(row['tags']))
 
 
@@ -271,12 +277,17 @@ class Feed(BaseScenario):
         if dto.author_id:
             where.append('p.author_id = :a')
             params['a'] = dto.author_id
+        if dto.owner:
+            where.append('p.author_id IN (SELECT user_id FROM admins)')
+        elif not dto.author_id:
+            # Раздел «Блог» — записи репетиторов; блог владельца живёт на главной.
+            where.append('p.author_id NOT IN (SELECT user_id FROM admins)')
         if dto.tag:
             where.append('CAST(p.tags AS jsonb) @> CAST(:tag AS jsonb)')
             params['tag'] = json.dumps([' '.join(dto.tag.split()).lower()], ensure_ascii=False)
         condition = ' AND '.join(where)
         # Закреплённые записи поднимаются только в ленте конкретного автора.
-        order = 'p.pinned DESC, ' if dto.author_id else ''
+        order = 'p.pinned DESC, ' if dto.author_id or dto.owner else ''
         rows = await self._db.query(
             SELECT_POST + f'WHERE {condition} ORDER BY {order}p.published_at DESC, p.id DESC LIMIT :lim OFFSET :off',
             params)
@@ -300,6 +311,7 @@ class Authors(BaseScenario):
         rows = await self._db.query(
             "SELECT u.id, u.full_name, count(p.id) AS post_count, max(p.published_at) AS last_published_at "
             "FROM blog_posts p JOIN users u ON u.id = p.author_id WHERE p.status = 'published' "
+            "AND u.id NOT IN (SELECT user_id FROM admins) "
             "GROUP BY u.id, u.full_name ORDER BY max(p.published_at) DESC", {})
         return AuthorList(items=[AuthorItem(**r) for r in rows])
 

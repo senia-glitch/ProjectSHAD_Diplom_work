@@ -1,4 +1,4 @@
-logs/
+/logs/
 frontend/dist/
 __pycache__/
 *.pyc

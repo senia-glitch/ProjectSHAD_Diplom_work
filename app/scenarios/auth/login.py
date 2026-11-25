@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from core import BaseScenario, ValidationError, register_scenario, tracked_scenario
 from core.utils.security import verify_password, create_access_token, create_refresh_token
 from app.utils.validation import PasswordInputStr
+from app.core.exceptions import ForbiddenError
 from app.utils.tokens import create_refresh_store, hash_refresh_token
 
 # Фиктивный bcrypt-хеш для выравнивания времени ответа: не даёт отличать
@@ -39,6 +40,13 @@ class LoginScenario(BaseScenario):
         password_valid = await verify_password(dto.password, user["password_hash"])
         if not password_valid:
             raise ValidationError("Invalid username or password")
+        # Администратор входит только по ключу (/admin/login); по паролю — как неверные данные,
+        # чтобы форма входа не подтверждала существование учётной записи владельца.
+        admins = await self._db.query('SELECT id FROM "admins" WHERE user_id = :uid', {"uid": user["id"]})
+        if admins:
+            raise ValidationError("Invalid username or password")
+        if user.get("blocked_at"):
+            raise ForbiddenError("Account is blocked")
 
         role_rows = await self._db.query(
             'SELECT * FROM "roles" WHERE id = :role_id',

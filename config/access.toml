@@ -2,6 +2,7 @@
 
 [roles.guest]
 scenarios = [
+    "auth.admin_key_login",
     "auth.login",
     "auth.logout",
     "auth.refresh",
@@ -158,12 +159,24 @@ scenarios = [
 
 [roles.admin]
 scenarios = [
+    "admin.audit",
+    "admin.block_user",
+    "admin.dashboard",
+    "admin.db_delete_row",
+    "admin.db_rows",
+    "admin.db_sql",
+    "admin.db_tables",
+    "admin.db_update_row",
+    "admin.delete_user",
     "admin.get_my_profile",
     "admin.get_user_by_id",
     "admin.list_admins",
     "admin.list_students",
     "admin.list_tutors",
     "admin.list_users",
+    "admin.reset_password",
+    "admin.rotate_key",
+    "admin.unblock_user",
     "admin.update_user",
     "auth.login",
     "auth.logout",
@@ -173,8 +186,12 @@ scenarios = [
     "blog.comment",
     "blog.comment_delete",
     "blog.comments",
+    "blog.create",
+    "blog.delete",
     "blog.feed",
+    "blog.list_mine",
     "blog.read",
+    "blog.update",
     "logs.read_logs",
     "logs.write_logs",
     "notifications.list_notifications",

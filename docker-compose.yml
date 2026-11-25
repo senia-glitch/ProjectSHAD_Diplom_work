@@ -64,6 +64,10 @@ services:
   app:
     <<: *backend
     restart: unless-stopped
+    environment:
+      <<: *backend-env
+      # Реальный адрес клиента из X-Forwarded-For (nginx web): журнал и лимит попыток входа по ключу.
+      FORWARDED_ALLOW_IPS: "*"
     depends_on:
       db:
         condition: service_healthy

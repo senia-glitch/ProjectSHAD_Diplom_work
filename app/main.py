@@ -69,6 +69,8 @@ def build_app():
                 raise RuntimeError(f"Missing core scenarios: {sorted(missing)}")
             result = await run("init_roles", None)
             logger.info("Roles initialized: created=%s", result.created)
+            blocked = await run("admin_load_blocklist", None)
+            logger.info("Blocked users loaded: %s", blocked.count)
             tasks = [asyncio.create_task(hub.autosave_loop(board_settings.autosave_minutes * 60)),
                      asyncio.create_task(_board_cleanup_loop()),
                      asyncio.create_task(_lesson_upkeep_loop())]

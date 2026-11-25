@@ -26,6 +26,8 @@ def test_original_api_surface_and_scenario_contracts_are_preserved():
     integration = json.loads((FIXTURES / "integration_api_surface.json").read_text(encoding="utf-8"))
     # Подтверждение записи и согласие на связь — отдельный контракт поверх исходного API.
     integration += json.loads((FIXTURES / "scheduling_api_surface.json").read_text(encoding="utf-8"))
+    # Админ-панель владельца: вход по ключу, пользователи, журнал, база данных.
+    integration += json.loads((FIXTURES / "admin_api_surface.json").read_text(encoding="utf-8"))
     app = make_app()
     routes = {(method, route.path): route for route in iter_route_contexts(app.routes)
               for method in route.methods or ()}

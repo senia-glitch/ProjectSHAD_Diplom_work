@@ -1,0 +1,15 @@
+[
+  {"method": "POST", "path": "/api/v1/auth/admin-key", "action": "auth.admin_key_login", "response": "AdminKeyLoginResponse", "scenario": "admin_key_login"},
+  {"method": "GET", "path": "/api/v1/admin/dashboard", "action": "admin.dashboard", "response": "DashboardResponse", "scenario": "admin_dashboard"},
+  {"method": "POST", "path": "/api/v1/admin/key/rotate", "action": "admin.rotate_key", "response": "AdminKeyResponse", "scenario": "admin_rotate_key"},
+  {"method": "GET", "path": "/api/v1/admin/audit", "action": "admin.audit", "response": "AuditListResponse", "scenario": "admin_audit_list"},
+  {"method": "POST", "path": "/api/v1/admin/users/{user_id}/block", "action": "admin.block_user", "response": "UserActionResponse", "scenario": "admin_block_user"},
+  {"method": "POST", "path": "/api/v1/admin/users/{user_id}/unblock", "action": "admin.unblock_user", "response": "UserActionResponse", "scenario": "admin_unblock_user"},
+  {"method": "POST", "path": "/api/v1/admin/users/{user_id}/reset-password", "action": "admin.reset_password", "response": "UserActionResponse", "scenario": "admin_reset_password"},
+  {"method": "DELETE", "path": "/api/v1/admin/users/{user_id}", "action": "admin.delete_user", "response": "UserActionResponse", "scenario": "admin_delete_user"},
+  {"method": "GET", "path": "/api/v1/admin/db/tables", "action": "admin.db_tables", "response": "TablesResponse", "scenario": "admin_db_tables"},
+  {"method": "GET", "path": "/api/v1/admin/db/tables/{table}", "action": "admin.db_rows", "response": "RowsResponse", "scenario": "admin_db_rows"},
+  {"method": "PATCH", "path": "/api/v1/admin/db/tables/{table}/row", "action": "admin.db_update_row", "response": "RowChangeResponse", "scenario": "admin_db_update_row"},
+  {"method": "POST", "path": "/api/v1/admin/db/tables/{table}/row/delete", "action": "admin.db_delete_row", "response": "RowChangeResponse", "scenario": "admin_db_delete_row"},
+  {"method": "POST", "path": "/api/v1/admin/db/sql", "action": "admin.db_sql", "response": "SqlResponse", "scenario": "admin_db_sql"}
+]

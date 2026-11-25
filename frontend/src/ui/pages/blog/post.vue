@@ -6,11 +6,11 @@
       </div>
       <div v-else-if="!post" class="skeleton tall" aria-hidden="true"></div>
       <article v-else class="post">
-        <router-link class="back" :to="`/blog/authors/${post.author_id}`">← Блог: {{ post.author_name }}</router-link>
+        <router-link class="back" :to="authorLink">{{ post.owner ? '← На главную' : `← Блог: ${post.author_name}` }}</router-link>
         <h1 class="post-title">{{ post.title }}</h1>
         <div class="meta post-meta">
           <span class="avatar small" aria-hidden="true">{{ initials(post.author_name) }}</span>
-          <router-link :to="`/blog/authors/${post.author_id}`">{{ post.author_name }}</router-link>
+          <router-link :to="authorLink">{{ post.author_name }}</router-link>
           <span>{{ post.status === 'published' ? formatDate(post.published_at) : 'Черновик — видите только вы' }}</span>
           <span v-if="post.status !== 'published'" class="badge draft">черновик</span>
           <router-link v-if="isAuthor" class="btn small ghost" :to="`/blog/manage/${post.id}`">
@@ -19,7 +19,7 @@
         </div>
         <MarkdownView :source="post.body" />
         <div v-if="post.tags.length" class="tags post-tags">
-          <router-link v-for="t in post.tags" :key="t" class="tag" :to="{ path: `/blog/authors/${post.author_id}`, query: { tag: t } }">#{{ t }}</router-link>
+          <router-link v-for="t in post.tags" :key="t" class="tag" :to="{ path: authorLink, query: { tag: t } }">#{{ t }}</router-link>
         </div>
 
         <section v-if="post.status === 'published'" class="comments" aria-labelledby="comments-title">
@@ -75,6 +75,8 @@ const error = ref('')
 const text = ref('')
 const sending = ref(false)
 const commentError = ref('')
+// Записи владельца живут на главной, записи репетиторов — в их блогах.
+const authorLink = computed(() => (post.value?.owner ? '/' : `/blog/authors/${post.value?.author_id}`))
 const isAuthor = computed(() => post.value && post.value.author_id === userId.value)
 
 function canDelete(c) {

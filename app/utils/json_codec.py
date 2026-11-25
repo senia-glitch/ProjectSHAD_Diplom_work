@@ -49,6 +49,9 @@ JSON_FIELDS: dict[str, dict[str, str]] = {
     "notifications": {
         "payload": "dict",
     },
+    "admin_audit": {
+        "details": "dict",
+    },
 }
 
 

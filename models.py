@@ -44,6 +44,9 @@ class User(SQLModel, table=True):
 
     gender: Optional[str] = Field(default=None, max_length=20)
     additional_info: Optional[str] = None
+    # Блокировка владельцем: вход и все сеансы закрыты, пока поле не пусто (наивный UTC).
+    blocked_at: Optional[NaiveDatetime] = None
+    block_reason: Optional[str] = Field(default=None, max_length=500)
 
 
 # ============================================
@@ -55,6 +58,9 @@ class Admin(SQLModel, table=True):
     __tablename__ = "admins"
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", unique=True)
+    # Вход администратора — только по уникальному ключу; хранится SHA-256 ключа.
+    key_hash: Optional[str] = Field(default=None, max_length=64, unique=True)
+    key_created_at: Optional[NaiveDatetime] = None
 
 
 class Student(SQLModel, table=True):
@@ -377,6 +383,20 @@ class BlogComment(SQLModel, table=True):
     author_id: int = Field(sa_column=sa.Column(sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False))
     text: str = Field(sa_column=sa.Column(sa.Text, nullable=False))
     created_at: datetime = Field(sa_column=_tz())
+
+
+class AdminAudit(SQLModel, table=True):
+    """Журнал действий администратора: кто, что, над чем, когда, откуда."""
+    __tablename__ = "admin_audit"
+    __table_args__ = (sa.Index("ix_admin_audit_created_at", "created_at"),)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    created_at: NaiveDatetime = Field(default_factory=utc_now)
+    admin_user_id: Optional[int] = Field(default=None, sa_column=sa.Column(
+        sa.Integer, sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True))
+    action: str = Field(max_length=64)
+    target: Optional[str] = Field(default=None, max_length=255)
+    details: Optional[Dict[str, Any] | str] = Field(default=None, sa_type=JSON)
+    ip: Optional[str] = Field(default=None, max_length=64)
 
 
 # ============================================

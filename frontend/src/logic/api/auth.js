@@ -27,3 +27,8 @@ export function postLogout({ refreshToken }) {
     retry: false,
   })
 }
+
+// Вход владельца по ключу (/admin/login).
+export function postAdminKey({ key }) {
+  return apiFetch('/api/v1/auth/admin-key', { method: 'POST', body: { key }, auth: false, retry: false })
+}

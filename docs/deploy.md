@@ -25,7 +25,7 @@ cd shad
 sh deploy/deploy.sh init        # .env.production с новыми паролем БД и JWT-секретом (права 600)
 nano .env.production            # SHAD_DOMAIN=example.ru; SHAD_TIMEZONE — только для переноса старых данных
 sh deploy/deploy.sh up          # сборка, миграции, запуск; ждёт готовности всех сервисов
-sh deploy/deploy.sh admin admin admin@example.ru   # первый администратор, пароль вводится скрытно
+sh deploy/deploy.sh admin owner owner@example.ru   # владелец; команда печатает ключ входа один раз
 ```
 
 Если на сервере уже есть свой обратный прокси (nginx, Traefik), оставьте `SHAD_DOMAIN` пустым:
@@ -33,7 +33,11 @@ sh deploy/deploy.sh admin admin admin@example.ru   # первый админис
 передавать заголовки `Upgrade`/`Connection` для `/api/v1/boards/*/ws` и `Host` без изменений.
 
 Демо-данные (`scripts.seed_demo`) на сервере не запускаются. Ученики и репетиторы регистрируются
-сами; администратора создаёт только `deploy.sh admin` (открытая регистрация администраторов не создаёт).
+сами; владельца создаёт только `deploy.sh admin` (открытая регистрация администраторов не создаёт).
+
+Владелец входит на странице `/admin/login` только по ключу. Потеряли ключ —
+`sh deploy/deploy.sh admin-key owner` выпустит новый (старый сразу перестанет действовать).
+Ключ можно перевыпустить и из админ-панели («Ключ доступа»).
 
 ## Обновление
 

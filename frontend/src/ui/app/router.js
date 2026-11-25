@@ -51,12 +51,18 @@ export const routes = [
   { path: '/blog', name: 'blog', component: () => import('../pages/blog/index.vue'), meta: { public: true, optionalAuth: true } },
   { path: '/blog/authors/:authorId(\\d+)', name: 'blog-author', component: () => import('../pages/blog/index.vue'), meta: { public: true, optionalAuth: true } },
   { path: '/blog/posts/:id(\\d+)', name: 'blog-post', component: () => import('../pages/blog/post.vue'), meta: { public: true, optionalAuth: true } },
-  { path: '/blog/manage', name: 'blog-manage', component: () => import('../pages/blog/manage.vue'), meta: { roles: ['tutor'] } },
-  { path: '/blog/manage/new', name: 'blog-new', component: () => import('../pages/blog/editor.vue'), meta: { roles: ['tutor'] } },
-  { path: '/blog/manage/:id(\\d+)', name: 'blog-edit', component: () => import('../pages/blog/editor.vue'), meta: { roles: ['tutor'] } },
-  { path: '/admin', name: 'admin', component: () => import('../pages/admin/index.vue'), meta: { roles: ['admin'] } },
-  { path: '/admin/system', name: 'admin-system', component: () => import('../pages/admin/system/index.vue'), meta: { roles: ['admin'] } },
-  { path: '/admin/logs', name: 'admin-logs', component: () => import('../pages/admin/logs/index.vue'), meta: { roles: ['admin'] } },
+  { path: '/blog/manage', name: 'blog-manage', component: () => import('../pages/blog/manage.vue'), meta: { roles: ['tutor', 'admin'] } },
+  { path: '/blog/manage/new', name: 'blog-new', component: () => import('../pages/blog/editor.vue'), meta: { roles: ['tutor', 'admin'] } },
+  { path: '/blog/manage/:id(\\d+)', name: 'blog-edit', component: () => import('../pages/blog/editor.vue'), meta: { roles: ['tutor', 'admin'] } },
+  // Админ-панель владельца: вход только по ключу (/admin/login), разделы — роли admin.
+  { path: '/admin/login', name: 'admin-login', component: () => import('../pages/admin/login.vue'), meta: { public: true } },
+  { path: '/admin', name: 'admin', component: () => import('../pages/admin/dashboard.vue'), meta: { roles: ['admin'], adminArea: true } },
+  { path: '/admin/users', name: 'admin-users', component: () => import('../pages/admin/users.vue'), meta: { roles: ['admin'], adminArea: true } },
+  { path: '/admin/db', name: 'admin-db', component: () => import('../pages/admin/database.vue'), meta: { roles: ['admin'], adminArea: true } },
+  { path: '/admin/audit', name: 'admin-audit', component: () => import('../pages/admin/audit.vue'), meta: { roles: ['admin'], adminArea: true } },
+  { path: '/admin/key', name: 'admin-key', component: () => import('../pages/admin/key.vue'), meta: { roles: ['admin'], adminArea: true } },
+  { path: '/admin/system', name: 'admin-system', component: () => import('../pages/admin/system/index.vue'), meta: { roles: ['admin'], adminArea: true } },
+  { path: '/admin/logs', name: 'admin-logs', component: () => import('../pages/admin/logs/index.vue'), meta: { roles: ['admin'], adminArea: true } },
 ]
 
 export function createAppRouter() {
@@ -85,12 +91,13 @@ export function createAppRouter() {
     // §6.6: сессию восстанавливаем ДО проверки доступа.
     if (!store.isLoggedIn || !store.user) {
       if (!(await restoreSession())) {
-        next({ name: 'login', query: { redirect: to.fullPath } })
+        // Разделы админки ведут на вход по ключу, остальные — на обычный вход.
+        next(to.meta.adminArea ? { name: 'admin-login' } : { name: 'login', query: { redirect: to.fullPath } })
         return
       }
     }
     if (to.meta.roles && !to.meta.roles.includes(store.role)) {
-      next({ name: 'home' })
+      next(to.meta.adminArea ? { name: 'admin-login' } : { name: 'home' })
       return
     }
     next()

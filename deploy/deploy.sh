@@ -3,7 +3,8 @@
 #   sh deploy/deploy.sh init      создать .env.production с новыми секретами (существующий не меняется)
 #   sh deploy/deploy.sh up        собрать и запустить (миграции применяются отдельным сервисом migrate)
 #   sh deploy/deploy.sh update    git pull и перезапуск с пересборкой
-#   sh deploy/deploy.sh admin LOGIN EMAIL   создать администратора (пароль вводится скрытно)
+#   sh deploy/deploy.sh admin LOGIN EMAIL   создать владельца и выдать ключ входа (/admin/login)
+#   sh deploy/deploy.sh admin-key LOGIN     выпустить новый ключ владельцу (старый перестаёт действовать)
 #   sh deploy/deploy.sh backup    резервная копия БД в backups/
 #   sh deploy/deploy.sh restore FILE        восстановить БД из копии (останавливает приложение)
 #   sh deploy/deploy.sh logs | ps | down
@@ -69,10 +70,13 @@ case "$command" in
   admin)
     [ $# -ge 2 ] || { echo "Использование: sh deploy/deploy.sh admin LOGIN EMAIL" >&2; exit 1; }
     compose run --rm migrate python -m scripts.create_admin --username "$1" --email "$2" ;;
+  admin-key)
+    [ $# -ge 1 ] || { echo "Использование: sh deploy/deploy.sh admin-key LOGIN" >&2; exit 1; }
+    compose run --rm migrate python -m scripts.create_admin --username "$1" --rotate ;;
   backup) backup ;;
   restore) restore "$@" ;;
   logs) compose logs -f --tail 200 "$@" ;;
   ps) compose ps ;;
   down) compose down ;;
-  *) sed -n '2,10p' "$0" ;;
+  *) sed -n '2,11p' "$0" ;;
 esac

@@ -2,6 +2,7 @@
 // Регистрирует провайдеры транспорта при bootstrap (см. main.js).
 import {
   postLogin,
+  postAdminKey,
   postRefresh,
   postLogout,
   postRegister,
@@ -147,4 +148,22 @@ export async function logoutUser() {
     }
   }
   clearPersistedSession()
+}
+
+// Вход владельца по уникальному ключу: та же сессия, что у обычного входа, роль admin.
+export async function loginAdminWithKey(key) {
+  const data = await postAdminKey({ key: key.trim() })
+  // Вход поверх чужой сессии в этой вкладке: данные прежнего пользователя не оставляем.
+  if (useAuthStore().user) resetDomainState()
+  persistSession({
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    user: { user_id: data.user_id, role: data.role },
+  })
+  try {
+    useAuthStore().setUser(await getMe())
+  } catch {
+    // Профиль догрузится при восстановлении сессии.
+  }
+  return data
 }

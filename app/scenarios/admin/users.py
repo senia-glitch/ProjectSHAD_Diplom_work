@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, Literal
 from pydantic import BaseModel, Field
 from core import BaseScenario, NotFoundError, ValidationError, ConflictError, register_scenario, tracked_scenario
@@ -20,6 +21,8 @@ class UserItem(BaseModel):
     gender: str | None
     additional_info: str | None
     role_name: str
+    blocked_at: datetime | None = None
+    block_reason: str | None = None
 
 
 class AdminListUsersResponse(BaseModel):
@@ -39,6 +42,8 @@ class AdminGetUserByIdResponse(BaseModel):
     gender: str | None
     additional_info: str | None
     role_name: str
+    blocked_at: datetime | None = None
+    block_reason: str | None = None
     profile: dict | None = None
 
 
@@ -79,7 +84,7 @@ class AdminListUsersScenario(BaseScenario):
         if dto.role:
             rows = await self._db.query(
                 """SELECT u.id AS user_id, u.username, u.full_name, u.email,
-                          u.personal_number, u.gender, u.additional_info,
+                          u.personal_number, u.gender, u.additional_info, u.blocked_at, u.block_reason,
                           r.name AS role_name
                    FROM "users" u
                    JOIN "roles" r ON r.id = u.role_id
@@ -90,7 +95,7 @@ class AdminListUsersScenario(BaseScenario):
         else:
             rows = await self._db.query(
                 """SELECT u.id AS user_id, u.username, u.full_name, u.email,
-                          u.personal_number, u.gender, u.additional_info,
+                          u.personal_number, u.gender, u.additional_info, u.blocked_at, u.block_reason,
                           r.name AS role_name
                    FROM "users" u
                    JOIN "roles" r ON r.id = u.role_id
@@ -111,7 +116,7 @@ class AdminGetUserByIdScenario(BaseScenario):
 
         user_rows = await self._db.query(
             """SELECT u.id AS user_id, u.username, u.full_name, u.email,
-                      u.personal_number, u.gender, u.additional_info,
+                      u.personal_number, u.gender, u.additional_info, u.blocked_at, u.block_reason,
                       r.name AS role_name
                FROM "users" u
                JOIN "roles" r ON r.id = u.role_id
@@ -193,7 +198,7 @@ class AdminUpdateUserScenario(BaseScenario):
 
         updated_rows = await self._db.query(
             """SELECT u.id AS user_id, u.username, u.full_name, u.email,
-                      u.personal_number, u.gender, u.additional_info,
+                      u.personal_number, u.gender, u.additional_info, u.blocked_at, u.block_reason,
                       r.name AS role_name
                FROM "users" u
                JOIN "roles" r ON r.id = u.role_id

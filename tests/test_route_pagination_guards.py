@@ -13,6 +13,8 @@ from app.api.v1.routes import admin, logs, notifications, student, tutor
 MODULES = [admin, logs, notifications, student, tutor]
 # в logs DTO держит le=500 — на маршруте совпадает
 LIMIT_CAPS = {"logs": 500}
+# Маршруты админ-панели: лимит маршрута совпадает с лимитом DTO сценария.
+PATH_LIMIT_CAPS = {"/admin/audit": 500, "/admin/db/tables/{table}": 200}
 
 
 def _iter_params(router):
@@ -41,13 +43,14 @@ def test_all_pagination_params_have_range_guards():
             ge, le = _constraints(param.field_info)
             if param.name == "limit":
                 ge2, le2 = ge, le
-                assert ge2 == 1 and le2 == LIMIT_CAPS.get(module_name, 1000), \
+                cap = PATH_LIMIT_CAPS.get(path, LIMIT_CAPS.get(module_name, 1000))
+                assert ge2 == 1 and le2 == cap, \
                     f"{path}: limit гварды {ge}/{le}"
                 checked += 1
             if param.name == "offset":
                 assert ge == 0, f"{path}: offset ge"
                 checked += 1
-    assert checked == 24, f"ожидали 24 гвардейских параметра, проверено {checked}"
+    assert checked == 28, f"ожидали 28 гвардейских параметров, проверено {checked}"
 
 
 def test_notifications_limit_default_is_30():

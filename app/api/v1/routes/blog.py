@@ -26,8 +26,9 @@ def _viewer(request: Request) -> int | None:
 @router.get('/posts', response_model=PostList)
 @external_scenario('blog.feed', core='blog.feed')
 async def feed(author_id: int | None = Query(default=None, gt=0), tag: str | None = Query(default=None, max_length=32),
+               owner: bool = False,
                limit: int = Query(default=20, ge=1, le=50), offset: int = Query(default=0, ge=0)):
-    return await run('blog.feed', FeedDTO(author_id=author_id, tag=tag, limit=limit, offset=offset))
+    return await run('blog.feed', FeedDTO(author_id=author_id, tag=tag, owner=owner, limit=limit, offset=offset))
 
 
 @router.get('/posts/{post_id}', response_model=PostItem)

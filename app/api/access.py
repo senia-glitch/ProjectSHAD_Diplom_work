@@ -4,6 +4,7 @@ from pathlib import Path
 import tomllib
 
 from core.utils.security import decode_token
+from app.core.blocklist import is_blocked
 from fastapi import Request
 from fastapi.routing import iter_route_contexts
 from fastapi.responses import JSONResponse
@@ -59,9 +60,13 @@ def authenticate(authorization: str | None, policy: dict) -> dict:
                 or not isinstance(subject, (str, int)) or isinstance(subject, bool)
                 or not str(subject).isascii() or not str(subject).isdigit() or int(subject) <= 0):
             raise ValueError("Invalid principal")
-        return {"user_id": int(subject), "role": role}
+        user_id = int(subject)
     except Exception:
         raise UnauthorizedError("Invalid or expired token") from None
+    # Блокировка действует сразу, не дожидаясь истечения токена доступа.
+    if is_blocked(user_id):
+        raise UnauthorizedError("Account is blocked")
+    return {"user_id": user_id, "role": role}
 
 
 def authorize(principal: dict, action: str | None, policy: dict) -> None:

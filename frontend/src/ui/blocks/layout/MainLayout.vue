@@ -198,8 +198,16 @@ const NAV = {
     },
   ],
   admin: [
-    { key: 'admin', to: '/admin', label: 'Управление', icon: 'shield' },
-    { key: 'blog', to: '/blog', label: 'Блог', icon: 'blog' },
+    {
+      key: 'admin', label: 'Управление', icon: 'shield',
+      items: [
+        { to: '/admin', label: 'Сводка', icon: 'chart', exact: true },
+        { to: '/admin/users', label: 'Пользователи', icon: 'users' },
+        { to: '/admin/db', label: 'База данных', icon: 'sliders' },
+        { to: '/admin/audit', label: 'Журнал действий', icon: 'clock' },
+      ],
+    },
+    { key: 'blog', to: '/blog/manage', label: 'Мой блог', icon: 'blog', section: '/blog/manage' },
     { key: 'profile', to: '/profile', label: 'Профиль', icon: 'user' },
   ],
 }
@@ -208,6 +216,7 @@ const navItems = computed(() => (props.isLoggedIn ? NAV[props.role] || [] : NAV.
 // Раздел подсвечивается и на вложенных страницах (тест, доска, запись блога).
 function isSection(item) {
   const base = item.section || item.to
+  if (item.exact) return route.path === base
   return route.path === base || route.path.startsWith(base + '/')
 }
 function isGroupActive(group) {

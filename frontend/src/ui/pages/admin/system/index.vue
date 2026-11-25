@@ -1,13 +1,6 @@
 <template>
-  <MainLayout :is-logged-in="isLoggedIn" :role="role" @logout="handleLogout">
+  <AdminShell title="Состояние системы" lead="Метрики ядра и очередей, обновление раз в 5 секунд.">
     <div class="sysstat-page">
-      <div class="page-header">
-        <div class="page-title-row">
-          <h1 class="page-title">Система</h1>
-          <router-link to="/admin" class="btn btn--gry btn--sm">К пользователям</router-link>
-        </div>
-        <p class="page-desc">Метрики ядра и очередей, обновление раз в 5 секунд</p>
-      </div>
 
       <div v-if="loading" class="loading">Загрузка...</div>
       <template v-else>
@@ -76,17 +69,14 @@
         </p>
       </template>
     </div>
-  </MainLayout>
+  </AdminShell>
 </template>
 
 <script setup>
-import MainLayout from '../../../blocks/layout/MainLayout.vue'
-import { useUser, useLogout } from '../../../composables/index.js'
+import AdminShell from '../AdminShell.vue'
 import { formatUptime, formatMs, formatQueueLoad } from '../../../../logic/utils/index.js'
 import { useSystemStatsPage } from './useSystemStatsPage.js'
 
-const { role, isLoggedIn } = useUser()
-const { handleLogout } = useLogout()
 const { stats, serverTime, loading, error } = useSystemStatsPage()
 </script>
 
