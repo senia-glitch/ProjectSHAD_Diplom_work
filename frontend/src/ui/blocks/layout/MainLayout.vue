@@ -219,22 +219,34 @@ const openGroup = ref('')
 const groupButtons = reactive({})
 const canHover = typeof window !== 'undefined' && window.matchMedia?.('(hover: hover) and (pointer: fine)').matches
 let hoverTimer = 0
+// Группа, раскрытая наведением: щелчок по ней её не закрывает, а закрепляет
+// (иначе мышь раскрывает при наведении, а щелчок тут же сворачивает).
+let openedByHover = ''
 
 function toggleGroup(key) {
+  if (openGroup.value === key && openedByHover === key) {
+    openedByHover = ''
+    return
+  }
+  openedByHover = ''
   openGroup.value = openGroup.value === key ? '' : key
 }
 function closeGroup() {
   openGroup.value = ''
+  openedByHover = ''
 }
 function hoverOpen(key) {
   if (!canHover) return
   clearTimeout(hoverTimer)
+  if (openGroup.value !== key) openedByHover = key
   openGroup.value = key
 }
 function hoverClose(key) {
   if (!canHover) return
   clearTimeout(hoverTimer)
-  hoverTimer = setTimeout(() => { if (openGroup.value === key) openGroup.value = '' }, 180)
+  hoverTimer = setTimeout(() => {
+    if (openGroup.value === key && openedByHover === key) closeGroup()
+  }, 180)
 }
 function menuItems(key) {
   return [...(document.getElementById(`nav-${key}`)?.querySelectorAll('[role="menuitem"]') || [])]
@@ -326,7 +338,9 @@ function handleBellClick() {
 .layout--fill .main { padding: 0; max-width: none; display: flex; flex-direction: column; }
 
 /* Группа меню: кнопка в стиле пунктов навигации + выпадающая панель эталона (.menu-panel). */
-.pp .nav-main { overflow: visible; }
+/* Меню с группами умещается без прокрутки: снимаем прокрутку и маску краёв эталона —
+   маска обрезала бы выпадающие панели групп. */
+.pp .nav-main { overflow: visible; mask-image: none; -webkit-mask-image: none; }
 .nav-group { position: relative; display: flex; }
 .pp .nav-group-btn {
   display: inline-flex; align-items: center; gap: 4px; padding: 0 12px;
@@ -346,6 +360,14 @@ function handleBellClick() {
 .nav-group--open .nav-caret { transform: rotate(-135deg) translateY(-1px); }
 .pp .nav-menu { left: 0; right: auto; top: calc(100% + 4px); min-width: 220px; }
 .nav-menu-title { padding: 6px 12px 4px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+/* Пункты панели — полноценные строки меню, а не квадратные значки шапки (правила .nav-main a эталона). */
+.pp .nav-menu a {
+  display: flex; width: auto; height: auto; justify-content: flex-start; gap: 10px;
+  padding: 10px 12px; margin: 0; border-bottom: 0; font-size: 14px; color: var(--text); white-space: nowrap;
+}
+.pp .nav-menu a:hover { background: var(--surface-2); }
+.pp .nav-menu .icon { display: inline-flex; }
+.pp .nav-menu .icon svg { width: 18px; height: 18px; }
 .pp .nav-menu a[aria-current="page"] { color: var(--accent); background: var(--surface-2); }
 .pp .nav-menu a[aria-current="page"] .icon { color: var(--accent); }
 
@@ -356,5 +378,15 @@ function handleBellClick() {
   .pp .nav-group-btn { padding: 0 10px; font-size: 14px; }
   /* На телефоне панель группы — во всю ширину под шапкой. */
   .pp .nav-menu { position: fixed; left: 8px; right: 8px; top: calc(var(--shell-h, 104px) + 4px); min-width: 0; }
+}
+/* Очень узкий экран: подписи меню не помещаются — только значки (подписи остаются для экранного диктора). */
+@media (max-width: 480px) {
+  .pp .nav-main { gap: 0; justify-content: space-between; }
+  .pp .nav-main .icon { display: inline-flex; }
+  .pp .nav-main .nav-label {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  }
+  .pp .nav-group-btn, .pp .nav-main > a { padding: 0 8px; }
+  .pp .nav-menu .icon { display: inline-flex; }
 }
 </style>

@@ -4,6 +4,14 @@
 // показывается как есть, чтобы не терять смысл новой ошибки.
 
 const EXACT = {
+  'Lesson is not awaiting confirmation': 'Заявка уже решена',
+  'Lesson request has expired': 'Срок заявки истёк: урок уже начался',
+  'Time is already taken by another lesson': 'Это время уже занято другим уроком',
+  'Link is not awaiting confirmation': 'Заявка на связь уже решена',
+  'Only the other side can answer this link request': 'Ответить на заявку может только вторая сторона',
+  'absence_from and absence_to are required': 'Укажите начало и конец периода',
+  'absence_from must be less than absence_to': 'Конец периода должен быть позже начала',
+  'Absence period is already over': 'Этот период уже закончился',
   'Invalid username or password': 'Неверный логин или пароль',
   'Username or email already registered': 'Логин или почта уже зарегистрированы',
   'Username, email or personal number already registered': 'Логин, почта или личный код уже зарегистрированы',
@@ -74,6 +82,8 @@ const PATTERNS = [
   [/^User \d+ not found$/, () => 'Пользователь не найден'],
   [/^Configuration for student \d+ and tutor \d+ already exists$/, () => 'Ученик уже связан с этим репетитором'],
   [/^password must be at most \d+ bytes$/, () => 'Пароль слишком длинный'],
+  [/^Cancellation deadline passed for student \d+ \((\d+)h before lesson\)$/, (m) => `Срок отмены прошёл: отменить можно не позже чем за ${m[1]} ч до начала. Обратитесь к репетитору`],
+  [/^Cannot leave lesson in status \w+$/, () => 'Этот урок уже нельзя отменить'],
 ]
 
 function byStatus(status) {

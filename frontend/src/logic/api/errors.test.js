@@ -72,3 +72,14 @@ describe('apiFetch: русские сообщения ошибок', () => {
     })
   })
 })
+
+describe('ошибки расписания на русском', () => {
+  it('дедлайны отмены и записи', async () => {
+    const { translateErrorMessage } = await import('./errors.js')
+    expect(translateErrorMessage(422, 'Cancellation deadline passed for student 5 (24h before lesson)'))
+      .toBe('Срок отмены прошёл: отменить можно не позже чем за 24 ч до начала. Обратитесь к репетитору')
+    expect(translateErrorMessage(422, 'Lesson must be booked at least 24h in advance'))
+      .toBe('Записаться можно не позднее чем за 24 ч до начала')
+    expect(translateErrorMessage(409, 'Time is already taken by another lesson')).toBe('Это время уже занято другим уроком')
+  })
+})

@@ -22,7 +22,7 @@
             @click="selectConfig(c)"
           >
             <div class="item-avatar">
-              <span>{{ studentInitial(c.student_id) }}</span>
+              <span>{{ (c.student_full_name || studentName(c.student_id) || '?').charAt(0).toUpperCase() }}</span>
             </div>
             <div class="item-info">
               <span class="item-name">{{ c.student_full_name || studentName(c.student_id) }}</span>
@@ -101,6 +101,10 @@
               <div class="detail-field">
                 <span class="detail-label">Самозапись</span>
                 <span class="detail-value">{{ selectedDetail.allow_self_booking ? 'Разрешена' : 'Запрещена' }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Запись</span>
+                <span class="detail-value">{{ selectedDetail.auto_confirm_bookings === false ? 'По моему подтверждению' : 'Без подтверждения' }}</span>
               </div>
               <div class="detail-field">
                 <span class="detail-label">Запись возможна за (часов)</span>

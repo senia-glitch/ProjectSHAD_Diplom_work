@@ -23,7 +23,7 @@ Python, Node.js и PostgreSQL на сервере не нужны: всё соб
 git clone https://github.com/senia-glitch/ProjectSHAD_Diplom_work.git shad
 cd shad
 sh deploy/deploy.sh init        # .env.production с новыми паролем БД и JWT-секретом (права 600)
-nano .env.production            # SHAD_DOMAIN=example.ru, SHAD_TIMEZONE=Europe/Moscow
+nano .env.production            # SHAD_DOMAIN=example.ru; SHAD_TIMEZONE — только для переноса старых данных
 sh deploy/deploy.sh up          # сборка, миграции, запуск; ждёт готовности всех сервисов
 sh deploy/deploy.sh admin admin admin@example.ru   # первый администратор, пароль вводится скрытно
 ```
@@ -55,6 +55,13 @@ sh deploy/deploy.sh restore backups/shad-....sql.gz   # спросит подт�
 
 Папка `backups/` в git не попадает. Для регулярных копий добавьте в cron, например:
 `0 3 * * * cd /opt/shad && sh deploy/deploy.sh backup`, и переносите копии за пределы сервера.
+
+## Время
+
+Сервер и база работают только в UTC. Каждый пользователь видит время в своём поясе
+(настройки → «Часовой пояс»; при регистрации берётся пояс браузера). `SHAD_TIMEZONE` нужен
+лишь один раз — миграции `20261125_utc_scheduling`, чтобы перевести в UTC данные, записанные
+раньше по часам сервера. Перед обновлением с версии до этой миграции сделайте `backup`.
 
 ## Секреты и настройки
 

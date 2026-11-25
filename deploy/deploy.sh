@@ -28,7 +28,7 @@ init() {
   umask 077
   sed -e "s/^POSTGRES_PASSWORD=__GENERATE__/POSTGRES_PASSWORD=$(secret)/" \
       -e "s/^CORE_JWT_SECRET=__GENERATE__/CORE_JWT_SECRET=$(secret)/" .env.production.example > "$ENV_FILE"
-  echo "Создан $ENV_FILE (права 600). Задайте SHAD_DOMAIN и SHAD_TIMEZONE, затем: sh deploy/deploy.sh up"
+  echo "Создан $ENV_FILE (права 600). Задайте SHAD_DOMAIN (SHAD_TIMEZONE — только для переноса старых данных), затем: sh deploy/deploy.sh up"
 }
 
 up() {
