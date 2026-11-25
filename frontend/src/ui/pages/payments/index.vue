@@ -126,7 +126,7 @@ const {
   dateFrom, dateTo, studentId, paidFilter,
   students, rows, summary, loading, error, togglingId,
   togglePaid,
-} = usePaymentsPage()
+} = usePaymentsPage({ root: true })
 </script>
 
 <style scoped>

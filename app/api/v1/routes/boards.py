@@ -110,13 +110,14 @@ async def create_board(body: CreateBody, request: Request, user: dict = Depends(
                                                     author=user_key(user['user_id'])))
 
 
-async def admit(ip: str, board_id: str, author: str, code: str):
+async def admit(ip: str, board_id: str, author: str, code: str, user_id: int | None = None):
     """
     Решение о входе с учётом защиты от перебора. Возвращает (причина отказа или None, BoardAdmit).
     Участник, уже входивший на доску, и создатель входят без кода и даже во время блокировки адреса.
     """
     wait = guard.retry_after(ip, board_id)
-    result = await run('boards.admit', AdmitDTO(board_id=board_id, author=author, code='' if wait else code))
+    result = await run('boards.admit', AdmitDTO(board_id=board_id, author=author, code='' if wait else code,
+                                                user_id=user_id))
     if not result.found:
         return 'not_found', result
     if result.banned:
@@ -182,7 +183,7 @@ async def import_board(request: Request, board_id: str = Path(pattern=BOARD_ID_P
         where = '.'.join(str(p) for p in first.get('loc', ()))
         raise BadBoardFile(f'Файл доски не распознан ({where or "формат"})')
     author = user_key(user['user_id'])
-    denied, _ = await admit(ip, board_id, author, req.code)
+    denied, _ = await admit(ip, board_id, author, req.code, user['user_id'])
     if denied == 'not_found':
         raise NotFoundError('Доска не найдена')
     if denied == 'banned':
@@ -297,7 +298,7 @@ async def board_socket(ws: WebSocket, board_id: str):
     if not _BOARD_ID.match(board_id):
         await _deny(ws, 'not_found')
         return
-    denied, _ = await admit(ip, board_id, author, hello.code)
+    denied, _ = await admit(ip, board_id, author, hello.code, principal['user_id'])
     if denied:
         await _deny(ws, denied)
         return

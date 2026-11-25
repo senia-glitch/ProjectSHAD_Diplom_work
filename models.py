@@ -47,6 +47,8 @@ class User(SQLModel, table=True):
     # Блокировка владельцем: вход и все сеансы закрыты, пока поле не пусто (наивный UTC).
     blocked_at: Optional[NaiveDatetime] = None
     block_reason: Optional[str] = Field(default=None, max_length=500)
+    # Фото профиля — внешняя ссылка http(s) на изображение (файлы на сервер не загружаются).
+    avatar_url: Optional[str] = Field(default=None, max_length=500)
 
 
 # ============================================
@@ -382,6 +384,19 @@ class BlogComment(SQLModel, table=True):
     post_id: int = Field(sa_column=sa.Column(sa.Integer, sa.ForeignKey("blog_posts.id", ondelete="CASCADE"), nullable=False))
     author_id: int = Field(sa_column=sa.Column(sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False))
     text: str = Field(sa_column=sa.Column(sa.Text, nullable=False))
+    created_at: datetime = Field(sa_column=_tz())
+    # Ответ на комментарий той же записи; удаление родителя удаляет ответы.
+    parent_id: Optional[int] = Field(default=None, sa_column=sa.Column(
+        sa.Integer, sa.ForeignKey("blog_comments.id", ondelete="CASCADE"), nullable=True))
+
+
+class BlogPostLike(SQLModel, table=True):
+    """Отметка «нравится» записи блога: один пользователь — одна отметка."""
+    __tablename__ = "blog_post_likes"
+    post_id: int = Field(sa_column=sa.Column(
+        sa.Integer, sa.ForeignKey("blog_posts.id", ondelete="CASCADE"), primary_key=True))
+    user_id: int = Field(sa_column=sa.Column(
+        sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True))
     created_at: datetime = Field(sa_column=_tz())
 
 

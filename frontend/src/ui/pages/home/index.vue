@@ -24,7 +24,7 @@
           <div v-else class="feed">
             <article v-for="post in posts" :key="post.id" class="feed-card">
               <div class="feed-head">
-                <span class="avatar" aria-hidden="true">{{ initials(post.author_name) }}</span>
+                <UserAvatar :src="post.author_avatar" :name="post.author_name" :size="36" />
                 <div class="feed-who">
                   <strong>{{ post.author_name }}</strong>
                   <div class="meta"><span>{{ formatDate(post.published_at) }}</span><span v-if="post.pinned" class="pin-label">Закреплено</span></div>
@@ -37,7 +37,10 @@
                 <button v-for="t in post.tags" :key="t" type="button" class="tag" :class="{ active: t === tag }" @click="setTag(t)">#{{ t }}</button>
               </div>
               <div class="feed-actions">
-                <span class="meta"><UiIcon name="chat" class="meta-ico" /> {{ post.comment_count }} {{ commentsWord(post.comment_count) }}</span>
+                <span class="row feed-stats">
+                  <LikeButton :count="post.like_count" :liked="post.liked" :busy="liking.has(post.id)" @toggle="toggleLike(post)" />
+                  <router-link class="meta" :to="`/blog/posts/${post.id}#comments-title`"><UiIcon name="chat" class="meta-ico" /> {{ post.comment_count }} {{ commentsWord(post.comment_count) }}</router-link>
+                </span>
                 <router-link class="feed-open" :to="`/blog/posts/${post.id}`">Открыть →</router-link>
               </div>
             </article>
@@ -80,11 +83,13 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MainLayout from '../../blocks/layout/MainLayout.vue'
-import { UiIcon } from '../../components/index.js'
+import { UiIcon, UserAvatar } from '../../components/index.js'
+import LikeButton from '../blog/LikeButton.vue'
 import MarkdownView from '../../components/MarkdownView.vue'
 import { useLogout, useUser } from '../../composables/index.js'
-import { loadFeed } from '../../../logic/actions/index.js'
-import { commentsWord, formatDate, initials } from '../blog/blogFormat.js'
+import { likePost, loadFeed } from '../../../logic/actions/index.js'
+import { toast } from '../../legacy/testing/kit.js'
+import { commentsWord, formatDate } from '../blog/blogFormat.js'
 
 const PAGE = 10
 const route = useRoute()
@@ -101,6 +106,26 @@ const expanded = reactive(new Set())
 const cutPosts = reactive(new Set())
 const allTags = ref([])
 const tags = computed(() => allTags.value)
+
+const liking = reactive(new Set())
+
+// «Нравится»: гостя ведём ко входу и возвращаем на главную.
+async function toggleLike(post) {
+  if (!isLoggedIn.value) {
+    router.push({ path: '/login', query: { redirect: '/' } })
+    return
+  }
+  liking.add(post.id)
+  try {
+    const res = await likePost(post.id)
+    post.liked = res.liked
+    post.like_count = res.like_count
+  } catch (e) {
+    toast(e.message || 'Не удалось отметить запись', 'error')
+  } finally {
+    liking.delete(post.id)
+  }
+}
 
 function setCut(id, cut) { if (cut) cutPosts.add(id); else cutPosts.delete(id) }
 function setTag(value) { router.push({ path: '/', query: value ? { tag: value } : {} }) }
@@ -136,5 +161,8 @@ document.title = 'SHAD Tutoring'
 
 <style scoped>
 .eyebrow { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; color: var(--accent); margin: 0 0 8px; }
+.feed-stats { gap: 14px; align-items: center; }
+.feed-stats a.meta { color: var(--muted); }
+.meta-ico { width: 16px; height: 16px; display: inline-block; vertical-align: -3px; }
 .filter-note { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px; }
 </style>

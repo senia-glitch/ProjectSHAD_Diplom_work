@@ -1,8 +1,9 @@
 <template>
   <MainLayout :is-logged-in="isLoggedIn" :role="role" @logout="handleLogout">
     <div class="pp admin-shell">
-      <div class="admin">
-        <nav class="admin-menu" aria-label="Разделы админ-панели">
+      <div class="admin" :class="{ 'admin--solo': sidebarAllowed }">
+        <!-- В информативном виде страницы раздела уже в общем левом меню -->
+        <nav v-if="!sidebarAllowed" class="admin-menu" aria-label="Разделы админ-панели">
           <div v-for="group in MENU" :key="group.title" class="admin-group">
             <div class="admin-title">{{ group.title }}</div>
             <router-link
@@ -33,7 +34,7 @@
 // Оболочка страниц админ-панели владельца: боковое меню разделов + заголовок.
 import { useRoute } from 'vue-router'
 import MainLayout from '../../blocks/layout/MainLayout.vue'
-import { useLogout, useUser } from '../../composables/index.js'
+import { useLogout, useNavMode, useUser } from '../../composables/index.js'
 
 defineProps({
   title: { type: String, required: true },
@@ -74,6 +75,7 @@ const MENU = [
 const route = useRoute()
 const { role, isLoggedIn } = useUser()
 const { handleLogout } = useLogout()
+const { sidebarAllowed } = useNavMode()
 
 function isActive(item) {
   return item.exact ? route.path === item.to : route.path === item.to || route.path.startsWith(item.to + '/')
@@ -82,5 +84,6 @@ function isActive(item) {
 
 <style scoped>
 .admin-shell { padding-bottom: 32px; }
+.admin--solo { grid-template-columns: minmax(0, 1fr); }
 .admin-body :deep(.toolbar .row:empty) { display: none; }
 </style>

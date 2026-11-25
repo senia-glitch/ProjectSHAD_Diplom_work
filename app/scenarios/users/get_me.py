@@ -18,6 +18,7 @@ class GetMeResponse(BaseModel):
     personal_number: str
     gender: str | None
     additional_info: str | None
+    avatar_url: str | None = None
     # Личный пояс (часы от UTC): клиент показывает время в нём.
     timezone_offset: int = 0
 
@@ -46,5 +47,6 @@ class GetMeScenario(BaseScenario):
             personal_number=user["personal_number"],
             gender=user.get("gender"),
             additional_info=user.get("additional_info"),
+            avatar_url=user.get("avatar_url"),
             timezone_offset=await user_offset(self._db, user["id"]),
         )

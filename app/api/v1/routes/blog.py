@@ -6,14 +6,16 @@ from pydantic import BaseModel, Field
 from app.api.access import external_scenario
 from app.api.v1.dependencies import get_current_user
 from app.scenarios.blog.posts import (ActorDTO, AuthorList, AuthorRefDTO, BlogAuthor, CommentDTO, CommentItem,
-                                      CommentList, CreatePostDTO, DeleteCommentDTO, Done, FeedDTO, OwnPostDTO,
-                                      PostInput, PostItem, PostList, PostRefDTO, UpdatePostDTO, ViewPostDTO)
+                                      CommentList, CreatePostDTO, DeleteCommentDTO, Done, FeedDTO, LikeDTO,
+                                      LikeResult, OwnPostDTO, PostInput, PostItem, PostList, PostRefDTO,
+                                      UpdatePostDTO, ViewPostDTO)
 
 router = APIRouter(prefix='/blog', tags=['blog'])
 
 
 class CommentBody(BaseModel):
     text: str = Field(min_length=1, max_length=3000)
+    parent_id: int | None = Field(default=None, gt=0)
 
 
 def _viewer(request: Request) -> int | None:
@@ -25,10 +27,12 @@ def _viewer(request: Request) -> int | None:
 
 @router.get('/posts', response_model=PostList)
 @external_scenario('blog.feed', core='blog.feed')
-async def feed(author_id: int | None = Query(default=None, gt=0), tag: str | None = Query(default=None, max_length=32),
+async def feed(request: Request, author_id: int | None = Query(default=None, gt=0),
+               tag: str | None = Query(default=None, max_length=32), q: str | None = Query(default=None, max_length=100),
                owner: bool = False,
                limit: int = Query(default=20, ge=1, le=50), offset: int = Query(default=0, ge=0)):
-    return await run('blog.feed', FeedDTO(author_id=author_id, tag=tag, owner=owner, limit=limit, offset=offset))
+    return await run('blog.feed', FeedDTO(author_id=author_id, tag=tag, q=q, owner=owner, viewer_id=_viewer(request),
+                                          limit=limit, offset=offset))
 
 
 @router.get('/posts/{post_id}', response_model=PostItem)
@@ -60,7 +64,14 @@ async def author(author_id: int = Path(gt=0)):
 @router.post('/posts/{post_id}/comments', status_code=201, response_model=CommentItem)
 @external_scenario('blog.comment', core='blog.comment_create')
 async def add_comment(body: CommentBody, post_id: int = Path(gt=0), user: dict = Depends(get_current_user)):
-    return await run('blog.comment_create', CommentDTO(actor_id=user['user_id'], post_id=post_id, text=body.text))
+    return await run('blog.comment_create', CommentDTO(actor_id=user['user_id'], post_id=post_id, text=body.text,
+                                                       parent_id=body.parent_id))
+
+
+@router.post('/posts/{post_id}/like', response_model=LikeResult)
+@external_scenario('blog.like', core='blog.like')
+async def like(post_id: int = Path(gt=0), user: dict = Depends(get_current_user)):
+    return await run('blog.like', LikeDTO(actor_id=user['user_id'], post_id=post_id))
 
 
 @router.delete('/comments/{comment_id}', response_model=Done)

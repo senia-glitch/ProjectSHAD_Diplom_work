@@ -12,6 +12,7 @@ from core import BaseScenario, NotFoundError, register_scenario
 from pydantic import BaseModel, Field, field_validator
 
 from app.core.exceptions import ForbiddenError
+from app.utils.notifications import notify_user
 
 MAX_TAGS = 8
 TAG_RE = re.compile(r'^[\w\- +#.]{1,32}$')
@@ -92,6 +93,9 @@ class FeedDTO(BaseModel):
     # Только записи владельца платформы (администраторов) — лента главной страницы.
     owner: bool = False
     tag: str | None = Field(default=None, max_length=32)
+    # Поиск по названию записи (без учёта регистра).
+    q: str | None = Field(default=None, max_length=100)
+    viewer_id: int | None = None
     limit: int = Field(default=20, ge=1, le=PAGE_LIMIT)
     offset: int = Field(default=0, ge=0)
 
@@ -109,6 +113,8 @@ class CommentDTO(BaseModel):
     actor_id: int = Field(gt=0)
     post_id: int = Field(gt=0)
     text: str = Field(min_length=1, max_length=3000)
+    # Ответ на комментарий этой же записи (ветка одного уровня).
+    parent_id: int | None = Field(default=None, gt=0)
 
     @field_validator('text')
     @classmethod
@@ -144,6 +150,9 @@ class PostItem(BaseModel):
     updated_at: datetime
     published_at: datetime | None
     comment_count: int = 0
+    like_count: int = 0
+    liked: bool = False
+    author_avatar: str | None = None
     # Запись владельца платформы (администратора): ссылки ведут на главную, а не в блог репетитора.
     owner: bool = False
 
@@ -161,6 +170,7 @@ class TagCount(BaseModel):
 class AuthorItem(BaseModel):
     id: int
     full_name: str
+    avatar_url: str | None = None
     post_count: int
     last_published_at: datetime | None
 
@@ -172,6 +182,7 @@ class AuthorList(BaseModel):
 class BlogAuthor(BaseModel):
     id: int
     full_name: str
+    avatar_url: str | None = None
     about: str | None
     post_count: int
     tags: list[TagCount]
@@ -183,6 +194,8 @@ class CommentItem(BaseModel):
     author_id: int
     author_name: str
     author_role: str
+    author_avatar: str | None = None
+    parent_id: int | None = None
     text: str
     created_at: datetime
 
@@ -195,9 +208,21 @@ class Done(BaseModel):
     ok: bool = True
 
 
+class LikeDTO(BaseModel):
+    actor_id: int = Field(gt=0)
+    post_id: int = Field(gt=0)
+
+
+class LikeResult(BaseModel):
+    liked: bool
+    like_count: int
+
+
 SELECT_POST = (
     'SELECT p.*, u.full_name AS author_name, '
     '(SELECT count(*) FROM blog_comments c WHERE c.post_id = p.id) AS comment_count, '
+    '(SELECT count(*) FROM blog_post_likes k WHERE k.post_id = p.id) AS like_count, '
+    'u.avatar_url AS author_avatar, '
     'EXISTS (SELECT 1 FROM admins a WHERE a.user_id = p.author_id) AS owner '
     'FROM blog_posts p JOIN users u ON u.id = p.author_id ')
 
@@ -206,7 +231,22 @@ def _item(row) -> PostItem:
     return PostItem(**{k: row[k] for k in ('id', 'author_id', 'author_name', 'title', 'body', 'status', 'pinned',
                                            'created_at', 'updated_at', 'published_at', 'comment_count')},
                     owner=bool(row.get('owner')),
+                    like_count=int(row.get('like_count') or 0),
+                    author_avatar=row.get('author_avatar'),
                     tags=_tags(row['tags']))
+
+
+async def _mark_liked(db, items: list, viewer_id: int | None) -> list:
+    """Отметить записи, которые нравятся читателю (гость — ни одной)."""
+    if not viewer_id or not items:
+        return items
+    ids = [i.id for i in items]
+    rows = await db.query(
+        'SELECT post_id FROM blog_post_likes WHERE user_id = :u AND post_id = ANY(:ids)', {'u': viewer_id, 'ids': ids})
+    liked = {r['post_id'] for r in rows}
+    for item in items:
+        item.liked = item.id in liked
+    return items
 
 
 async def _own(db, actor_id, post_id):
@@ -282,6 +322,11 @@ class Feed(BaseScenario):
         elif not dto.author_id:
             # Раздел «Блог» — записи репетиторов; блог владельца живёт на главной.
             where.append('p.author_id NOT IN (SELECT user_id FROM admins)')
+        if dto.q and dto.q.strip():
+            # % и _ из запроса ищутся буквально: экранируем их символом «!».
+            needle = ' '.join(dto.q.split()).replace('!', '!!').replace('%', '!%').replace('_', '!_')
+            where.append("p.title ILIKE :q ESCAPE '!'")
+            params['q'] = f'%{needle}%'
         if dto.tag:
             where.append('CAST(p.tags AS jsonb) @> CAST(:tag AS jsonb)')
             params['tag'] = json.dumps([' '.join(dto.tag.split()).lower()], ensure_ascii=False)
@@ -292,7 +337,8 @@ class Feed(BaseScenario):
             SELECT_POST + f'WHERE {condition} ORDER BY {order}p.published_at DESC, p.id DESC LIMIT :lim OFFSET :off',
             params)
         total = await self._db.query(f'SELECT count(*) AS n FROM blog_posts p WHERE {condition}', params)
-        return PostList(items=[_item(r) for r in rows], total=total[0]['n'])
+        items = await _mark_liked(self._db, [_item(r) for r in rows], dto.viewer_id)
+        return PostList(items=items, total=total[0]['n'])
 
 
 @register_scenario('blog.get', dto=ViewPostDTO, response=PostItem)
@@ -301,7 +347,7 @@ class GetPost(BaseScenario):
         row = await _load(self._db, dto.post_id)
         if row['status'] != 'published' and row['author_id'] != dto.viewer_id:
             raise NotFoundError('Запись не найдена')
-        return _item(row)
+        return (await _mark_liked(self._db, [_item(row)], dto.viewer_id))[0]
 
 
 @register_scenario('blog.authors', dto=None, response=AuthorList)
@@ -309,10 +355,10 @@ class Authors(BaseScenario):
     """Репетиторы, у которых есть опубликованные записи."""
     async def execute(self, dto):
         rows = await self._db.query(
-            "SELECT u.id, u.full_name, count(p.id) AS post_count, max(p.published_at) AS last_published_at "
+            "SELECT u.id, u.full_name, u.avatar_url, count(p.id) AS post_count, max(p.published_at) AS last_published_at "
             "FROM blog_posts p JOIN users u ON u.id = p.author_id WHERE p.status = 'published' "
             "AND u.id NOT IN (SELECT user_id FROM admins) "
-            "GROUP BY u.id, u.full_name ORDER BY max(p.published_at) DESC", {})
+            "GROUP BY u.id, u.full_name, u.avatar_url ORDER BY max(p.published_at) DESC", {})
         return AuthorList(items=[AuthorItem(**r) for r in rows])
 
 
@@ -321,7 +367,7 @@ class Author(BaseScenario):
     """Шапка блога репетитора: имя, «о себе» из профиля, число записей и теги."""
     async def execute(self, dto):
         rows = await self._db.query(
-            "SELECT u.id, u.full_name, u.additional_info AS about FROM users u "
+            "SELECT u.id, u.full_name, u.avatar_url, u.additional_info AS about FROM users u "
             "JOIN tutors t ON t.user_id = u.id WHERE u.id = :a", {'a': dto.author_id})
         if not rows:
             raise NotFoundError('Блог не найден')
@@ -338,7 +384,7 @@ class Author(BaseScenario):
 # ---------- комментарии ----------
 
 COMMENT_SELECT = (
-    'SELECT c.*, u.full_name AS author_name, r.name AS author_role FROM blog_comments c '
+    'SELECT c.*, u.full_name AS author_name, u.avatar_url AS author_avatar, r.name AS author_role FROM blog_comments c '
     'JOIN users u ON u.id = c.author_id JOIN roles r ON r.id = u.role_id ')
 
 
@@ -360,11 +406,29 @@ class Comments(BaseScenario):
 @register_scenario('blog.comment_create', dto=CommentDTO, response=CommentItem)
 class CreateComment(BaseScenario):
     async def execute(self, dto):
-        await _published(self._db, dto.post_id)
+        post = await _published(self._db, dto.post_id)
+        parent = None
+        if dto.parent_id:
+            found = await self._db.query(
+                'SELECT id, post_id, parent_id, author_id FROM blog_comments WHERE id = :id', {'id': dto.parent_id})
+            if not found or found[0]['post_id'] != dto.post_id:
+                raise NotFoundError('Комментарий не найден')
+            parent = found[0]
+        # Ветка одного уровня: ответ на ответ крепится к исходному комментарию.
+        parent_id = (parent['parent_id'] or parent['id']) if parent else None
         row = await self._db.create('blog_comments', {
-            'post_id': dto.post_id, 'author_id': dto.actor_id, 'text': dto.text, 'created_at': _now()})
+            'post_id': dto.post_id, 'author_id': dto.actor_id, 'text': dto.text, 'created_at': _now(),
+            'parent_id': parent_id})
         rows = await self._db.query(COMMENT_SELECT + 'WHERE c.id = :id', {'id': row['id']})
-        return CommentItem(**rows[0])
+        item = CommentItem(**rows[0])
+        title = post['title'][:80]
+        if parent and parent['author_id'] != dto.actor_id:
+            await notify_user(self._db, parent['author_id'], 'blog_reply',
+                              f'{item.author_name} ответил(а) на ваш комментарий к записи «{title}»')
+        elif not parent and post['author_id'] != dto.actor_id:
+            await notify_user(self._db, post['author_id'], 'blog_comment',
+                              f'{item.author_name} прокомментировал(а) вашу запись «{title}»')
+        return item
 
 
 @register_scenario('blog.comment_delete', dto=DeleteCommentDTO, response=Done)
@@ -380,3 +444,21 @@ class DeleteComment(BaseScenario):
             raise ForbiddenError('Удалить комментарий может его автор или автор записи')
         await self._db.delete('blog_comments', dto.comment_id)
         return Done()
+
+
+# ---------- отметки «нравится» ----------
+
+@register_scenario('blog.like', dto=LikeDTO, response=LikeResult)
+class ToggleLike(BaseScenario):
+    """Нажатие «нравится»: ставит отметку или снимает уже поставленную."""
+    async def execute(self, dto):
+        await _published(self._db, dto.post_id)
+        removed = await self._db.query(
+            'DELETE FROM blog_post_likes WHERE post_id = :p AND user_id = :u RETURNING post_id',
+            {'p': dto.post_id, 'u': dto.actor_id}, channel='write')
+        if not removed:
+            await self._db.query(
+                'INSERT INTO blog_post_likes (post_id, user_id, created_at) VALUES (:p, :u, :t) '
+                'ON CONFLICT DO NOTHING', {'p': dto.post_id, 'u': dto.actor_id, 't': _now()}, channel='write')
+        count = await self._db.query('SELECT count(*) AS n FROM blog_post_likes WHERE post_id = :p', {'p': dto.post_id})
+        return LikeResult(liked=not removed, like_count=int(count[0]['n']))

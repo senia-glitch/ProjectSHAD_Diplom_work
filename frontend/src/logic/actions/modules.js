@@ -2,7 +2,7 @@
 import {
   createBoard, createPost, deleteBoard, fetchBlogAuthor, fetchBlogAuthors, fetchBlogComments, fetchBlogFeed,
   fetchBlogPost, fetchJoinedBoards, fetchMyBoards, fetchMyPosts, importBoard, postBlogComment, removeBlogComment,
-  removePost, resolveBoard, testingRequest, updatePost, ApiError,
+  removePost, resolveBoard, testingRequest, toggleBlogLike, updatePost, ApiError,
 } from '../api/index.js'
 import { useAuthStore } from '../store/index.js'
 import { refreshSession } from './auth.js'
@@ -61,7 +61,8 @@ export async function loadPost(id) {
   const [post, comments] = await Promise.all([fetchBlogPost(id), fetchBlogComments(id).catch(() => ({ items: [] }))])
   return { post, comments: comments.items }
 }
-export const addComment = explained((postId, text) => postBlogComment(postId, text))
+export const addComment = explained((postId, text, parentId = null) => postBlogComment(postId, text, parentId))
+export const likePost = (postId) => toggleBlogLike(postId)
 export const deleteComment = (id) => removeBlogComment(id)
 export const loadMyPosts = () => fetchMyPosts()
 export const savePost = explained((id, body) => (id ? updatePost(id, body) : createPost(body)))

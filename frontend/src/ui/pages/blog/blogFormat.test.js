@@ -20,3 +20,14 @@ describe('blogFormat', () => {
     expect(formatDate('2026-11-24T10:00:00Z')).toMatch(/2026/)
   })
 })
+
+import { commentThreads } from './blogFormat.js'
+
+describe('commentThreads', () => {
+  it('собирает ответы под исходным комментарием в порядке появления', () => {
+    const threads = commentThreads([
+      { id: 1, parent_id: null }, { id: 2, parent_id: null }, { id: 3, parent_id: 1 }, { id: 4, parent_id: 1 }, { id: 5, parent_id: 99 },
+    ])
+    expect(threads.map((t) => [t.root.id, t.replies.map((r) => r.id)])).toEqual([[1, [3, 4]], [2, []], [5, []]])
+  })
+})

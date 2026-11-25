@@ -8,6 +8,18 @@ from app.utils.validation import EMAIL_PATTERN
 from core.dto import BaseDTO
 
 
+def _avatar_url(value):
+    """Фото профиля: пустая строка убирает фото, иначе только ссылка http(s) без пробелов."""
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return ""
+    if not text.lower().startswith(("https://", "http://")) or any(c.isspace() for c in text):
+        raise ValueError("avatar_url must be an http(s) link")
+    return text
+
+
 def _require_visible_name(value):
     """full_name не может быть пустой строкой или одними пробелами."""
     if value is None:
@@ -24,6 +36,7 @@ class UpdateMeDTO(BaseDTO):
     email: str | None = Field(default=None, max_length=255, pattern=EMAIL_PATTERN)
     gender: Literal["male", "female", "other"] | None = None
     additional_info: str | None = None
+    avatar_url: Annotated[str | None, BeforeValidator(_avatar_url)] = Field(default=None, max_length=500)
 
 
 class UpdateMeResponse(BaseModel):
@@ -32,6 +45,7 @@ class UpdateMeResponse(BaseModel):
     email: str
     gender: str | None
     additional_info: str | None
+    avatar_url: str | None = None
 
 
 @register_scenario("update_me", dto=UpdateMeDTO, response=UpdateMeResponse)
@@ -52,6 +66,8 @@ class UpdateMeScenario(BaseScenario):
             update_data["gender"] = dto.gender
         if dto.additional_info is not None:
             update_data["additional_info"] = dto.additional_info
+        if dto.avatar_url is not None:
+            update_data["avatar_url"] = dto.avatar_url or None
 
         if update_data:
             try:
@@ -68,4 +84,5 @@ class UpdateMeScenario(BaseScenario):
             email=updated["email"],
             gender=updated.get("gender"),
             additional_info=updated.get("additional_info"),
+            avatar_url=updated.get("avatar_url"),
         )

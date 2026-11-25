@@ -60,9 +60,9 @@
 
         <!-- === Внешний вид расписания === -->
         <section class="card">
-          <h2 class="card-title">Внешний вид расписания</h2>
+          <h2 class="card-title">Внешний вид</h2>
           <div class="form-grid">
-            <label class="fl">Тип расписания
+            <label class="fl">Вид интерфейса
               <select v-model="form.schedule_type">
                 <option v-for="st in SCHEDULE_TYPES" :key="st.value" :value="st.value">{{ st.label }}</option>
               </select>
@@ -211,7 +211,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import MainLayout from '../../blocks/layout/MainLayout.vue'
 import SettingsTour from './SettingsTour.vue'
-import { useUser, useLogout, useEscapeKey } from '../../composables/index.js'
+import { useUser, useLogout, useEscapeKey, setNavMode, navModeFromScheduleType } from '../../composables/index.js'
 import { loadTutorProfile, loadTutorStudents, saveTutorSettings } from '../../../logic/actions/index.js'
 import { logInfo, logError } from '../../../logic/logger/index.js'
 import { TIMEZONES, WORK_STATUSES, SCHEDULE_TYPES } from '../../../logic/constants/index.js'
@@ -329,6 +329,8 @@ function absencePatch() {
 
 function applyProfile(data) {
   workStatus.value = data.work_status || 'WORKING'
+  // Вид интерфейса хранится на сервере: на любом устройстве репетитора меню одинаковое.
+  if (data.schedule_type) setNavMode(navModeFromScheduleType(data.schedule_type))
   // Закончившийся период не показываем: при сохранении он снимается.
   const absenceOver = !data.absence_to || String(data.absence_to) <= userNowIso()
   Object.assign(form, {

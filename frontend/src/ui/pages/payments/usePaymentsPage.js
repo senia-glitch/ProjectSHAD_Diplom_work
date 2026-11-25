@@ -21,21 +21,20 @@ function monthRange() {
   return { from: isoLocal(from), to: isoLocal(to) }
 }
 
-let paymentsRootInitialized = false
+// Состояние общее для страницы «Оплаты», вкладки статистики и её панели фильтров:
+// фильтр, выбранный в панели, сразу меняет таблицу.
+const range = monthRange()
+const dateFrom = ref(range.from)
+const dateTo = ref(range.to)
+const studentId = ref('')
+const paidFilter = ref('all')
+const lessons = ref([])
+const loading = ref(false)
+const error = ref('')
+const togglingId = ref('')
 
 export function usePaymentsPage({ root = false } = {}) {
   const rosterStore = useRosterStore()
-  const range = monthRange()
-
-  const dateFrom = ref(range.from)
-  const dateTo = ref(range.to)
-  const studentId = ref('')
-  const paidFilter = ref('all')
-
-  const lessons = ref([])
-  const loading = ref(false)
-  const error = ref('')
-  const togglingId = ref('')
 
   const students = computed(() => rosterStore.students || [])
   const rows = computed(() => filterPaymentRows(buildPaymentRows(lessons.value), paidFilter.value))
@@ -64,17 +63,17 @@ export function usePaymentsPage({ root = false } = {}) {
       await setParticipantPaid(row.lesson_id, row.student_user_id, !row.paid)
       await reload()
     } catch (e) {
+      error.value = e.message || 'Не удалось изменить оплату'
       logError('payments', 'toggle:error', { error: e.message })
     } finally {
       togglingId.value = ''
     }
   }
 
+  // Владелец данных (страница или вкладка) загружает их при каждом открытии и при смене фильтров.
   if (root) {
     watch([dateFrom, dateTo, studentId], reload)
     onMounted(async () => {
-      if (paymentsRootInitialized) return
-      paymentsRootInitialized = true
       try {
         await loadTutorStudents()
       } catch (e) {

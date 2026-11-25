@@ -14,8 +14,15 @@
           <nav ref="navLinks" class="nav-main" aria-label="Разделы">
             <template v-for="item in navItems" :key="item.key">
               <!-- Группа страниц: значок раскрывает список разделов -->
+              <!-- Информативный вид: раздел — обычная ссылка, его страницы — в левом меню -->
+              <router-link v-if="item.items && sidebarOn" v-slot="{ href, navigate }" :to="item.items[0].to" custom>
+                <a :href="href" :data-tip="item.label" :aria-current="isGroupActive(item) ? 'page' : null" @click="navigate">
+                  <span class="icon" :data-icon="item.icon"><UiIcon :name="item.icon" /></span>
+                  <span class="nav-label">{{ item.label }}</span>
+                </a>
+              </router-link>
               <div
-                v-if="item.items"
+                v-else-if="item.items"
                 class="nav-group"
                 :class="{ 'nav-group--open': openGroup === item.key }"
                 @mouseenter="hoverOpen(item.key)"
@@ -102,9 +109,28 @@
         </div>
       </header>
     </div>
-    <main id="main-content" class="main" tabindex="-1">
-      <slot />
-    </main>
+    <div class="body" :class="{ 'body--side': sidebarOn }">
+      <aside v-if="sidebarOn" class="pp side-nav" :aria-label="sideSection ? `Страницы раздела «${sideSection.label}»` : 'Разделы'">
+        <div class="side-nav-inner">
+          <div class="side-nav-title">{{ sideSection ? sideSection.label : 'Разделы' }}</div>
+          <router-link
+            v-for="link in sideLinks"
+            :key="link.to"
+            v-slot="{ href, navigate }"
+            :to="link.to"
+            custom
+          >
+            <a :href="href" class="side-link" :aria-current="isSection(link) ? 'page' : null" @click="navigate">
+              <span class="icon" :data-icon="link.icon"><UiIcon :name="link.icon" /></span>
+              <span>{{ link.label }}</span>
+            </a>
+          </router-link>
+        </div>
+      </aside>
+      <main id="main-content" class="main" tabindex="-1">
+        <slot />
+      </main>
+    </div>
     <div v-if="!fill" class="pp">
       <footer class="site-footer">
         <div class="wrap footer-inner">
@@ -129,7 +155,7 @@ import { computed, ref, reactive, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import NotificationPanel from './NotificationPanel.vue'
 import { UiIcon } from '../../components/index.js'
-import { useNotifications, useTheme } from '../../composables/index.js'
+import { useNavMode, useNotifications, useTheme } from '../../composables/index.js'
 
 const props = defineProps({
   isLoggedIn: { type: Boolean, default: false },
@@ -207,11 +233,38 @@ const NAV = {
         { to: '/admin/audit', label: 'Журнал действий', icon: 'clock' },
       ],
     },
+    {
+      key: 'system', label: 'Система', icon: 'sliders',
+      items: [
+        { to: '/admin/system', label: 'Состояние', icon: 'chart' },
+        { to: '/admin/logs', label: 'Логи', icon: 'info' },
+        { to: '/admin/key', label: 'Ключ входа', icon: 'key' },
+      ],
+    },
     { key: 'blog', to: '/blog/manage', label: 'Мой блог', icon: 'blog', section: '/blog/manage' },
     { key: 'profile', to: '/profile', label: 'Профиль', icon: 'user' },
   ],
 }
 const navItems = computed(() => (props.isLoggedIn ? NAV[props.role] || [] : NAV.guest))
+
+// --- Левое меню (информативный вид, широкий экран): страницы текущего раздела ---
+const { sidebarAllowed } = useNavMode()
+const sidebarOn = computed(() => props.isLoggedIn && !props.fill && sidebarAllowed.value && navItems.value.length > 0)
+// Страницы вне меню относятся к ближайшему разделу: урок — к расписанию, доска — к занятиям.
+const EXTRA_SECTIONS = { '/lessons': '/schedule', '/boards': '/boards', '/testing': '/testing', '/statistics': '/statistics', '/blog/posts': '/blog' }
+const sideSection = computed(() => {
+  const own = navItems.value.find((item) => (item.items ? isGroupActive(item) : isSection(item)))
+  if (own) return own
+  const extra = Object.entries(EXTRA_SECTIONS).find(([prefix]) => route.path.startsWith(prefix))
+  if (!extra) return null
+  return navItems.value.find((item) => (item.items || [item]).some((child) => (child.section || child.to) === extra[1])) || null
+})
+// Раздел из одной страницы показывает её саму; без раздела (главная, уведомления) — все разделы.
+const sideLinks = computed(() => {
+  const section = sideSection.value
+  if (section) return section.items || [section]
+  return navItems.value.map((item) => (item.items ? { ...item.items[0], label: item.label, icon: item.icon } : item))
+})
 
 // Раздел подсвечивается и на вложенных страницах (тест, доска, запись блога).
 function isSection(item) {
@@ -335,6 +388,7 @@ function handleBellClick() {
 
 <style scoped>
 .layout { display: flex; flex-direction: column; min-height: 100dvh; }
+.layout--fill .body { display: flex; flex-direction: column; }
 /* Шапка всегда видна: и на телефоне, и на компьютере. */
 .shell-top { position: sticky; top: 0; z-index: 100; }
 .pp .site-header { position: static; }
@@ -342,7 +396,19 @@ function handleBellClick() {
 .notif-area { position: relative; }
 .notif-badge { position: absolute; top: 1px; right: 1px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--danger); color: var(--accent-ink); font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }
 .pp .header-actions .btn.icon { width: var(--ctl); padding: 0; border: 1px solid var(--line); }
+.body { flex: 1; display: flex; min-width: 0; }
 .main { flex: 1; padding: 40px 24px 80px; max-width: 1208px; margin: 0 auto; width: 100%; min-width: 0; }
+.body--side .main { padding-left: 32px; }
+/* Левое меню раздела: одинаковое место на любой странице, прилипает под шапкой. */
+.side-nav { width: 232px; flex: none; border-right: 1px solid var(--line); background: var(--bg); }
+.side-nav-inner { position: sticky; top: var(--shell-h, 64px); display: grid; gap: 2px; padding: 28px 14px; max-height: calc(100dvh - var(--shell-h, 64px)); overflow-y: auto; }
+.side-nav-title { padding: 0 12px 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.pp .side-link { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 10px; color: var(--muted); font-size: 14.5px; text-decoration: none; transition: background var(--t) var(--ease), color var(--t) var(--ease); }
+.pp .side-link:hover { background: var(--surface); color: var(--text); text-decoration: none; }
+.pp .side-link[aria-current="page"] { background: var(--accent-soft); color: var(--text); font-weight: 500; }
+.pp .side-link .icon { display: inline-flex; color: inherit; }
+.pp .side-link[aria-current="page"] .icon { color: var(--accent); }
+.pp .side-link .icon svg { width: 19px; height: 19px; }
 .main:focus { outline: none; }
 .layout--fill .main { padding: 0; max-width: none; display: flex; flex-direction: column; }
 

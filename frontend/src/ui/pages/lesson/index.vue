@@ -143,7 +143,7 @@
                   </select>
                 </label>
                 <p v-else-if="!boards.length" class="muted small">Своих досок пока нет — создайте её в разделе «Доски» и прикрепите к уроку.</p>
-                <p class="muted small">Ученик открывает доску из урока и один раз вводит её код.</p>
+                <p class="muted small">Во время урока ученики открывают доску из урока сразу, без кода.</p>
               </template>
               <router-link class="btn ghost" to="/boards"><UiIcon name="board" /> {{ isTutor ? 'Мои доски' : 'Доски' }}</router-link>
               <router-link class="btn ghost" :to="isTutor ? '/testing' : '/testing'"><UiIcon name="tests" /> {{ isTutor ? 'Тесты для учеников' : 'Мои тесты' }}</router-link>

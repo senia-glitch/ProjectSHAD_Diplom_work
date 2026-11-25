@@ -229,5 +229,12 @@
     "action": "testing.results_for_test",
     "response": "AttemptList",
     "scenario": "testing.attempts_list_for_test"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/blog/posts/{post_id}/like",
+    "action": "blog.like",
+    "response": "LikeResult",
+    "scenario": "blog.like"
   }
 ]

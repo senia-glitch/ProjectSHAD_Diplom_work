@@ -28,3 +28,24 @@ export function commentsWord(n) {
   if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'комментария'
   return 'комментариев'
 }
+
+// Комментарии веткам: исходный комментарий и ответы на него по порядку. Ответ без найденного
+// родителя (родителя удалили раньше, чем обновился список) показывается отдельной веткой.
+export function commentThreads(comments) {
+  const roots = []
+  const byId = new Map()
+  for (const c of comments || []) {
+    if (!c.parent_id) {
+      const thread = { root: c, replies: [] }
+      roots.push(thread)
+      byId.set(c.id, thread)
+    }
+  }
+  for (const c of comments || []) {
+    if (!c.parent_id) continue
+    const thread = byId.get(c.parent_id)
+    if (thread) thread.replies.push(c)
+    else roots.push({ root: c, replies: [] })
+  }
+  return roots
+}

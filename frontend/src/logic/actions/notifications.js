@@ -37,3 +37,9 @@ export async function markAllRead() {
   await markAllNotificationsRead()
   useNotificationsStore().markAllRead()
 }
+
+// Свежие уведомления для всплывающего показа: store списка не трогаем.
+export async function loadLatestNotifications(limit = 3) {
+  const data = await getNotifications({ limit, offset: 0 })
+  return data?.notifications || []
+}

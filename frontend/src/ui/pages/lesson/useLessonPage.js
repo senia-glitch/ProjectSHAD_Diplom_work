@@ -47,7 +47,8 @@ export function useLessonPage() {
   // ----- вход на занятие -----
   const phase = computed(() => lessonPhase(lesson.value, nowMs.value))
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  const links = computed(() => lessonSafeLinks(lesson.value?.links).map((l) => {
+  // Репетитору сервер отдаёт ссылки в links, ученику — в lesson_links.
+  const links = computed(() => lessonSafeLinks(lesson.value?.links || lesson.value?.lesson_links).map((l) => {
     const boardId = boardIdFromLink(l.safe, origin)
     return { ...l, boardId, to: boardId ? `/boards/${boardId}` : null }
   }))

@@ -10,11 +10,14 @@ import math
 import os
 import re
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 from core import BaseScenario, ConflictError, NotFoundError, register_scenario
+
+from app.utils.clock import utc_now
+from app.utils.participants import is_cancelled_row
 
 BOARD_ID_PATTERN = r'^[A-Za-z0-9_-]{16,40}$'
 KEY_PATTERN = r'^[A-Za-z0-9_-]{8,40}$'
@@ -195,13 +198,15 @@ class AdmitDTO(BaseModel):
     board_id: str = Field(pattern=BOARD_ID_PATTERN)
     author: str = Field(pattern=KEY_PATTERN)
     code: str = Field(default='', max_length=64)
+    # Пользователь платформы: доска, прикреплённая к его текущему уроку, открывается без кода.
+    user_id: int | None = None
 
 
 class BoardAdmit(BaseModel):
-    """Решение о входе: по коду, как участник, уже входивший раньше, или как создатель."""
+    """Решение о входе: по коду, как участник, уже входивший раньше, как создатель или по уроку."""
     found: bool
     granted: bool = False
-    via: Literal['code', 'member', 'creator', ''] = ''
+    via: Literal['code', 'member', 'creator', 'lesson', ''] = ''
     banned: bool = False
     code_tried: bool = False
     title: str = ''
@@ -322,6 +327,34 @@ class ResolveBoard(BaseScenario):
         return ResolvedBoard(found=True, **rows[0]) if rows else ResolvedBoard(found=False)
 
 
+# Доска урока открывается без кода с этого запаса до начала и до этого времени после конца.
+LESSON_ACCESS_BEFORE = timedelta(minutes=30)
+LESSON_ACCESS_AFTER = timedelta(minutes=60)
+
+
+async def _lesson_access(db, board_id: str, user_id: int) -> bool:
+    """Доска прикреплена к уроку её владельца (ссылкой урока), урок идёт или скоро начнётся,
+    а пользователь — репетитор урока или записанный (не отменивший запись) ученик."""
+    now = utc_now()
+    rows = await db.query(
+        'SELECT l.id, t.user_id AS tutor_user_id FROM lessons l JOIN tutors t ON t.id = l.tutor_id '
+        'JOIN boards b ON b.id = :bid AND b.owner_id = t.user_id '
+        'WHERE strpos(CAST(l.lesson_links AS text), :needle) > 0 '
+        "AND (l.status IS NULL OR l.status NOT IN ('CANCELLED', 'REJECTED', 'NO_SHOW')) "
+        'AND l.start_time <= :latest_start AND l.end_time >= :earliest_end',
+        {'bid': board_id, 'needle': f'/boards/{board_id}"', 'latest_start': now + LESSON_ACCESS_BEFORE,
+         'earliest_end': now - LESSON_ACCESS_AFTER})
+    for lesson in rows:
+        if lesson['tutor_user_id'] == user_id:
+            return True
+        participants = await db.query(
+            'SELECT lp.participant_settings FROM lesson_participants lp JOIN students s ON s.id = lp.student_id '
+            'WHERE lp.lesson_id = :lid AND s.user_id = :uid', {'lid': lesson['id'], 'uid': user_id})
+        if any(not is_cancelled_row(p) for p in participants):
+            return True
+    return False
+
+
 @register_scenario('boards.admit', dto=AdmitDTO, response=BoardAdmit)
 class AdmitToBoard(BaseScenario):
     async def execute(self, dto):
@@ -340,6 +373,12 @@ class AdmitToBoard(BaseScenario):
             return BoardAdmit(granted=True, via='creator', **info)
         if row['banned'] is False:  # запись участника есть и он не исключён
             return BoardAdmit(granted=True, via='member', **info)
+        if dto.user_id and await _lesson_access(self._db, dto.board_id, dto.user_id):
+            await self._db.query(
+                'INSERT INTO board_members (board_id, author_key) VALUES (:id, :author) '
+                'ON CONFLICT (board_id, author_key) DO NOTHING', {'id': dto.board_id, 'author': dto.author},
+                channel='write')
+            return BoardAdmit(granted=True, via='lesson', **info)
         tried = bool(normalize_code(dto.code))
         if tried and hmac.compare_digest(code_lookup(dto.code), row['code_lookup']):
             await self._db.query(

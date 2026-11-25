@@ -13,7 +13,7 @@
       <div v-if="loadError" class="server-error">{{ loadError }}</div>
       <div class="profile-card" v-if="user">
         <div class="profile-header">
-          <div class="avatar"><span>{{ user.full_name?.charAt(0)?.toUpperCase() || user.username?.charAt(0)?.toUpperCase() || '?' }}</span></div>
+          <UserAvatar class="avatar-photo" :src="form.avatar_url.trim()" :name="user.full_name || user.username" :size="72" />
           <div>
             <h2 class="profile-name">{{ user.full_name || user.username }}</h2>
             <p class="profile-role">{{ { tutor: 'Репетитор', student: 'Ученик', admin: 'Администратор' }[user.role] || user.role }}</p>
@@ -48,12 +48,41 @@
             />
             <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
           </div>
+          <div class="form-group" :class="{ 'has-error': errors.avatar_url }">
+            <label for="profile-avatar">Фото профиля — ссылка на изображение</label>
+            <div class="avatar-row">
+              <input
+                id="profile-avatar"
+                v-model="form.avatar_url"
+                type="url"
+                inputmode="url"
+                placeholder="https://…/photo.jpg"
+                :aria-invalid="!!errors.avatar_url"
+                aria-describedby="profile-avatar-hint"
+                :class="{ error: errors.avatar_url }"
+              />
+              <button v-if="form.avatar_url" type="button" class="btn btn--gry btn--sm" @click="form.avatar_url = ''">Убрать</button>
+            </div>
+            <span v-if="errors.avatar_url" class="field-error">{{ errors.avatar_url }}</span>
+            <span v-else id="profile-avatar-hint" class="field-hint">Вставьте прямую ссылку на картинку (https://…). Фото видно сразу слева; сохраните, чтобы его увидели другие.</span>
+          </div>
           <div v-if="serverError" class="server-error" role="alert">{{ serverError }}</div>
           <div v-if="successMsg" class="server-success" role="status">{{ successMsg }}</div>
           <button type="submit" class="btn btn--primary" :disabled="loading">
             {{ loading ? 'Сохранение...' : 'Сохранить' }}
           </button>
         </form>
+      </div>
+      <div v-if="user" class="profile-card profile-card--wide">
+        <h3 class="card-title">Вид интерфейса</h3>
+        <fieldset class="nav-modes">
+          <legend class="sr-only">Вид интерфейса</legend>
+          <label v-for="m in NAV_MODES" :key="m.value" class="nav-mode" :class="{ on: navMode === m.value }">
+            <input type="radio" name="nav-mode" :value="m.value" :checked="navMode === m.value" @change="changeNavMode(m.value)" />
+            <span><strong>{{ m.label }}</strong><small>{{ m.hint }}</small></span>
+          </label>
+        </fieldset>
+        <p class="field-hint">Меню слева показывается на экранах от 1100 px; на телефоне меню всегда компактное.</p>
       </div>
     </div>
   </MainLayout>
@@ -64,17 +93,31 @@ import { ref, reactive, onMounted } from 'vue'
 import MainLayout from '../../blocks/layout/MainLayout.vue'
 import ProfileTour from './ProfileTour.vue'
 import { useUser, useLogout } from '../../composables/index.js'
-import { loadMyProfile, saveMyProfile } from '../../../logic/actions/index.js'
+import { UserAvatar } from '../../components/index.js'
+import { NAV_MODES, scheduleTypeFromNavMode, useNavMode } from '../../composables/index.js'
+import { loadMyProfile, saveMyProfile, saveTutorSettings } from '../../../logic/actions/index.js'
 import { useAuthStore } from '../../../logic/store/index.js'
 import { logError } from '../../../logic/logger/index.js'
 
 const { role, isLoggedIn } = useUser()
 const { handleLogout } = useLogout()
 const showTour = ref(false)
+const { navMode, setNavMode } = useNavMode()
+
+// Вид меню применяется сразу; репетитору он сохраняется и в настройках (виден на всех устройствах).
+async function changeNavMode(value) {
+  setNavMode(value)
+  if (role.value !== 'tutor') return
+  try {
+    await saveTutorSettings({ schedule_type: scheduleTypeFromNavMode(value) })
+  } catch (e) {
+    logError('profile', 'nav-mode:error', { error: e.message })
+  }
+}
 
 const user = ref(null)
-const form = reactive({ full_name: '', email: '' })
-const errors = reactive({ full_name: '', email: '' })
+const form = reactive({ full_name: '', email: '', avatar_url: '' })
+const errors = reactive({ full_name: '', email: '', avatar_url: '' })
 const loading = ref(false)
 const serverError = ref('')
 const successMsg = ref('')
@@ -87,6 +130,7 @@ onMounted(async () => {
     user.value = data
     form.full_name = data.full_name || ''
     form.email = data.email
+    form.avatar_url = data.avatar_url || ''
   } catch (e) {
     loadError.value = e.status ? 'Не удалось загрузить профиль' : 'Сеть'
     logError('profile', 'mounted:error', { error: e.message })
@@ -96,7 +140,13 @@ onMounted(async () => {
 function validate() {
   errors.full_name = ''
   errors.email = ''
+  errors.avatar_url = ''
   let valid = true
+  const avatar = form.avatar_url.trim()
+  if (avatar && (!/^https?:\/\/\S+$/i.test(avatar) || avatar.length > 500)) {
+    errors.avatar_url = 'Нужна ссылка вида https://… без пробелов'
+    valid = false
+  }
 
   if (!form.full_name.trim()) {
     errors.full_name = 'Обязательное поле'
@@ -124,7 +174,7 @@ async function handleUpdate() {
 
   loading.value = true
   try {
-    const data = await saveMyProfile({ full_name: form.full_name.trim(), email: form.email.trim() })
+    const data = await saveMyProfile({ full_name: form.full_name.trim(), email: form.email.trim(), avatar_url: form.avatar_url.trim() })
     successMsg.value = 'Данные сохранены'
     user.value = { ...user.value, ...data }
     // Шапка сайта читает имя из authStore.user — синхронизируем её
@@ -132,6 +182,7 @@ async function handleUpdate() {
     useAuthStore().setUser({ ...useAuthStore().user, ...data })
     form.full_name = data.full_name || user.value.full_name
     form.email = data.email || user.value.email
+    form.avatar_url = data.avatar_url || ''
     setTimeout(() => { successMsg.value = '' }, 3000)
   } catch (e) {
     serverError.value = e.status ? e.message || 'Ошибка сохранения' : 'Ошибка сети'
@@ -161,7 +212,19 @@ async function handleUpdate() {
 .profile-page > .page-header, .profile-page > .loading-text, .profile-page > .server-error { grid-column: 1 / -1; margin-bottom: 0; }
 .profile-card { margin-bottom: 0; box-shadow: none; min-width: 0; }
 .profile-header { flex-direction: column; align-items: flex-start; }
-.avatar { border-radius: 16px; background: var(--accent-soft); color: var(--accent); }
+.avatar-photo { border-radius: 16px; }
+.avatar-row { display: flex; gap: 8px; align-items: center; }
+.avatar-row input { flex: 1; min-width: 0; }
+.field-hint { font-size: 12px; color: var(--muted); }
+.profile-card--wide { grid-column: 2; }
+.nav-modes { border: 0; padding: 0; margin: 0 0 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.nav-mode { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
+.nav-mode.on { border-color: var(--accent); background: var(--accent-soft); }
+.nav-mode input { margin-top: 3px; accent-color: var(--accent); }
+.nav-mode span { display: grid; gap: 2px; }
+.nav-mode small { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 800px) { .profile-card--wide { grid-column: auto; } }
 .profile-code { overflow-wrap: anywhere; line-height: 1.8; }
 .profile-role { display: inline-block; margin-top: 8px; padding: 2px 8px; background: var(--accent-soft); color: var(--accent); border-radius: 6px; font-size: 12px; }
 @media (max-width: 800px) { .profile-page { grid-template-columns: minmax(0, 1fr); gap: 16px; } .profile-header { flex-direction: row; align-items: center; } .avatar { flex-shrink: 0; } }
